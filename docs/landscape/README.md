@@ -18,7 +18,8 @@ projects named here are credited in [`../../ATTRIBUTION.md`](../../ATTRIBUTION.m
   deeply reverse-engineered and that expose (or can be made to expose) a stereo path. If one
   exists for your engine, use it — don't reinvent it.
 - **Per-game native mods** are what you build when no injector covers your engine. They are the
-  domain of the [porting model](../porting/) in this library.
+  domain of the [porting model](../porting/) and, for modern AAA engines that can't render the
+  world twice per frame, the [AER technique](../per-game-native-mods/).
 - **Generic drivers** (vorpX) are the pragmatic fallback for older D3D9–11 games: quick seated
   3D without engine work, but not true per-eye engine rendering and rarely full 6DoF.
 - **Stereo-3D shader drivers** (geo-11, 3Dmigoto) produce stereoscopic depth, not a VR runtime
@@ -31,7 +32,8 @@ projects named here are credited in [`../../ATTRIBUTION.md`](../../ATTRIBUTION.m
 1. **Unreal Engine 4.8–5.x?** → UEVR. Done.
 2. **Capcom RE Engine?** → REFramework VR. Done.
 3. **Another modern engine with a big modding scene?** → check whether a per-game native mod
-   already exists (see [case studies](../case-studies/)); if so, study/extend it.
+   already exists (see [case studies](../case-studies/)); if so, study/extend it. If the engine
+   can't draw the world twice per frame, [AER](../per-game-native-mods/) is the known strategy.
 4. **Nothing exists, but the engine is D3D11/12 and 64-bit?** → best candidate to build a new
    adapter with the [porting checklist](../porting/).
 5. **Old D3D9 (or older) game, no appetite to build a mod?** → try **vorpX** / **geo-11** for

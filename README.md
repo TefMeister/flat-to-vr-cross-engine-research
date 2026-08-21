@@ -49,6 +49,7 @@ credit from no one.
 | [`docs/porting/`](./docs/porting/) | The per-engine adapter model + a 10-milestone porting checklist |
 | [`docs/techniques/`](./docs/techniques/) | Deep dives: frame timing, AER, TAA under AFR, HUD in VR, basis/handedness |
 | [`docs/case-studies/`](./docs/case-studies/) | Worked public examples: RE Engine, Creation Engine 2, Anvil, Unreal 4/5 |
+| [`docs/per-game-native-mods/`](./docs/per-game-native-mods/) | The route for modern AAA engines with no injector: per-game mods & AER (Luke Ross R.E.A.L.) — informational |
 | [`docs/generic-drivers/`](./docs/generic-drivers/) | The off-the-shelf route for older D3D9 games: vorpX & geo-11 (no engine adapter) |
 | [`docs/engines-index.md`](./docs/engines-index.md) | Quick lookup: engine → render API → known VR path |
 | [`ATTRIBUTION.md`](./ATTRIBUTION.md) | Every person, project, tool, and source, with links and licenses |
