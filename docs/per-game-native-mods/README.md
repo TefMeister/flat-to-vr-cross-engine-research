@@ -59,12 +59,21 @@ This makes AER the go-to strategy precisely where native stereo and even same-ti
 | Coverage | Every game on a supported engine | One specific title at a time |
 | Mechanism | Drives the engine's own/near-native stereo | Bespoke hooks + AER reprojection |
 | Stereo | Native or same-tick sequential where possible | Alternating-eye + reprojection |
-| Distribution | Open-source frameworks | Author's own mods (mostly paid Patreon; the GTA V repo is source-available but unlicensed — viewable, not reusable) |
+| Distribution | Open-source frameworks | Author's own mods — **free (donations) since March 2026**, Cyberpunk 2077 excluded; the GTA V repo is source-available but unlicensed (viewable, not reusable) |
 
 Titles the R.E.A.L. mods have publicly supported include Cyberpunk 2077, Elden Ring, Hogwarts
 Legacy, Horizon Zero Dawn (1 & 2), Marvel's Spider-Man, Uncharted 4, Red Dead Redemption 2, and
-GTA V — as a sense of which engine classes AER has been applied to. (List per public reporting;
-availability and specifics are the author's to state.)
+GTA V — around 31 titles in total — as a sense of which engine classes AER has been applied to.
+(List per public reporting; availability and specifics are the author's to state.)
+
+**Availability, verified against public reporting (Aug 2026):** as of **15 March 2026** the
+R.E.A.L. framework is distributed **free for everyone with donations encouraged** (it was
+previously a paid Patreon), a change Ross made after **CD Projekt issued a DMCA takedown in
+January 2026** over the paywalled Cyberpunk 2077 mod; **Cyberpunk 2077 is excluded** from the free
+release. Separately, the **GTA V, Red Dead Redemption 2, and Mafia** VR mods were earlier taken
+down after a **Take-Two legal complaint** — though the GTA V source repo is currently public again
+(unlicensed). None of this changes our position: we use the *public technique*, not his code or
+mods.
 
 ## What a project can *learn* from this (not take)
 
@@ -78,10 +87,10 @@ availability and specifics are the author's to state.)
 ## Sources
 
 - **Luke Ross — R.E.A.L. VR** (official) — [patreon.com/realvr](https://www.patreon.com/realvr)
-- **GTA V R.E.A.L. mod** (the publicly-open one) —
+- **GTA V R.E.A.L. mod** (the publicly-open one, unlicensed) —
   [github.com/LukeRoss00/gta5-real-mod](https://github.com/LukeRoss00/gta5-real-mod)
-- Neutral overview — [Wikipedia: Luke Ross](https://en.wikipedia.org/wiki/Luke_Ross)
-- Community cross-reference (Cyberpunk RealVR) —
-  [helixmod.blogspot.com](https://helixmod.blogspot.com/2024/10/cyberpunk-2077-realvr-vrto3d.html)
+- Free-release + Cyberpunk exclusion — [Road to VR: "Luke Ross Releases PC VR Mod Suite for Free, Excluding Contentious 'Cyberpunk 2077' Mod"](https://roadtovr.com/luke-ross-vr-mods-free-cyberpunk-2077/)
+- Take-Two takedown of GTA V / RDR2 / Mafia mods — [Road to VR](https://www.roadtovr.com/luke-ross-vr-mods-gta-red-dead-take-two-dmca-notice/)
+- CD Projekt DMCA of the paid Cyberpunk 2077 mod — [Notebookcheck](https://www.notebookcheck.net/Paid-Cyberpunk-2077-VR-mod-targeted-by-CD-Projekt-Red-in-DMCA-takedown.1207067.0.html)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

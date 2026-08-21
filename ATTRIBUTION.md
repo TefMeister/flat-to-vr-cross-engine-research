@@ -31,9 +31,12 @@ knowledge, and individuals alike.
 - **Luke Ross** (github.com/LukeRoss00) — **R.E.A.L.** VR mods and the **AER (Alternating Eye
   Rendering)** technique for engines that cannot draw the world twice per frame. We reference the
   publicly-known *technique* only. Note the GTA V repo is source-**available** but **unlicensed**
-  (all rights reserved by default — viewable, **not** reusable), and the other titles are **paid
-  builds** on Patreon; we copy no code from the repo and use no paid or patron-only material.
-  - <https://github.com/LukeRoss00/gta5-real-mod> · <https://www.patreon.com/realvr>
+  (all rights reserved by default — viewable, **not** reusable). Per public reporting (verified
+  Aug 2026), the framework has been **free with optional donations since 15 March 2026** (formerly
+  paid Patreon), with **Cyberpunk 2077 excluded** after a CD Projekt DMCA; the GTA V / RDR2 / Mafia
+  mods were earlier removed following a Take-Two complaint. We copy no code from the repo and use
+  no paid or patron-only material.
+  - <https://github.com/LukeRoss00/gta5-real-mod> · <https://www.patreon.com/realvr> · [Road to VR (free release)](https://roadtovr.com/luke-ross-vr-mods-free-cyberpunk-2077/)
 
 ## Tools, drivers & communities
 
