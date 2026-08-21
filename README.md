@@ -59,6 +59,14 @@ Additions are welcome from anyone. The bar is simple and non-negotiable: **only 
 available information, every claim linked to its primary source, and every author credited.**
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
+## Related repositories
+
+- **[flat-to-vr-RE-toolkit](https://github.com/TefMeister/flat-to-vr-RE-toolkit)** — the
+  companion repo: the reusable **tools, Claude Code skills, setup, and engine-agnostic
+  PLAYBOOK** for reverse-engineering any flat game into VR. Where this library is the *public
+  knowledge* (engines, techniques, case studies), the toolkit is the *method and tooling* you
+  work with. The two are meant to be used together.
+
 ## License & attribution
 
 - The **original writing** in this repository (our summaries and notes) is licensed

@@ -55,3 +55,12 @@ decoupled yaw/pitch, roomscale origin, and HUD-to-depth placement. The
 When you start a new mod, **do not rebuild the core** — study how UEVR / REFramework / vrframework
 already did it and reuse that architecture. Spend your effort entirely on the engine-specific
 half, because that is the only part that is actually new for your game.
+
+## Sources
+
+- **vrframework** (Elliott Tate) — [github.com/elliotttate/vrframework](https://github.com/elliotttate/vrframework)
+- **REFramework** (praydog) — [github.com/praydog/REFramework](https://github.com/praydog/REFramework) · [reframework.dev](https://reframework.dev/)
+- **UEVR** (praydog) — [github.com/praydog/UEVR](https://github.com/praydog/UEVR) · [docs.uevr.io](https://docs.uevr.io/)
+- Runtimes/libraries: [OpenVR](https://github.com/ValveSoftware/openvr) · [OpenXR SDK](https://github.com/KhronosGroup/OpenXR-SDK) · [Dear ImGui](https://github.com/ocornut/imgui) · [MinHook](https://github.com/TsudaKageyu/minhook) · [safetyhook](https://github.com/cursey/safetyhook)
+
+Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

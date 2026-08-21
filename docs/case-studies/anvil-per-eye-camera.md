@@ -76,3 +76,12 @@ Dialogs remain letterboxed, a known limitation.
 - A **cheap main-camera discriminator** — Anvil uses far-plane magnitude; render-target size also
   works.
 - The **two-hook timing** model when your engine exposes no Reflex/marker instrumentation.
+
+## Sources
+
+- **anvilengine2vr** (mutars / Sergii Permiakov) — [github.com/mutars/anvilengine2vr](https://github.com/mutars/anvilengine2vr)
+- Upstream **REFramework** (praydog) — [github.com/praydog/REFramework](https://github.com/praydog/REFramework)
+- Core framework **vrframework** (Elliott Tate) — [github.com/elliotttate/vrframework](https://github.com/elliotttate/vrframework)
+- Hooking lib **safetyhook** (cursey) — [github.com/cursey/safetyhook](https://github.com/cursey/safetyhook)
+
+Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

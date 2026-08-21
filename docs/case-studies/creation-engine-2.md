@@ -61,3 +61,13 @@ what AFR + per-eye rendering breaks.
   and its history buffers are reachable.
 - The use of a **reverse-engineered SDK library** (here CommonLibSF) to get typed access to
   engine structs instead of raw offsets, where the community has built one.
+
+## Sources
+
+- **starfield2vr** (mutars / Sergii Permiakov) — [github.com/mutars/starfield2vr](https://github.com/mutars/starfield2vr)
+- Upstream **REFramework** (praydog) — [github.com/praydog/REFramework](https://github.com/praydog/REFramework)
+- Core framework **vrframework** (Elliott Tate) — [github.com/elliotttate/vrframework](https://github.com/elliotttate/vrframework)
+- **CommonLibSF** (Starfield Reverse Engineering) — [github.com/Starfield-Reverse-Engineering/CommonLibSF](https://github.com/Starfield-Reverse-Engineering/CommonLibSF)
+- **ViGEmBus** (Nefarius) — [github.com/nefarius/ViGEmBus](https://github.com/nefarius/ViGEmBus)
+
+Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

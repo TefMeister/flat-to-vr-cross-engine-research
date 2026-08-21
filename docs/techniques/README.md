@@ -90,3 +90,16 @@ A flat HUD stretched across a 100°+ field is unreadable and nauseating. The com
 UI** by user-tunable factors, and **suppress the head-tracked camera override while UI is
 showing** (so menus don't move with your head). Dialog/letterbox overlays often need special
 handling and are a frequent source of one-eye-only or letterboxed UI artifacts.
+
+---
+
+## Sources
+
+- **UEVR** render modes (native / synchronized-sequential / AFR) — [docs.uevr.io](https://docs.uevr.io/) · [github.com/praydog/UEVR](https://github.com/praydog/UEVR)
+- **Luke Ross R.E.A.L.** — AER (alternating eye rendering): [patreon.com/realvr](https://www.patreon.com/realvr) · [github.com/LukeRoss00/gta5-real-mod](https://github.com/LukeRoss00/gta5-real-mod)
+- **starfield2vr** (mutars) — Reflex-marker timing, keep-and-fix-TAA per eye: [github.com/mutars/starfield2vr](https://github.com/mutars/starfield2vr)
+- **anvilengine2vr** (mutars) — two-hook timing, disable-TAA, basis round-trip: [github.com/mutars/anvilengine2vr](https://github.com/mutars/anvilengine2vr)
+- **vrframework** (Elliott Tate) — the framework these techniques are described against: [github.com/elliotttate/vrframework](https://github.com/elliotttate/vrframework)
+- Inspection tools: [RenderDoc](https://renderdoc.org/) · [PIX](https://devblogs.microsoft.com/pix/)
+
+Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

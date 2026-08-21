@@ -89,3 +89,13 @@ on it. Skipping verification hides bugs downstream.
 Never skip a milestone · four responsibilities = one interface · **read (log matrices, M3) before
 write (M5)** · lean on public worked examples ([case studies](../case-studies/)) · defer comfort
 tweaks to the end.
+
+## Sources
+
+- **vrframework** (Elliott Tate) — the `IEngineAdapter` model + 17-part porting guide: [github.com/elliotttate/vrframework](https://github.com/elliotttate/vrframework)
+- **REFramework** (praydog) — the upstream this derives from: [github.com/praydog/REFramework](https://github.com/praydog/REFramework)
+- **starfield2vr** (mutars) — worked Creation Engine 2 adapter: [github.com/mutars/starfield2vr](https://github.com/mutars/starfield2vr)
+- **anvilengine2vr** (mutars) — worked Anvil adapter: [github.com/mutars/anvilengine2vr](https://github.com/mutars/anvilengine2vr)
+- **UEVR** (praydog) — the Unreal native-stereo reference + render modes: [github.com/praydog/UEVR](https://github.com/praydog/UEVR) · [docs.uevr.io](https://docs.uevr.io/)
+
+Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

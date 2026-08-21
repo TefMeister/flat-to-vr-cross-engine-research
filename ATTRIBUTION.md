@@ -39,7 +39,7 @@ knowledge, and individuals alike.
   stereoscopic-3D D3D11 driver and per-game fixes.
   <https://github.com/ThreeDeeJay/geo-11> · <https://helixmod.blogspot.com/>
 - **3Dmigoto** (bo3b, DarkStarSword, DHR, contributors) — D3D11 shader-injection modding tool.
-  <https://github.com/bo3b/3Dmigoto>
+  <https://github.com/bo3b/3Dmigoto> · <https://www.3dmigoto.com/>
 - **vrperfkit** (fholger) — VR performance toolkit (foveated / VRS upscaling).
   <https://github.com/fholger/vrperfkit>
 - **ViGEmBus** (Nefarius) — virtual gamepad driver used by some adapters for controller
@@ -49,9 +49,21 @@ knowledge, and individuals alike.
 
 ## Open-source libraries commonly used by these projects
 
-MinHook · safetyhook · Dear ImGui (ocornut) · GLM · spdlog · nlohmann/json · OpenVR (Valve) ·
-OpenXR (Khronos) · DirectXTK12 (Microsoft) · CommonLibSF — each under its own license. Graphics
-debuggers **RenderDoc** and **PIX** are the standard inspection tools named across these guides.
+Each under its own license:
+
+- **MinHook** (TsudaKageyu) — <https://github.com/TsudaKageyu/minhook>
+- **safetyhook** (cursey) — <https://github.com/cursey/safetyhook>
+- **Dear ImGui** (ocornut) — <https://github.com/ocornut/imgui>
+- **GLM** (g-truc) — <https://github.com/g-truc/glm>
+- **spdlog** (gabime) — <https://github.com/gabime/spdlog>
+- **nlohmann/json** — <https://github.com/nlohmann/json>
+- **OpenVR** (Valve) — <https://github.com/ValveSoftware/openvr>
+- **OpenXR SDK** (Khronos) — <https://github.com/KhronosGroup/OpenXR-SDK>
+- **DirectXTK12** (Microsoft) — <https://github.com/microsoft/DirectXTK12>
+- **CommonLibSF** (Starfield Reverse Engineering) — <https://github.com/Starfield-Reverse-Engineering/CommonLibSF>
+
+Graphics debuggers named across these guides: **RenderDoc** (<https://renderdoc.org/>) and
+Microsoft **PIX** (<https://devblogs.microsoft.com/pix/>).
 
 ## Engine / platform owners (context, not endorsement or affiliation)
 

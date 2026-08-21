@@ -37,3 +37,13 @@ has a VR path worth activating (the RE Engine case).
 - **Manual build** = use the [engine-agnostic core](./engine-agnostic-core/) +
   [porting checklist](./porting/) to write a new adapter.
 - **Generic (vorpX/geo-11)** = seated stereoscopic-3D over an unmodified game; not full 6DoF.
+
+## Sources
+
+Tools referenced above: [UEVR](https://github.com/praydog/UEVR) ·
+[REFramework](https://github.com/praydog/REFramework) ·
+[starfield2vr](https://github.com/mutars/starfield2vr) ·
+[anvilengine2vr](https://github.com/mutars/anvilengine2vr) ·
+[vorpX](https://www.vorpx.com/) ·
+[geo-11](https://github.com/ThreeDeeJay/geo-11). Full credit list:
+[`../ATTRIBUTION.md`](../ATTRIBUTION.md).
