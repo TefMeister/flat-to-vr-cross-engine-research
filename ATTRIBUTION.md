@@ -4,10 +4,17 @@ Everything in this library is derived from **publicly available** work by the pe
 projects below. **They own it; we only organize and link to it.** This page is the master
 credit list — every doc in the repo points back here.
 
-**If you should be credited and aren't, or you are a rights holder who wants a correction or
-removal, email td3kxlvr@proton.me and it will be fixed as soon as possible.** We credit everyone
-who helped, published, or even just inspired this work — tools, open-source projects, community
-knowledge, and individuals alike.
+**We learn the techniques, not the code.** We do not copy, host, or reuse anyone's actual source
+code or files — including mutars' (starfield2vr / anvilengine2vr, MIT) and Luke Ross's (R.E.A.L.)
+work — **even where the license permits it and even where the work is now free to download.** We
+describe the public *idea* in our own words and link back to the author's implementation, which
+stays theirs.
+
+**Corrections & removals — no questions asked.** If you are credited or referenced anywhere here
+and want your name or information changed or removed, email **td3kxlvr@proton.me** and tell us
+**exactly what to remove** — we will remove it promptly, no problem and no argument. We credit
+everyone who helped, published, or even just inspired this work — tools, open-source projects,
+community knowledge, and individuals alike; if we missed you, that's a mistake to fix, so tell us.
 
 ---
 
@@ -18,15 +25,17 @@ knowledge, and individuals alike.
   reference for the Unreal case and the upstream of most engine-agnostic cores below.
   - UEVR: <https://github.com/praydog/UEVR> · docs: <http://docs.uevr.io/>
   - REFramework: <https://github.com/praydog/REFramework> · <https://reframework.dev/>
-- **Elliott Tate** (github.com/elliotttate) — **vrframework**: an engine-agnostic VR core plus a
-  17-part porting field guide, derived from REFramework (MIT). Source of the `IEngineAdapter`
-  model and the 10-milestone porting checklist described here.
+- **Elliott Tate** (github.com/elliotttate) — **vrframework** (**MIT**, a REFramework derivative):
+  an engine-agnostic VR core plus a 17-part porting field guide. Source of the `IEngineAdapter`
+  model and the 10-milestone porting checklist described here (concept only — we use no code).
   - <https://github.com/elliotttate/vrframework>
 - **mutars — Sergii Permiakov** (github.com/mutars) — **starfield2vr** (Bethesda Creation
-  Engine 2) and **anvilengine2vr** (Ubisoft AnvilNext 2.0): the non-Unreal reference adapters
-  that prove the pattern generalizes. Source of the Reflex-marker vs two-hook frame-timing
-  contrast, the per-eye TAA-history fix, and the multi-title adapter structure. Also `Geo3D`,
-  `stalker2-uevr`, and maintenance of `CommonLibSF`.
+  Engine 2) and **anvilengine2vr** (Ubisoft AnvilNext 2.0), both **MIT**: the non-Unreal reference
+  adapters that prove the pattern generalizes. Source of the Reflex-marker vs two-hook frame-timing
+  contrast, the per-eye TAA-history fix, and the multi-title adapter structure — all documented as
+  *technique*, with **no code copied from these repos**. Also `Geo3D` (**BSD-2-Clause**),
+  `stalker2-uevr` (**unlicensed / all rights reserved**), and maintenance of `CommonLibSF`
+  (GPL-3.0).
   - <https://github.com/mutars/starfield2vr> · <https://github.com/mutars/anvilengine2vr>
 - **Luke Ross** (github.com/LukeRoss00) — **R.E.A.L.** VR mods and the **AER (Alternating Eye
   Rendering)** technique for engines that cannot draw the world twice per frame. We reference the

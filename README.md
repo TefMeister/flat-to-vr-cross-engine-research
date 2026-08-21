@@ -13,17 +13,25 @@ the techniques or code it describes.
 ## The one rule that governs everything here
 
 > **All techniques, code, and tools described in this library belong to their original
-> authors, under their own licenses.** This repo describes mechanisms, summarizes public
-> documentation, and **links to the primary sources** — it quotes only short excerpts and never
-> reproduces whole source files from other people's projects. Every idea traces back to whoever
-> published it. See [`ATTRIBUTION.md`](./ATTRIBUTION.md).
+> authors, under their own licenses.** This repo describes mechanisms in our own words,
+> summarizes public documentation, and **links to the primary sources.** Every idea traces back
+> to whoever published it. See [`ATTRIBUTION.md`](./ATTRIBUTION.md).
 >
-> If you should be credited and aren't, or you are a rights holder who wants a correction or
-> removal, email **td3kxlvr@proton.me** and it will be fixed as soon as possible.
+> **We learn the *techniques*, not the code.** We do **not** copy, host, or reuse anyone's
+> actual source code or files — not Luke Ross's (R.E.A.L.), not mutars' (starfield2vr /
+> anvilengine2vr), not anyone's — **even when their license (MIT, BSD, etc.) would allow it,
+> and even now that some of that work is free to download.** Free to download is not the same as
+> ours to take. What we take is the publicly-explained idea; the implementation stays theirs.
+>
+> **Corrections & removals — no questions asked.** If you are credited or referenced here and
+> want your name or information changed or removed, just email **td3kxlvr@proton.me** and tell us
+> **exactly what to remove**, and we will remove it, no problem. You do not need to be a lawyer or
+> prove anything — if it's yours and you want it gone, that's enough.
 
 We built this because the knowledge on bringing flat games into VR is scattered across GitHub
-repos, docs sites, forum posts, and Patreon write-ups. Gathering the public pieces into one
-readable, well-attributed place — with links back to every source — helps everyone and takes
+repos, docs sites, forum posts, and write-ups. Our goal is simple: **make flat→VR modding more
+widely available to everyone and gather as much public information about it as we can**, in one
+readable, well-attributed place — with links back to every source, so it helps everyone and takes
 credit from no one.
 
 ---
