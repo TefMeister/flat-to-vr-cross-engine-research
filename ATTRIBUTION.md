@@ -29,12 +29,16 @@ knowledge, and individuals alike.
   `stalker2-uevr`, and maintenance of `CommonLibSF`.
   - <https://github.com/mutars/starfield2vr> · <https://github.com/mutars/anvilengine2vr>
 - **Luke Ross** (github.com/LukeRoss00) — **R.E.A.L.** VR mods and the **AER (Alternating Eye
-  Rendering)** technique for engines that cannot draw the world twice per frame.
+  Rendering)** technique for engines that cannot draw the world twice per frame. We reference the
+  publicly-known *technique* only. Note the GTA V repo is source-**available** but **unlicensed**
+  (all rights reserved by default — viewable, **not** reusable), and the other titles are **paid
+  builds** on Patreon; we copy no code from the repo and use no paid or patron-only material.
   - <https://github.com/LukeRoss00/gta5-real-mod> · <https://www.patreon.com/realvr>
 
 ## Tools, drivers & communities
 
-- **vorpX** (Ralf Ostertag) — generic D3D9–11 VR driver. <https://www.vorpx.com/>
+- **vorpX** (Ralf Ostertag) — generic D3D9–11 VR driver. **Commercial, closed source**;
+  referenced as public prior art only (no code inspected or reused). <https://www.vorpx.com/>
 - **geo-11 / Helix Mod** (incl. ThreeDeeJay, Helifax, DarkStarSword and the 3D-fix community) —
   stereoscopic-3D D3D11 driver and per-game fixes.
   <https://github.com/ThreeDeeJay/geo-11> · <https://helixmod.blogspot.com/>
@@ -62,7 +66,8 @@ Each under its own license:
 - **OpenVR** (Valve) — <https://github.com/ValveSoftware/openvr>
 - **OpenXR SDK** (Khronos) — <https://github.com/KhronosGroup/OpenXR-SDK>
 - **DirectXTK12** (Microsoft) — <https://github.com/microsoft/DirectXTK12>
-- **CommonLibSF** (Starfield Reverse Engineering) — <https://github.com/Starfield-Reverse-Engineering/CommonLibSF>
+- **CommonLibSF** (Starfield Reverse Engineering) — **GPL-3.0** (copyleft; archived) —
+  <https://github.com/Starfield-Reverse-Engineering/CommonLibSF>
 
 Graphics debuggers named across these guides: **RenderDoc** (<https://renderdoc.org/>) and
 Microsoft **PIX** (<https://devblogs.microsoft.com/pix/>).
