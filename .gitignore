@@ -1,0 +1,30 @@
+# Never commit game files, engine source, binaries, or assets.
+# This library is text + links only. Binaries do not belong here.
+*.exe
+*.dll
+*.so
+*.dylib
+*.pak
+*.u
+*.upk
+*.uasset
+*.bin
+*.dat
+*.dds
+*.tga
+*.png
+*.jpg
+*.jpeg
+*.bnk
+*.wem
+*.mp4
+*.bik
+*.zip
+*.7z
+*.rar
+
+# OS / editor cruft
+Thumbs.db
+.DS_Store
+*.swp
+*~
