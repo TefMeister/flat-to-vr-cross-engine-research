@@ -40,3 +40,15 @@ projects named here are credited in [`../../ATTRIBUTION.md`](../../ATTRIBUTION.m
    modern stereo tool even applies.
 
 See [`../engines-index.md`](../engines-index.md) for a per-engine quick lookup.
+
+## Sources
+
+- UEVR — [github.com/praydog/UEVR](https://github.com/praydog/UEVR) · [docs.uevr.io](https://docs.uevr.io/) · [uevr.org](https://uevr.org/)
+- REFramework — [github.com/praydog/REFramework](https://github.com/praydog/REFramework) · [reframework.dev](https://reframework.dev/)
+- Luke Ross R.E.A.L. / AER — [github.com/LukeRoss00/gta5-real-mod](https://github.com/LukeRoss00/gta5-real-mod) · [patreon.com/realvr](https://www.patreon.com/realvr)
+- vorpX — [vorpx.com](https://www.vorpx.com/)
+- geo-11 / Helix — [github.com/ThreeDeeJay/geo-11](https://github.com/ThreeDeeJay/geo-11) · [helixmod.blogspot.com](https://helixmod.blogspot.com/)
+- 3Dmigoto — [github.com/bo3b/3Dmigoto](https://github.com/bo3b/3Dmigoto) · [3dmigoto.com](https://www.3dmigoto.com/)
+- vrperfkit — [github.com/fholger/vrperfkit](https://github.com/fholger/vrperfkit)
+
+Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).
