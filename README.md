@@ -80,10 +80,12 @@ See [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 ## License & attribution
 
 - The **original writing** in this repository (our summaries and notes) is licensed
-  **[CC-BY-4.0](./LICENSE)** — reuse it freely, just credit this repository.
-- **Quoted excerpts and any referenced code remain under their upstream authors' own licenses**
-  (MIT, etc.) and are credited in [`ATTRIBUTION.md`](./ATTRIBUTION.md). CC-BY-4.0 governs only
-  the text we wrote, never the third-party material we point to.
+  **[CC-BY-4.0](./LICENSE)** — reuse it freely, just credit this repository. The same spirit
+  covers everything else we make (our tooling and our mods): **free to use with credit.**
+- **We copy no third-party code or files into this repo** — we describe public techniques in our
+  own words and link to the primary sources, which stay under their authors' own licenses
+  (MIT, BSD, etc.) and are credited in [`ATTRIBUTION.md`](./ATTRIBUTION.md). CC-BY-4.0 governs only
+  the text we wrote, never the material we point to.
 
 ## Legal & scope
 
