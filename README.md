@@ -59,6 +59,9 @@ credit from no one.
 | [`docs/case-studies/`](./docs/case-studies/) | Worked public examples: RE Engine, Creation Engine 2, Anvil, Unreal 4/5 |
 | [`docs/per-game-native-mods/`](./docs/per-game-native-mods/) | The route for modern AAA engines with no injector: per-game mods & AER (Luke Ross R.E.A.L.) — informational |
 | [`docs/generic-drivers/`](./docs/generic-drivers/) | The off-the-shelf route for older D3D9 games: vorpX & geo-11 (no engine adapter) |
+| [`docs/source-available/`](./docs/source-available/) | VR source ports & SDK mods (Team Beef, Quake VR, HL2VR, GZ3Doom…) — the route when engine source is public |
+| [`docs/unity/`](./docs/unity/) | Unity games: UUVR, VRGIN, BepInEx plugins — the managed-runtime shortcut |
+| [`docs/runtime-layers/`](./docs/runtime-layers/) | OpenComposite, OpenXR Toolkit, VRto3D, Depth3D — the plumbing between mod, runtime & display |
 | [`docs/engines-index.md`](./docs/engines-index.md) | Quick lookup: engine → render API → known VR path |
 | [`ATTRIBUTION.md`](./ATTRIBUTION.md) | Every person, project, tool, and source, with links and licenses |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | How to add — public info only, credit everyone, link primary sources |
