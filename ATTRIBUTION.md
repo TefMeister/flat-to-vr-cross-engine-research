@@ -42,6 +42,8 @@ knowledge, and individuals alike.
   <https://github.com/bo3b/3Dmigoto> · <https://www.3dmigoto.com/>
 - **vrperfkit** (fholger) — VR performance toolkit (foveated / VRS upscaling).
   <https://github.com/fholger/vrperfkit>
+- **dgVoodoo2** (dege-diosg) — wraps legacy DirectX (Glide/DX1–9) onto D3D11/12; the bridge that
+  lets D3D9-and-older games reach geo-11 / 3Dmigoto. <https://github.com/dege-diosg/dgVoodoo2>
 - **ViGEmBus** (Nefarius) — virtual gamepad driver used by some adapters for controller
   emulation. <https://github.com/nefarius/ViGEmBus>
 - The **flatscreen-to-VR modding community** broadly — forums, wikis, Discord/Reddit threads,
