@@ -44,7 +44,7 @@ From best-quality to most-compatible:
    **reproject** the other from the previous frame (L, R+reproj-L, L+reproj-R, …), with
    "yaw folding"/camera-rotation compensation for smooth turning. The answer when an engine
    *refuses* to draw the world twice per frame and you can't hit 2× framerate. AER 2.0 largely
-   fixed early ghosting.
+   fixed early ghosting. Dedicated page: [per-game native mods & AER](../per-game-native-mods/).
 
 ## Temporal effects under AFR
 
