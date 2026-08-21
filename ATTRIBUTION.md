@@ -47,6 +47,36 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   no paid or patron-only material.
   - <https://github.com/LukeRoss00/gta5-real-mod> · <https://www.patreon.com/realvr> · [Road to VR (free release)](https://roadtovr.com/luke-ross-vr-mods-free-cyberpunk-2077/)
 
+- **Raicuparta** (github.com/Raicuparta) — **UUVR** (universal Unity VR mod, **GPL-3.0**),
+  **Rai Pal** (mod manager for universal mods, **GPL-3.0**), **NomaiVR** (Outer Wilds VR, with
+  **artumino**, **MIT**), **TwoForksVR** (Firewatch VR, **MIT**). The reference body of work for
+  Unity flat→VR modding.
+  - <https://github.com/Raicuparta/uuvr> · <https://github.com/Raicuparta/rai-pal> ·
+    <https://raicuparta.com/>
+- **Eusth** — **VRGIN** (**MIT**), the classic VR injection framework for Unity games; its
+  "Hacking VR into a Unity game" wiki remains a foundational public explainer.
+  - <https://github.com/Eusth/VRGIN>
+- **Team Beef** — **DrBeef**, **Baggyg**, and contributors (incl. **emileb**'s multithreaded
+  GLES rendering) — the standalone-headset source-port VR conversions: QuestZDoom (**GPL-3.0**),
+  Lambda1VR (**GPL-3.0**), Doom3Quest, RTCWQuest (**LGPL-3.0**), JKXR (**GPL-2.0**),
+  Quake/Quake 3 ports, and more.
+  - <https://www.teambeefvr.com/> · <https://github.com/Team-Beef-Studios> ·
+    <https://www.patreon.com/teambeef>
+- **Vittorio Romeo** (github.com/vittorioromeo) — **Quake VR** (**GPL-2.0**, roomscale +
+  hand-interaction showcase) and **HL2VRU** (Half-Life 2: VR Mod — Unleashed fork).
+  - <https://github.com/vittorioromeo/quakevr> · <https://github.com/vittorioromeo/HL2VRU>
+- **Christopher M. Bruns (cmbruns)** — **GZ3Doom** (**GPL-3.0**), the original classic-Doom-in-VR
+  GZDoom fork; continued by **Fishbiter** and **hh79** (gzdoomvr).
+  - <https://github.com/Fishbiter/gz3doom> · <https://github.com/hh79/gzdoomvr>
+- **KozGit** — **DOOM 3 BFG VR: Fully Possessed** (**GPL-3.0**), the PCVR Doom 3 conversion whose
+  VR gameplay layer informed later ports.
+  - <https://github.com/KozGit/DOOM-3-BFG-VR>
+- **Source VR Mod Team** — **Half-Life 2: VR Mod** (free on Steam, built on Source SDK 2013).
+  - <https://halflife2vr.com/>
+- **sd805** — **L4D2VR** (Left 4 Dead 2 VR mod, no license file — all rights reserved by
+  default; referenced as public prior art only).
+  - <https://github.com/sd805/l4d2vr>
+
 ## Tools, drivers & communities
 
 - **vorpX** (Ralf Ostertag) — generic D3D9–11 VR driver. **Commercial, closed source**;
@@ -62,6 +92,27 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   lets D3D9-and-older games reach geo-11 / 3Dmigoto. <https://github.com/dege-diosg/dgVoodoo2>
 - **ViGEmBus** (Nefarius) — virtual gamepad driver used by some adapters for controller
   emulation. <https://github.com/nefarius/ViGEmBus>
+- **ZNix** and the OpenComposite community forks — **OpenComposite / OpenOVR** (**GPL-3.0**),
+  the OpenVR→OpenXR reimplementation. <https://gitlab.com/znixian/OpenOVR>
+- **Matthieu Bucchianeri (mbucchia)** — **OpenXR Toolkit** (**MIT**; development ended,
+  still widely used). <https://mbucchia.github.io/OpenXR-Toolkit/>
+- **oneup03** — **VRto3D** (**LGPL-3.0**), the SteamVR virtual-headset driver for 3D displays.
+  <https://github.com/oneup03/VRto3D>
+- **BlueSkyDefender** — **Depth3D / SuperDepth3D** (no repo-level license; see file headers),
+  the ReShade depth-buffer stereo shader. <https://github.com/BlueSkyDefender/Depth3D>
+- **crosire** and contributors — **ReShade**, the post-processing injector SuperDepth3D runs on.
+  <https://reshade.me/>
+- **BepInEx team** (<https://github.com/BepInEx/BepInEx>), **MelonLoader / LavaGang**
+  (<https://github.com/LavaGang/MelonLoader>), and **Andreas Pardeike** — **Harmony**
+  (<https://github.com/pardeike/Harmony>) — the managed injection/patching substrate of Unity
+  modding.
+- Non-VR source ports the VR conversions build on: **GZDoom** (ZDoom team), **dhewm3**
+  (<https://github.com/dhewm/dhewm3>), **ioquake3**, **Xash3D-FWGS** (FWGS team,
+  <https://github.com/FWGS/xash3d-fwgs>) — and **id Software** for releasing its engines under
+  the GPL in the first place, plus **Valve** for the Source SDK.
+- **Flat2VR community & Flat2VR Studios** — the flatscreen-to-VR hub (150k+ member Discord) and
+  the studio producing officially licensed VR ports with developers from the modding scene.
+  <https://www.flat2vrstudios.com/>
 - The **flatscreen-to-VR modding community** broadly — forums, wikis, Discord/Reddit threads,
   and countless per-game fix authors whose collected knowledge underlies all of the above.
 

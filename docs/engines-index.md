@@ -12,7 +12,11 @@ aid, not an exhaustive database — contributions welcome (see
 | **Capcom RE Engine** | D3D11/D3D12 (+Vulkan) | **REFramework VR** (turnkey) | Engine ships an OpenVR path; REFramework activates it. |
 | **Bethesda Creation Engine 2** (Starfield) | D3D12 | **starfield2vr** (mutars) | Public adapter; Reflex-marker frame timing. See [case study](./case-studies/creation-engine-2.md). |
 | **Ubisoft AnvilNext 2.0** (Assassin's Creed) | D3D12 | **anvilengine2vr** (mutars) | Public multi-title adapter; two-hook frame timing. See [case study](./case-studies/anvil-per-eye-camera.md). |
-| **id Tech 5** (STEM/Evil Within) | D3D11 | None turnkey | 64-bit D3D11; strong candidate for a new adapter. Typically Z-up basis. Per-draw MVP. |
+| **Unity** | D3D11/12 (Vulkan/GL) | **UUVR** (universal) / per-game BepInEx plugins | Managed C# + built-in XR = easiest big engine class. Mono easier than IL2CPP. See [Unity games](./unity/). |
+| **Valve Source** (SDK 2013 titles) | D3D9 | **HL2VR** (SDK mod) / per-game (L4D2VR) | Source SDK 2013 = near-source access for its titles. See [source-available](./source-available/). |
+| **GoldSrc** (Half-Life 1) | OpenGL | **Lambda1VR** (via Xash3D-FWGS) | Open reimplementation makes it source-port territory. |
+| **id Tech 1–4 & kin** (Doom, Quake 1–3, Doom 3, RTCW, Jedi Knight) | OpenGL | **Source-port VR conversions** (GZ3Doom/QuestZDoom, Quake VR, dhewm3-based, Team Beef ports) | GPL source releases — VR is built inside the engine. See [source-available](./source-available/). |
+| **id Tech 5** (STEM/Evil Within) | D3D11 | None turnkey | 64-bit D3D11; strong candidate for a new adapter. Typically Z-up basis. Per-draw MVP. Source NOT released (unlike id Tech 1–4). |
 | **Ubisoft Dunia** (Far Cry 2) | D3D9 | vorpX (generic) for 3D | Older D3D9; manual for true 6DoF. |
 | **Bespoke / older custom engines** | D3D9 and older | Case-by-case | Usually fully manual; vorpX/geo-11 for seated 3D if D3D9+. |
 | **Anything Direct3D 8 or older** | D3D8/7 | Wrapper first | Needs a D3D8→9/11 shim before modern stereo tooling applies. |
@@ -33,6 +37,8 @@ has a VR path worth activating (the RE Engine case).
 
 ## Legend
 
+- **Source port / SDK mod** = engine source is public; VR is built inside it — see
+  [source-available conversions](./source-available/).
 - **Turnkey** = an existing public tool you can run; you write little or no code.
 - **Manual build** = use the [engine-agnostic core](./engine-agnostic-core/) +
   [porting checklist](./porting/) to write a new adapter.
