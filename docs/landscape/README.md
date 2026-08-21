@@ -35,9 +35,10 @@ projects named here are credited in [`../../ATTRIBUTION.md`](../../ATTRIBUTION.m
 4. **Nothing exists, but the engine is D3D11/12 and 64-bit?** → best candidate to build a new
    adapter with the [porting checklist](../porting/).
 5. **Old D3D9 (or older) game, no appetite to build a mod?** → try **vorpX** / **geo-11** for
-   seated 3D.
-6. **Direct3D 8 or earlier?** → you likely need an API wrapper (e.g. a D3D8→9/11 shim) before any
-   modern stereo tool even applies.
+   seated 3D — see the dedicated guide: [generic drivers for older D3D9 games](../generic-drivers/).
+6. **Direct3D 8 or earlier?** → you likely need an API wrapper (e.g. a D3D8→9/11 shim like
+   **dgVoodoo2**) before any modern stereo tool even applies. See
+   [generic drivers](../generic-drivers/).
 
 See [`../engines-index.md`](../engines-index.md) for a per-engine quick lookup.
 

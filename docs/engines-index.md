@@ -37,6 +37,8 @@ has a VR path worth activating (the RE Engine case).
 - **Manual build** = use the [engine-agnostic core](./engine-agnostic-core/) +
   [porting checklist](./porting/) to write a new adapter.
 - **Generic (vorpX/geo-11)** = seated stereoscopic-3D over an unmodified game; not full 6DoF.
+  For the D3D9-specific route (and the dgVoodoo2 wrapper for D3D8/older), see
+  [generic drivers for older D3D9 games](./generic-drivers/).
 
 ## Sources
 
