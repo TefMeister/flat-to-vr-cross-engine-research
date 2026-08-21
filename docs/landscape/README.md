@@ -48,7 +48,7 @@ See [`../engines-index.md`](../engines-index.md) for a per-engine quick lookup.
 
 - UEVR — [github.com/praydog/UEVR](https://github.com/praydog/UEVR) · [docs.uevr.io](https://docs.uevr.io/) · [uevr.org](https://uevr.org/)
 - REFramework — [github.com/praydog/REFramework](https://github.com/praydog/REFramework) · [reframework.dev](https://reframework.dev/)
-- Luke Ross R.E.A.L. / AER — repo is unlicensed (view-only), other titles paid; technique reference only — [github.com/LukeRoss00/gta5-real-mod](https://github.com/LukeRoss00/gta5-real-mod) · [patreon.com/realvr](https://www.patreon.com/realvr)
+- Luke Ross R.E.A.L. / AER — framework now free (donations) since Mar 2026, Cyberpunk 2077 excluded; GTA V repo unlicensed (view-only); technique reference only — [github.com/LukeRoss00/gta5-real-mod](https://github.com/LukeRoss00/gta5-real-mod) · [patreon.com/realvr](https://www.patreon.com/realvr) · [Road to VR](https://roadtovr.com/luke-ross-vr-mods-free-cyberpunk-2077/)
 - vorpX — commercial, closed source (public prior art only) — [vorpx.com](https://www.vorpx.com/)
 - geo-11 / Helix — [github.com/ThreeDeeJay/geo-11](https://github.com/ThreeDeeJay/geo-11) · [helixmod.blogspot.com](https://helixmod.blogspot.com/)
 - 3Dmigoto — [github.com/bo3b/3Dmigoto](https://github.com/bo3b/3Dmigoto) · [3dmigoto.com](https://www.3dmigoto.com/)
