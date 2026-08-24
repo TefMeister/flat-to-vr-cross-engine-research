@@ -6,17 +6,19 @@ simple, non-negotiable rules.
 
 ## The three rules
 
-1. **Public information only.** Everything you add must already be publicly available — a public
-   repo, a docs site, a forum/Discord/Reddit post, an article, a video, a released tool. Do not
-   add private communications, leaked material, or anything behind an NDA. Do not add
+1. **Public information only — and read it online, not downloaded.** Everything you add must
+   already be publicly available — a public repo, a docs site, a forum/Discord/Reddit post, an
+   article, a video, a released tool. Research it strictly online (browser, web fetch, a repo's own
+   file viewer) — never clone or download someone else's repo, mod, or files locally just to study
+   them. Do not add private communications, leaked material, or anything behind an NDA. Do not add
    copyrighted engine source or game assets.
 2. **Link the primary source; never paste their code.** Say where each fact, technique, or figure
    comes from and link the exact repo/commit/doc. Describe mechanisms **entirely in your own
    words**. Do **not** paste, transcribe, or lightly-reword anyone else's source code, config, or
    files into this library — **not even a short snippet, regardless of license or price.** If code
    would help, write your **own** minimal illustration from scratch (or generic pseudocode) and
-   label it as ours; otherwise just link to theirs. You study everything public freely; what lands
-   in this repo is only ever our own words and our own code.
+   label it as ours; otherwise just link to theirs. You study everything public freely, online; what
+   lands in this repo is only ever our own words and our own code.
 3. **Credit everyone.** Add each new person, project, or tool you drew on to
    [`ATTRIBUTION.md`](./ATTRIBUTION.md), with a link and — where relevant — their license. If in
    doubt, over-credit.
