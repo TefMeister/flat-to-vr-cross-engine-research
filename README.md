@@ -63,6 +63,7 @@ credit from no one.
 | [`docs/unity/`](./docs/unity/) | Unity games: UUVR, VRGIN, BepInEx plugins — the managed-runtime shortcut |
 | [`docs/runtime-layers/`](./docs/runtime-layers/) | OpenComposite, OpenXR Toolkit, VRto3D, Depth3D — the plumbing between mod, runtime & display |
 | [`docs/engines-index.md`](./docs/engines-index.md) | Quick lookup: engine → render API → known VR path |
+| [`docs/watch-list.md`](./docs/watch-list.md) | Where new information appears — the sources checked on a standing research cadence |
 | [`ATTRIBUTION.md`](./ATTRIBUTION.md) | Every person, project, tool, and source, with links and licenses |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | How to add — public info only, credit everyone, link primary sources |
 
