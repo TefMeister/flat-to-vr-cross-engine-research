@@ -81,6 +81,10 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
 
 - **vorpX** (Ralf Ostertag) — generic D3D9–11 VR driver. **Commercial, closed source**;
   referenced as public prior art only (no code inspected or reused). <https://www.vorpx.com/>
+- **Vireio Perception** (cybereality and contributors) — free, **open-source (LGPL-3.0)** generic
+  VR driver in the same family as vorpX, publicly available since 2013. Referenced as public prior
+  art / an open alternative worth trying before reaching for paid software.
+  <https://github.com/cybereality/Perception>
 - **geo-11 / Helix Mod** (incl. ThreeDeeJay, Helifax, DarkStarSword and the 3D-fix community) —
   stereoscopic-3D D3D11 driver and per-game fixes.
   <https://github.com/ThreeDeeJay/geo-11> · <https://helixmod.blogspot.com/>
@@ -111,8 +115,11 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   <https://github.com/FWGS/xash3d-fwgs>) — and **id Software** for releasing its engines under
   the GPL in the first place, plus **Valve** for the Source SDK.
 - **Flat2VR community & Flat2VR Studios** — the flatscreen-to-VR hub (150k+ member Discord) and
-  the studio producing officially licensed VR ports with developers from the modding scene.
-  <https://www.flat2vrstudios.com/>
+  the studio producing officially licensed VR ports with developers from the modding scene. At the
+  **August 2026 VR Games Showcase** the studio announced official VR ports of **System Shock VR**
+  and **High On Life**, alongside **Out of Sight**, **Surviving Mars**, **Postal 2**, and
+  **Shadowgate VR: The Mines of Mythrok** (PSVR2) — evidence the licensed-port pipeline keeps
+  scaling. <https://www.flat2vrstudios.com/>
 - The **flatscreen-to-VR modding community** broadly — forums, wikis, Discord/Reddit threads,
   and countless per-game fix authors whose collected knowledge underlies all of the above.
 

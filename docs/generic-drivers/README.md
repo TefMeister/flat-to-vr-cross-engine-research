@@ -43,6 +43,15 @@ Docs: [features](https://www.vorpx.com/features/) ·
 [support FAQ](https://www.vorpx.com/support-faq/) · a good third-party overview:
 [CompoundVR's vorpX guide](https://compoundvr.com/articles/vorpx-injection-driver-guide/).
 
+### Vireio Perception — the free, open-source alternative
+**Vireio Perception** (cybereality and contributors, **LGPL-3.0**, public since 2013) is a free
+generic VR driver aimed at the same problem as vorpX: reconstructing a stereoscopic/head-tracked
+view over an unmodified D3D game without engine work. It predates vorpX's commercial polish and
+per-game profile library, and is less actively maintained, but being fully open source it's worth
+trying first on a budget, or as a reference for how a generic driver's injection/reconstruction
+layer is actually built (vorpX's internals are closed).
+<https://github.com/cybereality/Perception>
+
 ---
 
 ## geo-11 — the DX11 stereo driver (D3D9 needs a wrapper first)
@@ -95,6 +104,7 @@ Releases: [github.com/ThreeDeeJay/geo-11/releases](https://github.com/ThreeDeeJa
 - **vorpX** (Ralf Ostertag) — [vorpx.com](https://www.vorpx.com/) ·
   [features](https://www.vorpx.com/features/) ·
   [Geometry vs Z-Buffer](https://www.vorpx.com/more-headtracking-z-buffer-vs-geometry-3d/)
+- **Vireio Perception** (cybereality) — [github.com/cybereality/Perception](https://github.com/cybereality/Perception)
 - **geo-11** (ThreeDeeJay / Helix) — [github.com/ThreeDeeJay/geo-11](https://github.com/ThreeDeeJay/geo-11) ·
   [helixmod.blogspot.com](https://helixmod.blogspot.com/)
 - **3Dmigoto** — [github.com/bo3b/3Dmigoto](https://github.com/bo3b/3Dmigoto)

@@ -58,7 +58,10 @@ See [`../engines-index.md`](../engines-index.md) for a per-engine quick lookup.
 The hub of all of this is the **Flat2VR community** ("Flatscreen to VR Modding", 150k+ members
 on Discord) — announcements, per-game channels, and most of the authors above. In 2024 it also
 spawned **Flat2VR Studios**, which produces *officially licensed* VR ports of flat games with
-developers hired from the modding scene — a sign of how far the hobby has matured.
+developers hired from the modding scene — a sign of how far the hobby has matured. At the
+**August 2026 VR Games Showcase** the studio announced licensed ports of **System Shock VR**,
+**High On Life**, **Out of Sight**, **Surviving Mars**, **Postal 2**, and **Shadowgate VR: The
+Mines of Mythrok** — the pipeline from "fan mod" to "official licensed port" keeps widening.
 [flat2vrstudios.com](https://www.flat2vrstudios.com/) ·
 [x.com/Flat2VR](https://x.com/Flat2VR) · [beacons.ai/flat2vr](https://beacons.ai/flat2vr)
 
