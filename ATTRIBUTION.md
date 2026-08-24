@@ -76,6 +76,11 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
 - **sd805** — **L4D2VR** (Left 4 Dead 2 VR mod, no license file — all rights reserved by
   default; referenced as public prior art only).
   - <https://github.com/sd805/l4d2vr>
+- **Gistix** (Giovanni Correia) and the **Portal4Dead** team — **Portal2VR** (Portal 2 VR mod,
+  released ~December 2025; binary D3D9 injection built on sd805's L4D2VR pattern plus DXVK and
+  Source SDK 2013 material; no license file — all rights reserved by default; referenced as
+  public prior art only).
+  - <https://github.com/Gistix/portal2vr> · <https://www.portal4dead.com/>
 
 ## Tools, drivers & communities
 
@@ -92,6 +97,10 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   <https://github.com/bo3b/3Dmigoto> · <https://www.3dmigoto.com/>
 - **vrperfkit** (fholger) — VR performance toolkit (foveated / VRS upscaling).
   <https://github.com/fholger/vrperfkit>
+- **fholger** — also author of **farcry_vrmod** (added 2026-08-24), a full roomscale 6DoF VR
+  conversion of the original **Far Cry (2004, Crytek)** built against the official **CryEngine
+  Mod SDK** — a vendor-SDK case in the same family as Source SDK 2013, referenced here as
+  technique/landscape only, no code reused. <https://github.com/fholger/farcry_vrmod>
 - **dgVoodoo2** (dege-diosg) — wraps legacy DirectX (Glide/DX1–9) onto D3D11/12; the bridge that
   lets D3D9-and-older games reach geo-11 / 3Dmigoto. <https://github.com/dege-diosg/dgVoodoo2>
 - **ViGEmBus** (Nefarius) — virtual gamepad driver used by some adapters for controller
@@ -120,6 +129,11 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   and **High On Life**, alongside **Out of Sight**, **Surviving Mars**, **Postal 2**, and
   **Shadowgate VR: The Mines of Mythrok** (PSVR2) — evidence the licensed-port pipeline keeps
   scaling. <https://www.flat2vrstudios.com/>
+- **Camracks** — **PCVR Central**, a community-run, non-rehosting directory of PC VR mods and
+  conversions (added 2026-08-24; ~968 flat games tracked, ~900 mods cataloged with quality/
+  freshness labels, a Steam-library VR-compatibility checker, and per-mod links back to each
+  creator's own page). Useful as a landscape/discovery cross-check alongside this library.
+  <https://pcvrcentral.com/>
 - The **flatscreen-to-VR modding community** broadly — forums, wikis, Discord/Reddit threads,
   and countless per-game fix authors whose collected knowledge underlies all of the above.
 

@@ -26,6 +26,7 @@ for the last sweep date and what it found.
 | **Flat2VR community & Flat2VR Studios** | The hub of the whole hobby (150k+ Discord) — new mod releases, licensed-port announcements, and the pulse of what's being solved. | [flat2vrstudios.com/news](https://www.flat2vrstudios.com/) · [x.com/Flat2VR](https://x.com/Flat2VR) |
 | **Road to VR**, **UploadVR** | Press coverage catches licensed-port news (Flat2VR Studios titles) and major tool releases before they reach niche forums. | [roadtovr.com](https://www.roadtovr.com/) · [uploadvr.com](https://www.uploadvr.com/) |
 | **MTBS3D forums** | Long-running stereoscopic-3D/VR modding community — vorpX, geo-11, and generic-driver discussion lives here. | [mtbs3d.com/phpbb](https://www.mtbs3d.com/phpbb/) |
+| **PCVR Central** (Camracks, added 2026-08-24) | A non-rehosting directory of ~900 PC VR mods across ~968 games with quality/freshness labels and a Steam-library checker — a fast cross-check for "does a mod already exist" and for landscape/framework coverage before starting new adapter work. | [pcvrcentral.com/mods](https://pcvrcentral.com/mods) · [pcvrcentral.com/library](https://pcvrcentral.com/library) |
 
 ## Per-project relevance (checked with extra attention while these projects are active)
 
@@ -69,3 +70,22 @@ for the last sweep date and what it found.
 - **2026-08-24:** Added Vireio Perception, Flat2VR Studios' August 2026 VR Games Showcase
   titles, and the Dunia REAC 2023 shader-pipeline talk. Confirmed no change needed for id Tech 5,
   Dunia VR prior art, or XIII/Unreal Gold engine identification (already accurate).
+- **2026-08-24 (second sweep, later same day):** Checked all core tool/community sources for
+  activity since the entry above. Added three genuinely new public items: **PCVR Central**
+  (Camracks) — a new non-rehosting VR-mod discovery database, added to Community hubs and
+  ATTRIBUTION; **Portal2VR** (Gistix/Portal4Dead, ~Dec 2025) — an injection-based Source-engine
+  VR mod for Portal 2, added to `docs/source-available/` and ATTRIBUTION; **farcry_vrmod**
+  (fholger) — a vendor-SDK (CryEngine Mod SDK) VR conversion of the original Far Cry (2004),
+  added to `docs/source-available/`, `engines-index.md`, and ATTRIBUTION (not applicable to our
+  Far Cry 2 project — different engine/game, no public SDK exists for Dunia — but useful
+  landscape context, noted as such). Checked UEVR/REFramework/mutars/vrframework releases and
+  Flat2VR Studios news: nothing new since the entry above (latest UEVR 1.05 and REFramework
+  v1.5.9.1 predate this sweep; mutars repos unchanged). Noted but did not add: OldUnreal's
+  v227k_15 (Aug 2024) is three releases ahead of the v227k_12 SDK the Unreal Gold VR project
+  currently uses and includes fog/D3D9Drv rendering fixes relevant to that project's open
+  fog-calibration work — this is project-specific SDK-upgrade intel, not general library
+  material, so it's flagged here for the project's own next session rather than added to the
+  library. A geo-11 "Mod Manager V3" mentioned on MTBS3D could not be verified (forum blocked
+  automated fetch) — left out per the "leave it out if unsure" rule. Targeted checks for new VR
+  prior art on The Evil Within (id Tech 5) and Far Cry 2 (Dunia) specifically: none found, per-project
+  rows unchanged.

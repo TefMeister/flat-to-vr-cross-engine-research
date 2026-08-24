@@ -22,7 +22,9 @@ every other family in this library.** Check it first. All projects credited in
 2. **Open reimplementations** — an engine rebuilt from scratch for compatibility, e.g.
    **Xash3D-FWGS** (a GoldSrc-compatible engine) which made Half-Life 1 VR portable.
 3. **Vendor SDKs** — Valve's **Source SDK 2013** ships enough engine/game source that a mod team
-   can build a first-class VR version of Half-Life 2 as a "mod" in the official sense.
+   can build a first-class VR version of Half-Life 2 as a "mod" in the official sense. Crytek's
+   **CryEngine Mod SDK** plays the same role for the original Far Cry (2004) — see farcry_vrmod
+   below.
 
 In every case the pattern is the same: **the camera, renderer, input, and game code are yours to
 edit**, so VR becomes an engineering project, not a reverse-engineering one. The cost: these
@@ -76,6 +78,29 @@ gameplay, 6DoF weapon aim, and comfort options on top of the community engines t
   in the public SDK, so this one is **injection-based** rather than source-based — a reminder
   that "Source engine" ≠ "source available" for every title; the mod family straddles the line.
   [github.com/sd805/l4d2vr](https://github.com/sd805/l4d2vr)
+- **Portal2VR** (Gistix / the Portal4Dead team, released ~December 2025) — a 6DoF VR mod for
+  Portal 2 with motion-controlled portal gun and object interaction. Portal 2's branch is also
+  outside the public SDK, so like L4D2VR this is **binary injection**, not a source-based build:
+  a proxy `d3d9.dll` hooks the D3D9 render path (via a DXVK-based translation layer) and drives
+  OpenVR. Built as an evolution of sd805's L4D2VR pattern for a different Source title — another
+  reminder that "Source engine" spans both source-based and injection-based VR depending on
+  which branch a given game shipped on. No license file is published; treat as all-rights-reserved
+  by default, referenced here as public prior art only.
+  [github.com/Gistix/portal2vr](https://github.com/Gistix/portal2vr) ·
+  [portal4dead.com](https://www.portal4dead.com/)
+
+### CryEngine (Crytek)
+- **farcry_vrmod** (fholger, added 2026-08-24) — a full roomscale 6DoF VR conversion of the
+  original **Far Cry (2004)**, built against the official **CryEngine Mod SDK** rather than by
+  injection: motion-controller movement and interaction implemented as an in-engine mod under
+  the SDK's own EULA. The same author also maintains **vrperfkit** (credited elsewhere in this
+  library) and previously worked on Half-Life 2: VR Mod, so this is a second data point for how
+  a Source-SDK-style vendor-SDK conversion generalizes to a different, older engine. Not directly
+  applicable to Far Cry **2** (Dunia engine, a different, closed engine — no public SDK exists for
+  it), but useful landscape context: it's the only public engine-native Far Cry-series VR
+  conversion found so far, and confirms CryEngine-era titles are approachable through a vendor SDK
+  when one exists.
+  [github.com/fholger/farcry_vrmod](https://github.com/fholger/farcry_vrmod)
 
 ## What a closed-engine project can still learn here
 
@@ -112,5 +137,8 @@ approximate from outside: engine-true per-eye cameras at native frame rate.
   [FAQ](https://halflife2vr.com/faq/)
 - HL2VRU — [github.com/vittorioromeo/HL2VRU](https://github.com/vittorioromeo/HL2VRU)
 - L4D2VR — [github.com/sd805/l4d2vr](https://github.com/sd805/l4d2vr)
+- Portal2VR — [github.com/Gistix/portal2vr](https://github.com/Gistix/portal2vr) ·
+  [portal4dead.com](https://www.portal4dead.com/)
+- farcry_vrmod — [github.com/fholger/farcry_vrmod](https://github.com/fholger/farcry_vrmod)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).
