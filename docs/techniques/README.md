@@ -67,9 +67,14 @@ in [`engines-index.md`](../engines-index.md#how-to-identify-an-unknown-engine-st
 
 **Three cautions before you get excited:**
 
-1. **Compiled-in is not the same as working.** Strings prove the code was built into the binary.
-   They say nothing about whether it still functions after years of patches on a path nobody ships.
-   Verify it renders before you design around it.
+1. **Compiled-in is not the same as reachable.** Strings prove the code was built into the binary.
+   They say nothing about whether you can *get at it*. On id Tech 6 the answer turned out to be no:
+   the retail build boots into a "production mode" that registers only ~171 of the engine's many
+   thousands of cvars, the `stereoRender_*` ones are **never registered at all**, and the master
+   switch that would change that is gated by the same mechanism. Budget a cheap live probe — list
+   the engine's cvars and search for the names — *before* planning around a dormant feature.
+   And check the neighbours of any developer switch before flipping it: the cvar sitting next to
+   "enable dev mode" there was *"FatalError rather than enter Dev Mode"*, defaulting to on.
 2. **Vintage stereo was built for 3D TVs and shutter glasses, not HMDs.** Expect it to give you
    correct *stereo* — real binocular depth — without necessarily giving correct *per-eye positional*
    geometry. In the id Tech 6 case the engine's own doc-comment says the two stereo world views are

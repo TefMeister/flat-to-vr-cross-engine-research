@@ -58,9 +58,10 @@ code the engine's own authors wrote and shipped — but it is not automatically 
 built on it would likely still need to override at the **projection** stage rather than assume the
 view stage will carry an eye offset.
 
-**Status: unverified.** Strings prove the code was *compiled in*. They do not prove it still
-*functions* in a shipping 2016 build. Treat "is the dormant path still wired up, or is it
-vestigial?" as the first question to answer, not a settled fact.
+**Status: partly answered, and the answer is instructive.** A live console session on the retail
+build established that these cvars are **never registered at runtime** — see
+[the gating section](#the-gate-a-dormant-path-can-be-real-and-still-unreachable) below. Strings prove
+the code was *compiled in*; they prove nothing about whether it is *reachable*.
 
 ---
 
@@ -118,6 +119,60 @@ source: structurally the same advantage reflection gives UEVR on Unreal or REFra
 except native to the binary rather than supplied by a tool.
 
 ---
+
+## The gate: a dormant path can be real *and* unreachable
+
+The obvious next move after finding those cvars is to set one from the developer console. On this
+game that fails, and the reason generalizes.
+
+The retail build boots into a **production mode** (its startup log announces it) and separately
+reports **cheat mode off**. Measured on the shipping build:
+
+| probed | result |
+|---|---|
+| list all cvars | **171** — an engine of this class has thousands |
+| list all commands | **40** |
+| search cvars for "stereo" | **nothing** |
+| the production-mode master switch | **not itself listed** — it cannot be turned off from the console |
+| the "enable developer mode" cvar | present, reads 0 … |
+| its neighbour, "FatalError rather than enter dev mode" | … reads **1 by default** |
+
+So the stereo cvars are not *hidden*, they are **never registered**. And the switch that would
+change that is behind the same gate. The engine even carries a `CVAR_SHIPPINGDISABLED` flag, which
+states the mechanism plainly.
+
+**Three transferable lessons:**
+
+1. **"Present in the binary" and "reachable at runtime" are different claims.** A string sweep
+   establishes the first and says nothing about the second. Budget a cheap live probe before
+   planning around any dormant feature.
+2. **Check the neighbours of a switch before flipping it.** The "enable dev mode" cvar looked like
+   the way in; the cvar defined immediately next to it turns that same action into a deliberate fatal
+   error. One read-only query avoided a crash. When an engine ships a developer gate, assume it also
+   ships a tripwire.
+3. **A closed door is worth paying for early.** Establishing that the console cannot reach the
+   feature took one short session, and converted "maybe we can drive the engine's own stereo path" —
+   a plan that would otherwise have shaped weeks of work — into a known constraint before any code
+   existed.
+
+What remains open is narrower and better posed: whether the gated cvars are merely hidden or never
+*constructed*. If the latter, in-process registration won't resurrect them either, and the dormant
+render code would have to be driven directly rather than through its cvars.
+
+## A method trap worth stealing
+
+The static pass that found all of the above also produced a **confidently-stated wrong conclusion**,
+and the cause was a tooling default rather than an analytical error.
+
+Strings were extracted with **`strings -n 4`** — a four-character minimum, which is the default or
+near-default in most implementations. That silently discarded every three-character token. The sweep
+therefore reported a particular short console command as *absent from the binary*, when it is in fact
+registered and working.
+
+**For command- and cvar-name questions, run the sweep at `-n 2` or `-n 3`**, and cross-check against
+a live command listing where one is available. Engine console vocabularies are full of short names
+(`god`, `rp`, `map`, `fov`, `set`, `bind`), and a default-threshold sweep quietly hides exactly the
+ones most worth finding.
 
 ## What generalizes
 
