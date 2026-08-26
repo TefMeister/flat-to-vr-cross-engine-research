@@ -8,6 +8,12 @@ This repository is a **curated index and set of study notes for information that
 public**. It is **not** a mod, it ships no game files, and it claims ownership of **none** of
 the techniques or code it describes.
 
+Two kinds of material live here, and they are always labeled: **study notes on other people's
+public work** (the bulk of it — described in our own words, linked to the primary source, credited
+in [`ATTRIBUTION.md`](./ATTRIBUTION.md)), and **our own first-party research**, published openly in
+our project repos and contributed back here so it isn't stranded in one game's notes. The second
+kind is ours to give; the first never is.
+
 ---
 
 ## The one rule that governs everything here
@@ -45,8 +51,9 @@ credit from no one.
 3. If you must build it yourself, read the [engine-agnostic core](./docs/engine-agnostic-core/)
    (the reusable half) and the [porting model + checklist](./docs/porting/).
 4. Cross-reference the [techniques](./docs/techniques/) (frame timing, AER, TAA-under-AFR, HUD,
-   basis/handedness) and the [case studies](./docs/case-studies/) of engines people have
-   already solved in public.
+   basis/handedness) and the [case studies](./docs/case-studies/) — mostly engines people have
+   already solved in public, plus one (id Tech 6) documenting the *reconnaissance* stage on an
+   engine nobody has converted yet.
 
 ## Structure
 
@@ -56,9 +63,9 @@ credit from no one.
 | [`docs/engine-agnostic-core/`](./docs/engine-agnostic-core/) | The reusable layers: D3D hooks, OpenXR/OpenVR, stereo submission, projection math |
 | [`docs/porting/`](./docs/porting/) | The per-engine adapter model + a 10-milestone porting checklist |
 | [`docs/techniques/`](./docs/techniques/) | Deep dives: frame timing, AER, TAA under AFR, HUD in VR, basis/handedness |
-| [`docs/case-studies/`](./docs/case-studies/) | Worked public examples: RE Engine, Creation Engine 2, Anvil, Unreal 4/5 |
+| [`docs/case-studies/`](./docs/case-studies/) | Worked public examples: RE Engine, Creation Engine 2, Anvil, Unreal 4/5 — plus id Tech 6, a recon-stage study of an engine nobody has converted yet |
 | [`docs/per-game-native-mods/`](./docs/per-game-native-mods/) | The route for modern AAA engines with no injector: per-game mods & AER (Luke Ross R.E.A.L.) — informational |
-| [`docs/generic-drivers/`](./docs/generic-drivers/) | The off-the-shelf route for older D3D9 games: vorpX & geo-11 (no engine adapter) |
+| [`docs/generic-drivers/`](./docs/generic-drivers/) | The off-the-shelf route when you're not writing an adapter: vorpX & geo-11 for D3D9/D3D11, Vk3DVision for Vulkan |
 | [`docs/source-available/`](./docs/source-available/) | VR source ports & SDK mods (Team Beef, Quake VR, HL2VR, GZ3Doom…) — the route when engine source is public |
 | [`docs/unity/`](./docs/unity/) | Unity games: UUVR, VRGIN, BepInEx plugins — the managed-runtime shortcut |
 | [`docs/runtime-layers/`](./docs/runtime-layers/) | OpenComposite, OpenXR Toolkit, VRto3D, Depth3D — the plumbing between mod, runtime & display |

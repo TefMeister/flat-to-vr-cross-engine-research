@@ -6,6 +6,7 @@ Each is distilled from public projects credited in
 
 - [Frame timing: Reflex-marker vs two-hook](#frame-timing)
 - [Stereo submission: native, synchronized-sequential, AFR, AER](#stereo-submission-strategies)
+- [Dormant native stereo paths (check before you build)](#dormant-native-stereo-paths)
 - [Temporal effects under AFR (the TAA problem)](#temporal-effects-under-afr)
 - [Basis & handedness (why the world "swims")](#basis--handedness)
 - [Telling the main camera from shadow/reflection cameras](#main-camera-discrimination)
@@ -34,8 +35,10 @@ own frame-begin functions.
 
 From best-quality to most-compatible:
 
-1. **Native stereo** — drive the engine's built-in stereo path (only Unreal-class engines that
-   ship one; this is what UEVR's "Native Stereo" mode does).
+1. **Native stereo** — drive the engine's built-in stereo path. This is what UEVR's "Native Stereo"
+   mode does on Unreal, and what REFramework does on RE Engine (whose OpenVR path ships in the
+   engine). **Don't assume only modern Unreal-class engines qualify** — see
+   [dormant native stereo paths](#dormant-native-stereo-paths) below.
 2. **Synchronized sequential** — render both eyes on the *same* engine tick; fixes many effect
    bugs at a performance cost (a UEVR mode).
 3. **AFR (alternating frame rendering)** — one eye per engine tick; per-eye framerate is halved.
@@ -45,6 +48,39 @@ From best-quality to most-compatible:
    "yaw folding"/camera-rotation compensation for smooth turning. The answer when an engine
    *refuses* to draw the world twice per frame and you can't hit 2× framerate. AER 2.0 largely
    fixed early ghosting. Dedicated page: [per-game native mods & AER](../per-game-native-mods/).
+
+## Dormant native stereo paths
+
+Before committing to building stereo yourself, check whether the engine already contains it. Three
+public examples show this is not rare:
+
+- **Unreal** ships a live native stereo path; UEVR activates it through reflection.
+- **RE Engine** ships an OpenVR path in the engine itself; REFramework switches it on.
+- **id Tech 6** (DOOM, 2016) carries a **complete but unexposed** stereo-3D subsystem — mode enum,
+  separation/eye-swap/GUI-offset cvars, and an AFR-vs-both-eyes toggle — inherited from the Doom 3
+  BFG generation and reachable by nothing in the shipping game's UI.
+
+The third case is the instructive one, because it is found **statically, by string inspection alone**,
+in an engine with no VR-runtime strings anywhere in it. See the
+[id Tech 6 case study](../case-studies/id-tech-6-dormant-stereo.md) and the widened search heuristic
+in [`engines-index.md`](../engines-index.md#how-to-identify-an-unknown-engine-static-no-launch-needed).
+
+**Three cautions before you get excited:**
+
+1. **Compiled-in is not the same as working.** Strings prove the code was built into the binary.
+   They say nothing about whether it still functions after years of patches on a path nobody ships.
+   Verify it renders before you design around it.
+2. **Vintage stereo was built for 3D TVs and shutter glasses, not HMDs.** Expect it to give you
+   correct *stereo* — real binocular depth — without necessarily giving correct *per-eye positional*
+   geometry. In the id Tech 6 case the engine's own doc-comment says the two stereo world views are
+   *identical and centered between the eyes*, with separation applied downstream as a
+   projection/screen-space step. That is a different thing from two properly offset eye views, and it
+   points your override at the **projection** stage.
+3. **No dormant path of that era supplies head tracking.** You inherit the plumbing — two views, two
+   targets, eye swap, GUI depth — and still write all of the pose input yourself.
+
+Even with all three caveats, a dormant path is worth finding: it hands you the engine authors' own
+answers to "how do I get two views out of this renderer", which is normally the expensive part.
 
 ## Temporal effects under AFR
 
