@@ -1,9 +1,10 @@
-# Generic drivers for older D3D9 games: vorpX & geo-11
+# Generic stereo drivers: vorpX, geo-11 & Vk3DVision
 
 When a game is too old, too niche, or too closed to justify writing a full
-[engine adapter](../porting/), two off-the-shelf routes can still get it into stereoscopic 3D —
-and, with vorpX, into a head-tracked VR view — **without touching the engine at all**. This is
-the pragmatic path for the large back-catalog of **Direct3D 9 (and older)** titles.
+[engine adapter](../porting/), off-the-shelf routes can still get it into stereoscopic 3D —
+and, with vorpX, into a head-tracked VR view — **without touching the engine at all**. Most of this
+page covers the large back-catalog of **Direct3D 9 (and older)** titles, where this approach is most
+useful; the [Vulkan section](#vulkan--vk3dvision) covers the one modern-API equivalent.
 
 These are *generic drivers*, not engine-native mods: they reconstruct a VR/3D view over an
 unmodified game. Expect good seated 3D and (with vorpX) head-look, but **not** true engine 6DoF,
@@ -81,6 +82,51 @@ Releases: [github.com/ThreeDeeJay/geo-11/releases](https://github.com/ThreeDeeJa
 
 ---
 
+## Vulkan — Vk3DVision
+
+The two drivers above cover D3D9 and D3D11. For **Vulkan** titles the equivalent is **Vk3DVision**
+by **Helifax** (Octavian Vasilov) — a dedicated Vulkan stereoscopic-3D driver, and the spiritual
+successor to his earlier **OGL3DVision** (an OpenGL wrapper for the now-dead NVIDIA 3D Vision
+ecosystem). It advertises output to VR headsets, 3D Vision, and side-by-side / top-bottom /
+interleaved 3D-TV formats, and is maintained through a per-game fix list.
+
+**Why it earns a place here:** it is public evidence that **per-eye override at the Vulkan level
+works on real, closed, modern commercial games** — including a maintained DOOM (2016) fix and a more
+developed DOOM Eternal one. When you're deciding whether a Vulkan target is even tractable, a
+working third-party fix on that exact title is a useful sanity check independent of anything you
+build.
+
+**Limits, stated honestly:**
+
+- **Closed source.** The public GitHub repo hosts compiled releases only; the project is
+  Patreon-funded. So it is **feasibility proof and prior art, not something to study line-by-line** —
+  which happens to match this library's own [link-and-learn rule](../../CONTRIBUTING.md) naturally,
+  since there is no implementation to read even if one wanted to.
+- **Stereo is not the same as 6DoF.** Its "VR"/"FullVR" naming should not be taken at face value as
+  positional head tracking. Community discussion of VR options for DOOM (2016) names Vk3DVision and
+  a ReShade/Depth3D route as the two known choices and reads **neither** as delivering true
+  positional tracking. We have not been able to confirm the head-tracking question either way from
+  public sources — treat it as genuinely open rather than settled in either direction.
+- It only applies when the game is actually running its **Vulkan** renderer, which for some titles
+  (id Tech 6 among them) is a separate executable or a config switch.
+
+Links: [Vk3DVision-Public (releases)](https://github.com/helifax/Vk3DVision-Public) ·
+[per-game fix list](https://3dsurroundgaming.com/Vk3DVisionGames.html) ·
+[creator's Patreon](https://www.patreon.com/vk3dvision).
+
+**The depth-reprojection fallback.** For a cheaper, lower-fidelity alternative that works on almost
+anything with a readable depth buffer, **Depth3D / SuperDepth3D** (BlueSkyDefender, on ReShade)
+reprojects the single rendered image using its depth buffer instead of rendering a real second eye.
+Different technique, different quality ceiling — covered under
+[runtime layers](../runtime-layers/).
+
+**A caution about generic drivers on modern engines:** vorpX's Geometry-3D mode is reported by its
+own users as no longer working on DOOM (2016), despite having worked at some point. Generic-driver
+support on modern engines is patch-fragile — verify it works on your current build rather than
+trusting a support list.
+
+---
+
 ## Choosing between them for a D3D9 game
 
 | Want… | Use |
@@ -109,6 +155,11 @@ Releases: [github.com/ThreeDeeJay/geo-11/releases](https://github.com/ThreeDeeJa
   [helixmod.blogspot.com](https://helixmod.blogspot.com/)
 - **3Dmigoto** — [github.com/bo3b/3Dmigoto](https://github.com/bo3b/3Dmigoto)
 - **dgVoodoo2** (dege-diosg) — [github.com/dege-diosg/dgVoodoo2](https://github.com/dege-diosg/dgVoodoo2)
+- **Vk3DVision** (Helifax / Octavian Vasilov) — closed-source, releases only —
+  [github.com/helifax/Vk3DVision-Public](https://github.com/helifax/Vk3DVision-Public) ·
+  [fix list](https://3dsurroundgaming.com/Vk3DVisionGames.html) ·
+  [Patreon](https://www.patreon.com/vk3dvision)
+- **Depth3D / SuperDepth3D** (BlueSkyDefender) — [github.com/BlueSkyDefender/Depth3D](https://github.com/BlueSkyDefender/Depth3D)
 - Third-party guide — [CompoundVR: vorpX](https://compoundvr.com/articles/vorpx-injection-driver-guide/)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

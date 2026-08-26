@@ -17,6 +17,7 @@ aid, not an exhaustive database — contributions welcome (see
 | **GoldSrc** (Half-Life 1) | OpenGL | **Lambda1VR** (via Xash3D-FWGS) | Open reimplementation makes it source-port territory. |
 | **id Tech 1–4 & kin** (Doom, Quake 1–3, Doom 3, RTCW, Jedi Knight) | OpenGL | **Source-port VR conversions** (GZ3Doom/QuestZDoom, Quake VR, dhewm3-based, Team Beef ports) | GPL source releases — VR is built inside the engine. See [source-available](./source-available/). |
 | **id Tech 5** (STEM/Evil Within) | D3D11 | None turnkey | 64-bit D3D11; strong candidate for a new adapter. Typically Z-up basis. Per-draw MVP. Source NOT released (unlike id Tech 1–4). |
+| **id Tech 6** (DOOM 2016) | **OpenGL *or* Vulkan** (separate exes) | None turnkey; Vk3DVision for stereo only | Renderer is an **exe-level fork** — one binary imports `OPENGL32`, the other `vulkan-1`. Ships a **dormant, inherited stereo-3D path** (`stereoRenderMode_t`, `stereoRender_*` cvars) and a **named renderparm table** (`viewMatrix*`, `projectionMatrix*`, `globalViewOrigin`). Source NOT released. See [case study](./case-studies/id-tech-6-dormant-stereo.md). |
 | **Ubisoft Dunia** (Far Cry 2) | D3D9 | vorpX (generic) for 3D | Older D3D9; manual for true 6DoF. No public VR prior art; Ubisoft's own [Dunia shader-pipeline architecture talk (REAC 2023)](https://enginearchitecture.realtimerendering.com/downloads/reac2023_dunia_shader_pipeline.pdf) is a citable reference for the renderer lineage if building a from-scratch adapter. |
 | **CryEngine** (original Far Cry, 2004) | D3D9 | **farcry_vrmod** (fholger) via the official CryEngine Mod SDK | Vendor-SDK route, same family as Source SDK 2013 — not injection. Only proven for the *original* Far Cry, a different (older, open-SDK) engine from Far Cry 2's closed Dunia. See [source-available](./source-available/). |
 | **Bespoke / older custom engines** | D3D9 and older | Case-by-case | Usually fully manual; vorpX/geo-11 for seated 3D if D3D9+. |
@@ -35,6 +36,21 @@ aid, not an exhaustive database — contributions welcome (see
 
 A native **`openvr`/`openxr`** string in the main binary is a strong signal the engine already
 has a VR path worth activating (the RE Engine case).
+
+**Widen that search — an engine can ship a usable stereo path with no VR-runtime strings at all**,
+because it predates the modern runtimes. Also grep the binary for:
+
+- **`stereo*` cvars and enums** — mode enums (`…RenderMode_t`), `topBottom`/`leftRight`/`HDMI3D`
+  style value names, `stereoRender_*`-style settings.
+- **eye / separation / IPD terminology** — `separation`, `swapEyes`, `guiOffset`, `interocular`.
+- **multi-view or split-view render modes**, and any cvar help text distinguishing "alternate frame"
+  from "render both each frame".
+
+Long-lived engine families inherit this code silently across generations. id Tech 6 (2016) carries a
+complete, unexposed stereo subsystem of Doom 3 BFG vintage — found purely by string inspection, with
+the developers' own help text attached. See the
+[id Tech 6 case study](./case-studies/id-tech-6-dormant-stereo.md) for what that does and doesn't buy
+you.
 
 ## Legend
 

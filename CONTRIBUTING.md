@@ -12,6 +12,12 @@ simple, non-negotiable rules.
    file viewer) — never clone or download someone else's repo, mod, or files locally just to study
    them. Do not add private communications, leaked material, or anything behind an NDA. Do not add
    copyrighted engine source or game assets.
+
+   **Your own original research counts as public once you publish it.** If you did the work
+   yourself — on a game you legitimately own — you may contribute your findings here, provided you
+   publish the underlying evidence somewhere public and link it, and label the entry as your own
+   first-party work rather than a summary of someone else's. Findings about an engine are fine;
+   game assets, extracted content, and bulk dumps are not.
 2. **Link the primary source; never paste their code.** Say where each fact, technique, or figure
    comes from and link the exact repo/commit/doc. Describe mechanisms **entirely in your own
    words**. Do **not** paste, transcribe, or lightly-reword anyone else's source code, config, or

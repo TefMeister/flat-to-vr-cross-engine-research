@@ -93,6 +93,12 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
 - **geo-11 / Helix Mod** (incl. ThreeDeeJay, Helifax, DarkStarSword and the 3D-fix community) —
   stereoscopic-3D D3D11 driver and per-game fixes.
   <https://github.com/ThreeDeeJay/geo-11> · <https://helixmod.blogspot.com/>
+- **Helifax — Octavian Vasilov** — **Vk3DVision**, a Vulkan stereoscopic-3D driver (and its
+  predecessor **OGL3DVision** for OpenGL), with a maintained per-game fix list including DOOM (2016)
+  and DOOM Eternal. **Closed source, Patreon-funded** — the public repo hosts compiled releases
+  only; referenced here purely as public prior art and a feasibility proof that per-eye override at
+  the Vulkan level works on modern closed commercial titles. No code inspected or reused.
+  <https://github.com/helifax/Vk3DVision-Public> · <https://3dsurroundgaming.com/Vk3DVisionGames.html>
 - **3Dmigoto** (bo3b, DarkStarSword, DHR, contributors) — D3D11 shader-injection modding tool.
   <https://github.com/bo3b/3Dmigoto> · <https://www.3dmigoto.com/>
 - **vrperfkit** (fholger) — VR performance toolkit (foveated / VRS upscaling).
@@ -176,6 +182,29 @@ position on their terms of use.
 
 UEVR docs (docs.uevr.io, uevr.org) · REFramework (reframework.dev) · UploadVR · DigiAlps ·
 Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every repo listed above.
+
+### Developer-authored engine talks & technical write-ups
+
+- **Tiago Sousa** and **Jean Geffroy** (id Software) — *"The Devil is in the Details: idTech 666"*,
+  SIGGRAPH 2016, Advances in Real-Time Rendering. The primary developer-authored description of
+  id Tech 6's renderer.
+  [slides](https://www.slideshare.net/TiagoAlexSousa/siggraph2016-the-devil-is-in-the-details-idtech-666) ·
+  [text summary, 80.lv](https://80.lv/articles/idtech-666-the-secret-of-dooms-render)
+- **Adrian Courrèges** — *"DOOM (2016) — Graphics Study"*, a frame-by-frame breakdown of the
+  renderer's passes. <https://www.adriancourreges.com/blog/2016/09/09/doom-2016-graphics-study/>
+- **Ubisoft** — *Dunia shader-pipeline architecture*, REAC 2023.
+  <https://enginearchitecture.realtimerendering.com/downloads/reac2023_dunia_shader_pipeline.pdf>
+
+### Our own first-party research
+
+The [id Tech 6 case study](./docs/case-studies/id-tech-6-dormant-stereo.md) is our own static
+analysis of a legitimately-owned copy, not a summary of someone else's work. The full evidence and
+working notes are published openly at
+[`doom-2016-vr-engine-research`](https://github.com/TefMeister/doom-2016-vr-engine-research),
+[`doom-2016-vr-dev-archive`](https://github.com/TefMeister/doom-2016-vr-dev-archive), and
+[`doom-2016-vr-modding-notes`](https://github.com/TefMeister/doom-2016-vr-modding-notes).
+Like everything else we write, it is CC-BY-4.0 — take it and build on it, just say where it came
+from.
 
 ---
 
