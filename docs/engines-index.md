@@ -17,7 +17,7 @@ aid, not an exhaustive database — contributions welcome (see
 | **GoldSrc** (Half-Life 1) | OpenGL | **Lambda1VR** (via Xash3D-FWGS) | Open reimplementation makes it source-port territory. |
 | **id Tech 1–4 & kin** (Doom, Quake 1–3, Doom 3, RTCW, Jedi Knight) | OpenGL | **Source-port VR conversions** (GZ3Doom/QuestZDoom, Quake VR, dhewm3-based, Team Beef ports) | GPL source releases — VR is built inside the engine. See [source-available](./source-available/). |
 | **id Tech 5** (STEM/Evil Within) | D3D11 | None turnkey | 64-bit D3D11; strong candidate for a new adapter. Typically Z-up basis. Per-draw MVP. Source NOT released (unlike id Tech 1–4). |
-| **id Tech 6** (DOOM 2016) | **OpenGL *or* Vulkan** (separate exes) | None turnkey; Vk3DVision for stereo only | Renderer is an **exe-level fork** — one binary imports `OPENGL32`, the other `vulkan-1`. Ships a **dormant, inherited stereo-3D path** (`stereoRenderMode_t`, `stereoRender_*` cvars) and a **named renderparm table** (`viewMatrix*`, `projectionMatrix*`, `globalViewOrigin`). Source NOT released. See [case study](./case-studies/id-tech-6-dormant-stereo.md). |
+| **id Tech 6** (DOOM 2016) | **OpenGL *or* Vulkan** (separate exes) | None turnkey; Vk3DVision for stereo only | Renderer is an **exe-level fork** — one binary imports `OPENGL32`, the other `vulkan-1`. Ships a **dormant inherited stereo-3D path** (`stereoRenderMode_t`, `stereoRender_*`) and a **named renderparm table** (`viewMatrix*`, `projectionMatrix*`, `globalViewOrigin`) — but retail **production mode never registers** the stereo cvars, so injection is the only route. **Z-up basis**, view angles as pitch/yaw degrees. Source NOT released. See [case study](./case-studies/id-tech-6-dormant-stereo.md). |
 | **Ubisoft Dunia** (Far Cry 2) | D3D9 | vorpX (generic) for 3D | Older D3D9; manual for true 6DoF. No public VR prior art; Ubisoft's own [Dunia shader-pipeline architecture talk (REAC 2023)](https://enginearchitecture.realtimerendering.com/downloads/reac2023_dunia_shader_pipeline.pdf) is a citable reference for the renderer lineage if building a from-scratch adapter. |
 | **CryEngine** (original Far Cry, 2004) | D3D9 | **farcry_vrmod** (fholger) via the official CryEngine Mod SDK | Vendor-SDK route, same family as Source SDK 2013 — not injection. Only proven for the *original* Far Cry, a different (older, open-SDK) engine from Far Cry 2's closed Dunia. See [source-available](./source-available/). |
 | **Bespoke / older custom engines** | D3D9 and older | Case-by-case | Usually fully manual; vorpX/geo-11 for seated 3D if D3D9+. |
@@ -29,6 +29,11 @@ aid, not an exhaustive database — contributions welcome (see
 - **Imported/embedded strings** → render API (`d3d8/9/11/12`, `dxgi`, `vulkan`, `opengl32`),
   VR hints (`openvr`, `openxr`), DRM (`steam_api`, Denuvo), middleware (PhysX, Bink),
   engine tags (`UnrealEngine3`, `idTech`, engine-specific renderer names).
+  ⚠️ **Use `strings -n 2` or `-n 3` when hunting console command/cvar names.** The common `-n 4`
+  default silently drops every three-character token — `god`, `rp`, `map`, `fov`, `set` — which is
+  exactly the vocabulary you're looking for. This has already produced one wrong published
+  conclusion in this library's own research; see the
+  [id Tech 6 case study](./case-studies/id-tech-6-dormant-stereo.md#a-method-trap-worth-stealing).
 - **Folder layout** → Unreal (`Engine/`, `<Game>Game/`, `.u`/`.pak`), id Tech (`base/`,
   virtual textures), etc.
 - **A tiny main exe** often means a launcher stub; the real renderer lives in a companion DLL —
