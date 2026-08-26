@@ -84,6 +84,12 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
 
 ## Tools, drivers & communities
 
+- **OldUnreal** (Smirftsch and the OldUnreal community) — custodians of Unreal Engine 1:
+  the Epic-licensed 227 community maintenance patch line (currently 227k), with its SDK,
+  64-bit builds, modern renderers, and render-device contract. The foundation of this account's
+  Unreal Gold project; referenced as public documentation and a tool we actually run, no code
+  reused.
+  <https://github.com/OldUnreal> · <https://www.oldunreal.com/>
 - **vorpX** (Ralf Ostertag) — generic D3D9–11 VR driver. **Commercial, closed source**;
   referenced as public prior art only (no code inspected or reused). <https://www.vorpx.com/>
 - **Vireio Perception** (cybereality and contributors) — free, **open-source (LGPL-3.0)** generic
@@ -174,7 +180,11 @@ Microsoft **PIX** (<https://devblogs.microsoft.com/pix/>).
 ## Engine / platform owners (context, not endorsement or affiliation)
 
 Capcom (RE Engine) · Epic Games (Unreal Engine) · Bethesda/id Software (Creation Engine,
-id Tech) · Ubisoft (AnvilNext, Dunia) · and the owners of every other engine referenced. This
+id Tech) · Ubisoft (AnvilNext, Dunia, Scimitar/Anvil) · Crytek (CryEngine) · Criterion
+(RenderWare, Burnout) · Tango Gameworks (the STEM branch of id Tech 5) · Ninja Theory
+(the NTEngine layer on Unreal Engine 3) · Avalanche Studios (Avalanche Engine) · Remedy
+Entertainment (the Alan Wake engine) · Double Fine Productions (the Psychonauts engine) ·
+and the owners of every other engine referenced. This
 library is unaffiliated with them; it redistributes none of their assets or source and takes no
 position on their terms of use.
 
