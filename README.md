@@ -45,7 +45,8 @@ credit from no one.
 ## How to use this library
 
 1. Identify your game's **engine** and **render API** — start at
-   [`docs/engines-index.md`](./docs/engines-index.md).
+   [`docs/engines-index.md`](./docs/engines-index.md), then its family page under
+   [`docs/engines/`](./docs/engines/) if we already have a project on that engine.
 2. Skim the [tool landscape](./docs/landscape/) to see whether a turnkey solution already
    exists for your engine (e.g. UEVR for Unreal 4/5, REFramework VR for RE Engine).
 3. If you must build it yourself, read the [engine-agnostic core](./docs/engine-agnostic-core/)
@@ -70,6 +71,7 @@ credit from no one.
 | [`docs/unity/`](./docs/unity/) | Unity games: UUVR, VRGIN, BepInEx plugins — the managed-runtime shortcut |
 | [`docs/runtime-layers/`](./docs/runtime-layers/) | OpenComposite, OpenXR Toolkit, VRto3D, Depth3D — the plumbing between mod, runtime & display |
 | [`docs/engines-index.md`](./docs/engines-index.md) | Quick lookup: engine → render API → known VR path |
+| [`docs/engines/`](./docs/engines/) | Per-engine family pages: shared findings across our own sibling projects on the same engine, with links out to each project's dossier |
 | [`docs/watch-list.md`](./docs/watch-list.md) | Where new information appears — the sources checked on a standing research cadence |
 | [`ATTRIBUTION.md`](./ATTRIBUTION.md) | Every person, project, tool, and source, with links and licenses |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | How to add — public info only, credit everyone, link primary sources |

@@ -3,7 +3,9 @@
 Find your engine, its typical render API, and the known public VR path. This is an orientation
 aid, not an exhaustive database — contributions welcome (see
 [`../CONTRIBUTING.md`](../CONTRIBUTING.md)). Every tool named is credited in
-[`../ATTRIBUTION.md`](../ATTRIBUTION.md).
+[`../ATTRIBUTION.md`](../ATTRIBUTION.md). For engine families this account has an active
+conversion project on, there is a deeper per-family page — shared findings plus links to every
+sibling project's dossier — under [`engines/`](./engines/).
 
 | Engine | Typical render API | Known public VR path | Notes |
 |--------|--------------------|----------------------|-------|
