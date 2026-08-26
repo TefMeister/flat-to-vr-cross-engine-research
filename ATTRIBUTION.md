@@ -129,6 +129,15 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   and **High On Life**, alongside **Out of Sight**, **Surviving Mars**, **Postal 2**, and
   **Shadowgate VR: The Mines of Mythrok** (PSVR2) — evidence the licensed-port pipeline keeps
   scaling. <https://www.flat2vrstudios.com/>
+  - **Impact Reality** — Flat2VR Studios' parent company; confirmed (Aug 2026) $5M+ raised in a
+    private round (Hartmann Capital among backers) plus a **StartEngine** equity-crowdfunding
+    reservation opened to retail investors. Portfolio named in that campaign: Trombone Champ:
+    Unflattened, WRATH: Aeon of Ruin VR, FlatOut 4: Total Insanity VR, Roboquest VR, Surviving
+    Mars: Pioneer, VRacer Hoverbike, POSTAL 2, Primal Rumble, I Am Your Beast, Out of Sight, R.A.I.D.,
+    High On Life VR, System Shock VR. Referenced as landscape/funding context only — no code or
+    product of theirs is used here.
+  - **Impact Inked** — a sibling publishing label; announced (Aug 2026) a PSVR2 publishing
+    partnership including **Drop Dead: The Cabin**.
 - **Camracks** — **PCVR Central**, a community-run, non-rehosting directory of PC VR mods and
   conversions (added 2026-08-24; ~968 flat games tracked, ~900 mods cataloged with quality/
   freshness labels, a Steam-library VR-compatibility checker, and per-mod links back to each

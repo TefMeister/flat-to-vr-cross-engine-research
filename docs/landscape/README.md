@@ -62,6 +62,20 @@ developers hired from the modding scene — a sign of how far the hobby has matu
 **August 2026 VR Games Showcase** the studio announced licensed ports of **System Shock VR**,
 **High On Life**, **Out of Sight**, **Surviving Mars**, **Postal 2**, and **Shadowgate VR: The
 Mines of Mythrok** — the pipeline from "fan mod" to "official licensed port" keeps widening.
+
+**The business side is scaling too (confirmed Aug 2026):** Flat2VR Studios' parent company,
+**Impact Reality**, has raised $5M+ in a private round (backers include Hartmann Capital) and
+opened a **StartEngine** equity-crowdfunding reservation to extend that round to retail
+investors — the first time this scene's licensed-porting arm has opened itself to public
+investment, not just Discord goodwill. The campaign material lists a much wider live/upcoming
+portfolio than the showcase alone suggested: alongside System Shock VR and High On Life VR, it
+names **Trombone Champ: Unflattened**, **WRATH: Aeon of Ruin VR**, **FlatOut 4: Total Insanity
+VR**, **Roboquest VR**, **Surviving Mars: Pioneer**, **VRacer Hoverbike**, **POSTAL 2**, **Primal
+Rumble**, **I Am Your Beast**, **Out of Sight**, and **R.A.I.D.** Separately, a sibling label,
+**Impact Inked**, announced a PSVR2 publishing partnership featuring **Drop Dead: The Cabin**.
+Worth watching purely as a landscape signal: sustained outside investment in licensed VR porting
+makes the "official port" path a more durable alternative to modding for popular titles, not a
+one-off showcase moment.
 [flat2vrstudios.com](https://www.flat2vrstudios.com/) ·
 [x.com/Flat2VR](https://x.com/Flat2VR) · [beacons.ai/flat2vr](https://beacons.ai/flat2vr)
 

@@ -89,3 +89,19 @@ for the last sweep date and what it found.
   automated fetch) — left out per the "leave it out if unsure" rule. Targeted checks for new VR
   prior art on The Evil Within (id Tech 5) and Far Cry 2 (Dunia) specifically: none found, per-project
   rows unchanged.
+- **2026-08-26 (open-ended discovery sweep):** Checked core tool projects for commit/release
+  activity since the 2026-08-24 entries above — nothing new: UEVR's last commit (2026-08-23)
+  and REFramework's (2026-08-20) both predate that sweep; OldUnreal's v227k_15 is unchanged;
+  elliotttate/vrframework last commit 2026-06-05; all of mutars' VR-relevant repos
+  (starfield2vr, anvilengine2vr, Geo3D, stalker2-uevr) unchanged since their last-known dates.
+  Checked REFramework's render-target/GPU-backing question (flagged in the Per-project relevance
+  table as relevant to our RE Village work) directly — no new public information found, still
+  open. Added one genuinely new item, verified across two independent sources (UploadVR,
+  VR.org): Flat2VR Studios' parent, Impact Reality, opened a StartEngine equity-crowdfunding
+  round ($5M+ already raised) and its campaign material revealed a much wider live/upcoming
+  portfolio than the showcase alone showed, plus a separate PSVR2 publishing deal (Drop Dead:
+  The Cabin, via sibling label Impact Inked) — added to docs/landscape/README.md and
+  ATTRIBUTION.md. Flat2VR Studios' own news page showed nothing dated beyond 2026-08-24. PCVR
+  Central's tracked-game count is essentially unchanged (~967 vs. the ~968 already on record) —
+  no real signal either way. MTBS3D again returned HTTP 403 to automated fetch, same limitation
+  noted in the prior sweep — still unverifiable this way, not confirmed unchanged.
