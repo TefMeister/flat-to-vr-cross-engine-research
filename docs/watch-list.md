@@ -107,3 +107,35 @@ for the last sweep date and what it found.
   Central's tracked-game count is essentially unchanged (~967 vs. the ~968 already on record) —
   no real signal either way. MTBS3D again returned HTTP 403 to automated fetch, same limitation
   noted in the prior sweep — still unverifiable this way, not confirmed unchanged.
+- **2026-08-27:** Drained own inbox (empty — README only, nothing to fold in). Checked core tools:
+  UEVR has one new commit today (D3D12 barrier-transition bug fix, no new release; still 1.05);
+  REFramework unchanged since 2026-08-20; mutars repos, vrframework, OldUnreal (v227k_15) all
+  unchanged since their last-known dates. Flat2VR Studios' news page shows nothing newer than
+  2026-07-23; PCVR Central's count is unchanged (~967). Vk3DVision's DOOM (2016)/DOOM Eternal fix
+  entries are unchanged since 2025-08-30/2024-12-30 — no new stereo-driver signal for the active
+  DOOM project. Nothing added from the web this sweep — landscape is stable.
+  **Project-repo harvest (by delta since 2026-08-26):** pulled all 17 `-engine-research` +
+  16 `-external-research` clones; every one had only the routine PLAYBOOK-pointer/`inbox/`
+  scaffolding commit except three with real content: **doom-2016-vr-engine-research** (Phase 0
+  static+live recon, now fully covered — the id Tech 6 dormant-stereo findings were already folded
+  into `docs/case-studies/id-tech-6-dormant-stereo.md` and `docs/engines/id-tech-6.md` in the prior
+  sweep; this cycle's newer commits — Vulkan proxy M0 verified in-game, the launch-recipe/SteamAppId
+  finding, the corrected injection-surface recommendation — are project-specific engineering detail
+  except the SteamAppId mechanism, generalized below), **manhunt-2003-vr-engine-research** (read in
+  full — windowed-mode D3D8 CreateDevice saga and the SecuROM packed-binary investigation; the
+  packed-binary finding generalizes cleanly and is written up below, the windowed-mode D3D8 findings
+  stay in the project dossier per the one-RenderWare-project rule), and
+  **doom-2016-vr-external-research** / **manhunt-2003-vr-external-research** (research-session
+  cross-checks, already folded into their own dossiers per the table above — nothing further to
+  generalize from these two specifically). **Generalized up this sweep:** (1) a new case study,
+  [`docs/case-studies/packed-binary-live-memory-scan.md`](./case-studies/packed-binary-live-memory-scan.md)
+  — Manhunt's SecuROM investigation (16 documented addresses, zero static file matches, 16/16 live
+  memory matches) generalized into "packed/self-protecting binaries: scan the live process, not the
+  file," cross-linked from `docs/techniques/README.md` and a new **RenderWare** row in
+  `docs/engines-index.md`; credited Fire-Head/MHNoDRM and the manhunt-2003-vr-* repos in
+  `ATTRIBUTION.md`. (2) A new technique note in `docs/techniques/README.md`,
+  "Launching a Steamworks game directly" — the `steam_appid.txt`/`SteamAppId` requirement (Valve's
+  own Steamworks SDK mechanism) generalized from DOOM (2016)'s first-party confirmation (direct
+  launch of `DOOMx64vk.exe` requires it) and cross-referenced against Far Cry 2's related-but-distinct
+  Desktop-Game-Theatre wedge. Inboxes: none drained (all empty), none filled (no findings needed a
+  project-specific hand-off this cycle).
