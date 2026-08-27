@@ -84,6 +84,10 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
 
 ## Tools, drivers & communities
 
+- **Fire-Head** — **MHNoDRM**, the community write-up documenting Manhunt (2003)'s 16 SecuROM-remnant
+  IAT-hook addresses and their fake-return-value mechanism. Technique studied and independently
+  verified against our own live memory dump; no code reused.
+  <https://github.com/Fire-Head/MHNoDRM>
 - **OldUnreal** (Smirftsch and the OldUnreal community) — custodians of Unreal Engine 1:
   the Epic-licensed 227 community maintenance patch line (currently 227k), with its SDK,
   64-bit builds, modern renderers, and render-device contract. The foundation of this account's
@@ -213,8 +217,16 @@ working notes are published openly at
 [`doom-2016-vr-engine-research`](https://github.com/TefMeister/doom-2016-vr-engine-research),
 [`doom-2016-vr-dev-archive`](https://github.com/TefMeister/doom-2016-vr-dev-archive), and
 [`doom-2016-vr-modding-notes`](https://github.com/TefMeister/doom-2016-vr-modding-notes).
-Like everything else we write, it is CC-BY-4.0 — take it and build on it, just say where it came
-from.
+
+The [RenderWare packed-binary case study](./docs/case-studies/packed-binary-live-memory-scan.md) is
+likewise our own static-and-live analysis of a legitimately-owned copy of Manhunt (2003). Full
+evidence at
+[`manhunt-2003-vr-engine-research`](https://github.com/TefMeister/manhunt-2003-vr-engine-research),
+[`manhunt-2003-vr-dev-archive`](https://github.com/TefMeister/manhunt-2003-vr-dev-archive), and
+[`manhunt-2003-vr-external-research`](https://github.com/TefMeister/manhunt-2003-vr-external-research).
+
+Like everything else we write, both are CC-BY-4.0 — take them and build on them, just say where
+they came from.
 
 ---
 

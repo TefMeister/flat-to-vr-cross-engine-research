@@ -11,6 +11,8 @@ Each is distilled from public projects credited in
 - [Basis & handedness (why the world "swims")](#basis--handedness)
 - [Telling the main camera from shadow/reflection cameras](#main-camera-discrimination)
 - [HUD & UI in VR](#hud--ui-in-vr)
+- [Packed/self-protecting binaries](#packedself-protecting-binaries)
+- [Launching a Steamworks game directly](#launching-a-steamworks-game-directly)
 
 ---
 
@@ -123,6 +125,53 @@ You must apply VR only to the **main scene camera**, not to shadow-map or reflec
 **a far-plane threshold** (the main camera's far plane is large; shadow/reflection far planes are
 small), or render-target size/format. Pick a signal that reliably isolates the world view on your
 engine.
+
+## Packed/self-protecting binaries
+
+If a documented address, offset, or IAT hook doesn't match what a static file read finds — before
+concluding "wrong build" or "wrong version" — check whether the entry point lands inside an
+oversized or oddly-named section. That's the signature of a still-active protector stub: the real
+code exists only after the process unpacks itself in memory at startup, so a static file read can
+never see it, no matter how correct the address is.
+
+The fix is to scan *live* process memory instead of the file on disk. Any DLL already loaded into
+the target process (a same-name proxy DLL, or any other in-process hook) initializes before the
+game's own unpacking runs and is not subject to the anti-attach defenses that may be blocking an
+external debugger — because it's part of the process, not an outside observer of it. A short delay
+after load (to let the unpacking stub finish), then a `VirtualQuery`-guarded scan of committed
+readable+executable regions for the real opcode pattern, works where both a static file patch and
+an external debugger attach fail. Worked example, including a case where 16 documented addresses
+came back with zero static matches and 16-for-16 live matches once scanned correctly:
+[RenderWare/Manhunt case study](../case-studies/packed-binary-live-memory-scan.md).
+
+Anti-tamper sabotage of this kind is usually **per-site, not one blanket check** — each hooked call
+may expect a different faked return value or a different side effect (a write to a polled global,
+not just a return value). There is no single fix; each site needs its own disassembly and its own
+targeted repair, usually cheapest as "force the branch the game itself takes on success," which
+restores the game's own intended path rather than inventing new behavior.
+
+## Launching a Steamworks game directly
+
+Bypassing Steam's own launcher — to attach a debugger before the game's window exists, to launch
+a specific one of several shipped executables, or to avoid a Desktop-Game-Theatre wedge some
+titles hit under SteamVR — commonly breaks Steamworks-integrated games in a specific,
+non-obvious way: **`SteamAPI_Init()` fails silently and the process exits immediately**, with no
+window, no log file, and no crash entry, because the Steamworks SDK reads the running app's ID
+either from a `steam_appid.txt` file beside the executable or from the `SteamAppId` environment
+variable, and Steam itself only supplies that ID when it starts the process. This mechanism is
+part of Valve's own Steamworks SDK (documented for local testing without the Steam client running
+the game).
+
+Two fixes, either sufficient alone: drop a `steam_appid.txt` containing the game's numeric App ID
+next to the executable (leaves a file in the game's install directory), or set the `SteamAppId`
+environment variable for just the launched process (writes nothing to disk). First-party
+confirmation that the failure mode is exactly "instant silent exit, no diagnostic trace" — not a
+crash, not a hang — comes from this account's DOOM (2016) project, which requires a direct launch
+of its Vulkan-renderer executable (`DOOMx64vk.exe`, which Steam itself never launches):
+[`doom-2016-vr-engine-research`](https://github.com/TefMeister/doom-2016-vr-engine-research), §10.
+A related but distinct symptom — SteamVR's Desktop Game Theatre wedging on "Launching" for a
+title started *through* Steam while a VR runtime is active, fixed the same way (launch the exe
+directly) but for an unrelated reason — was hit independently on this account's Far Cry 2 project.
 
 ## HUD & UI in VR
 

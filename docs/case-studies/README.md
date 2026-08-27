@@ -4,10 +4,10 @@ Study notes on engines that have been brought into VR **in public**. Each is a d
 how the public project solved the problem, with links to its source — **not** a copy of that
 source. All credited in [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).
 
-One entry (id Tech 6) is a different shape: no public adapter exists for that engine, so it
-documents the **reconnaissance** step instead — what a static pass over an unmodified commercial
-binary can establish before any hook code is written. It draws on our own first-party analysis,
-published openly in the linked project repos.
+Two entries (id Tech 6, RenderWare) are a different shape: no public adapter exists for either
+engine, so they document the **reconnaissance** step instead — what a static or live pass over an
+unmodified commercial binary can establish before any hook code is written. Both draw on our own
+first-party analysis, published openly in the linked project repos.
 
 | Engine | Public project | What it demonstrates |
 |--------|----------------|----------------------|
@@ -16,6 +16,7 @@ published openly in the linked project repos.
 | **Bethesda Creation Engine 2** | **[starfield2vr](https://github.com/mutars/starfield2vr)** (mutars) | [Reflex-marker timing; keep-and-fix-TAA per eye](./creation-engine-2.md) |
 | **Ubisoft AnvilNext 2.0** | **[anvilengine2vr](https://github.com/mutars/anvilengine2vr)** (mutars) | [Two-hook timing; per-eye camera matrix; disable-TAA](./anvil-per-eye-camera.md) |
 | **id Tech 6** (DOOM 2016) | *none — our own static recon* | [Finding a **dormant** inherited stereo path, and reading the engine's own doc-comments](./id-tech-6-dormant-stereo.md) |
+| **RenderWare 3.6** (Manhunt 2003) | *none — our own static+live recon* | [Packed/self-protecting binaries: why a static file patch fails, and how an in-process DLL scans live memory instead](./packed-binary-live-memory-scan.md) |
 
 ## Why case studies matter
 
