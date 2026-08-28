@@ -13,6 +13,7 @@ Each is distilled from public projects credited in
 - [HUD & UI in VR](#hud--ui-in-vr)
 - [Packed/self-protecting binaries](#packedself-protecting-binaries)
 - [Launching a Steamworks game directly](#launching-a-steamworks-game-directly)
+- [Driving a live game from a hook (harness tick sites)](#driving-a-live-game-from-a-hook)
 
 ---
 
@@ -183,8 +184,66 @@ handling and are a frequent source of one-eye-only or letterboxed UI artifacts.
 
 ---
 
+## Driving a live game from a hook
+
+Once a VR mod can *read* the game every frame, the next step is usually to *act* — an automation
+harness that drives the game unattended, so testing does not need a human at the keyboard. Acting
+from a hook is a different problem from observing from one, and it fails in ways observation never
+does.
+
+### Where to dispatch from
+
+**Guidance: prefer a simulation-phase hook over a render-path one.** Re-entering an engine's
+command/console/script system while a frame is being drawn is a genuine hazard, and a hook whose
+name is about *view* (a camera or view-calculation function) is naturally called *by the renderer*
+— it satisfies every property you look for in a tick site ("game thread, once per frame, has the
+player object") while sitting in the one call stack where acting is unsafe. Nothing in its name or
+signature says "you are inside Draw". Prefer a hook named for simulation: an actor/entity `Tick`,
+the world update, the input phase. If your only per-frame hook is on the render path, use it to
+**queue**, and drain from a simulation-phase hook.
+
+**⚠️ Be careful how strongly you state this, and do not cite XIII as proof of it.** Our XIII (2003)
+project appeared to demonstrate exactly this rule — an automation harness draining a command queue
+from a camera hook crashed with a GPF whose stack ran through `UGameEngine::Draw`, and moving
+dispatch to `APlayerController::Tick` fixed it "outright, first try". `[disproved 2026-08-28]`
+Re-arming that engine-level dispatch a day later crashed the game **again**, from `ULevel::Tick`,
+with no render path anywhere in the stack. The call site was never the cause: that engine's
+global `Exec` entry point is not callable from an injected hook *at all*. Moving the dispatch site
+only appeared to fix things because two other, narrower dispatch objects absorbed every command
+sent afterwards, so the failing path was never exercised again until it was deliberately re-armed.
+
+### The better-supported finding
+
+`[verified-live 2026-08-28, n=2 — two faults, two different call sites, same engine]`
+On at least one UE2-era title, an **engine-wide `Exec`-style entry point is unsafe to call from an
+injected hook regardless of phase.** Prefer **narrowly-scoped dispatch objects** — in XIII, the
+player controller and its cheat manager, located by exported-vtable identity rather than a
+hardcoded offset — and keep any engine-level dispatch behind a default-off flag. That is a smaller
+claim than "avoid the render path", but it is the one the evidence actually supports, and it is
+the one that would have prevented the second crash.
+
+### Log before the call, and flush
+
+`[verified-live 2026-08-27]` Independent of everything above, and unaffected by the correction.
+The first version of that harness logged each command **after** it completed, so the crash left no
+record of which command or which call died — the cause had to be inferred from telemetry stopping
+on an exact tick and the process going idle. Logging **before** the call, flushed to disk, costs a
+few lines and turns "something crashed" into "this exact call crashed". For any harness driving a
+live game unattended, do it from the first version: the fault you are instrumenting for is
+precisely the one that stops you collecting the evidence afterwards.
+
+### The method lesson (the most transferable part)
+
+**A fix that removes the symptom *and* stops the failing path from being exercised has proved
+nothing about the cause.** Both effects are indistinguishable from outside. Before recording "X
+caused it, because fixing X worked", ask whether the original failing path still runs. If it does
+not, what you have is a hypothesis, and it should be written down as one — because the next
+session will read a confident sentence and act on it. That is exactly how the XIII correction
+above came to be needed: the note was believed, the tier was re-armed, and the game crashed again.
+
 ## Sources
 
+- **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, and the log-before-the-call habit; generalised out of [`XIII2003-vr-engine-research`](https://github.com/TefMeister/XIII2003-vr-engine-research) §9a/§9b
 - **UEVR** render modes (native / synchronized-sequential / AFR) — [docs.uevr.io](https://docs.uevr.io/) · [github.com/praydog/UEVR](https://github.com/praydog/UEVR)
 - **Luke Ross R.E.A.L.** — AER (alternating eye rendering); *technique reference only* — the GTA V repo is unlicensed (view-only, don't reuse code) and other titles are paid: [patreon.com/realvr](https://www.patreon.com/realvr) · [github.com/LukeRoss00/gta5-real-mod](https://github.com/LukeRoss00/gta5-real-mod)
 - **starfield2vr** (mutars) — Reflex-marker timing, keep-and-fix-TAA per eye: [github.com/mutars/starfield2vr](https://github.com/mutars/starfield2vr)

@@ -225,7 +225,15 @@ evidence at
 [`manhunt-2003-vr-dev-archive`](https://github.com/TefMeister/manhunt-2003-vr-dev-archive), and
 [`manhunt-2003-vr-external-research`](https://github.com/TefMeister/manhunt-2003-vr-external-research).
 
-Like everything else we write, both are CC-BY-4.0 — take them and build on them, just say where
+The [harness tick-sites section](./docs/techniques/README.md#driving-a-live-game-from-a-hook) and
+the UE1–3 family page's automation findings come from our own live work on a legitimately-owned
+copy of XIII (2003). Full evidence — including the **disproved** render-path diagnosis, kept on
+purpose so nobody re-walks it — at
+[`XIII2003-vr-engine-research`](https://github.com/TefMeister/XIII2003-vr-engine-research),
+[`XIII2003-vr-dev-archive`](https://github.com/TefMeister/XIII2003-vr-dev-archive), and
+[`XIII2003-vr-modding-notes`](https://github.com/TefMeister/XIII2003-vr-modding-notes).
+
+Like everything else we write, these are CC-BY-4.0 — take them and build on them, just say where
 they came from.
 
 ---

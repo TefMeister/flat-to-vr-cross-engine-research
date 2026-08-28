@@ -27,9 +27,43 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Shared findings
 
-*Seeded 2026-08-26; grown by the research sweep as cross-project truths emerge. Nothing has been
-generalised up to this page yet — the per-project dossiers linked above are the current source of
-truth for this family.*
+*Seeded 2026-08-26; grown by the research sweep as cross-project truths emerge. The per-project
+dossiers linked above remain the source of truth for game-specific detail.*
+
+### Driving the game from an injected hook (UE2, from XIII)
+
+`[verified-live 2026-08-28, n=2 — two faults, two different call sites]`
+**A global `UGameEngine::Exec`-style entry point can be unsafe to call from an injected hook
+regardless of which phase you call it from.** In XIII (2003) it faulted from a camera hook inside
+`UGameEngine::Draw` *and* — after the render-path explanation was assumed and the tier re-armed —
+from `ULevel::Tick`, with no render path in the stack. Prefer **narrowly-scoped dispatch objects**
+instead: `UObject::ScriptConsoleExec` on the player controller reaches only that object's own exec
+functions, and the cheats live on a separate `UCheatManager` the console reaches by hopping from
+the controller. Locate it by **exported-vtable identity** (`??_7UCheatManager@@6B@`) rather than a
+hardcoded offset, and re-validate on use — it is destroyed on level change.
+
+Corollary worth checking on any UE1–3 title: **"it is a standard UE command, therefore it is
+here" does not hold.** XIII's build has `God`/`Fly`/`Ghost`/`Walk`/`HealMe` but no `Teleport`,
+`SetSpeed`, `Slomo`, `Invisible` or `Loaded`. Probe, don't assume.
+
+### Input is alias-based, and useful aliases often ship unbound
+
+`[verified-live 2026-08-28]` UE1–3 route input through named aliases (`Axis aBaseX Speed=...`,
+`button bUp`) defined in the ini and bound to keys separately. A game can therefore **define an
+action it never binds** — XIII ships `TurnLeft`/`TurnRight`/`FastTurnL`/`FastTurnR` with no key on
+any of them, which reads as "the engine cannot do this" when in fact only the binding is missing.
+Binding a spare key needs **no code change at all**. Check the alias table before building
+anything to synthesise an input.
+
+Two traps that cost real time on XIII, both plausibly family-wide:
+
+- **The ini the game writes is not always the ini you should edit.** XIII *deletes* `User.ini` on
+  exit and regenerates it at launch from `DefUser.ini`, so edits to the former always vanish and
+  the template is the only durable target. Check which file survives a restart before concluding
+  a binding "did not take".
+- **A rotator read from telemetry may be unwrapped.** XIII's yaw is a raw accumulating integer
+  that runs straight through the 65536 boundary. Applying the usual shortest-arc wrap to it turns
+  a real −199° turn into an apparent +161°, which looks exactly like an input reversing direction.
 
 ## See also
 
