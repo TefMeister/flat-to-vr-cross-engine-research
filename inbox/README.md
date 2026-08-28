@@ -28,8 +28,10 @@ Supersedes: 2026-08-27-mod-never-dispatch-engine-commands-from-render-hooks.md
 So before folding anything into `docs/`, run:
 
 ```
-grep -r "^Supersedes:" inbox/
+grep -rn "^Supersedes:" inbox/ --exclude=README.md
 ```
+
+(`--exclude=README.md` keeps the example above from matching itself.)
 
 Draining oldest-first without that check writes a claim into the curated library and only then
 meets the correction that withdraws it. That is not hypothetical: a 2026-08-27 finding was still
