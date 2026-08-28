@@ -139,3 +139,46 @@ for the last sweep date and what it found.
   launch of `DOOMx64vk.exe` requires it) and cross-referenced against Far Cry 2's related-but-distinct
   Desktop-Game-Theatre wedge. Inboxes: none drained (all empty), none filled (no findings needed a
   project-specific hand-off this cycle).
+
+### 2026-08-28 — inbox drain only (scoped by the user); no web sweep this run
+
+**Scope:** the user asked for the inbox to be drained, not a full sweep. Web sources were **not**
+checked this run — the watch-list bookmark is therefore UNCHANGED and the next full `/sr` should
+still treat 2026-08-26 as its web-delta start. In-house harvest was likewise limited to the three
+inbox files rather than a git-delta pass over every project.
+
+**Inbox drained: 3 files, `flat-to-vr-cross-engine-research/inbox/` now empty.**
+
+- `2026-08-27-mod-never-dispatch-engine-commands-from-render-hooks.md` (XIII modding session)
+- `2026-08-28-mod-correction-xiii-gpf-was-not-the-render-path.md` — **superseded the above**
+- `2026-08-28-gs-drain-these-two-together.md` — a `/gs` notice flagging the supersession
+
+**This is the case the `Supersedes:` protocol was built for, and it worked.** The 08-27 file
+claimed, as settled fact, that XIII's GPF proved "never dispatch engine commands from a
+render-path hook". It was **disproved** the next day: re-arming that dispatch crashed the game
+again from `ULevel::Tick` with no render path in the stack. Draining oldest-first and acting as I
+went would have written the false claim into `docs/` and only then met its withdrawal. Both files
+were still pending, so nothing wrong ever reached the library.
+
+**Generalised up this sweep** — into `docs/techniques/README.md`, new section
+["Driving a live game from a hook"](./techniques/README.md#driving-a-live-game-from-a-hook):
+
+1. The dispatch-site advice **kept as guidance, with XIII explicitly relabelled as a case where
+   the hypothesis was tested and FAILED** — not as its proof.
+2. The narrower, better-supported finding: a global `Exec`-style entry point may be uncallable
+   from an injected hook at all; prefer narrowly-scoped dispatch objects behind a default-off flag.
+3. **Log before the call, flushed** — untouched by the correction and fully valid on its own.
+4. The method lesson: *a fix that removes the symptom and its test coverage at the same time has
+   proved nothing.* The most transferable item in the whole set.
+
+Also grown: `docs/engines/unreal-1-3.md` gained its **first shared findings** (previously seeded
+but empty) — the UE2 dispatch-object pattern with vtable-identity lookup, "standard UE command
+therefore present" being false, alias-based input where useful aliases ship **unbound** (so a
+binding, not code, is the fix), and two traps: a regenerated-on-launch ini, and an **unwrapped**
+rotator that makes a shortest-arc wrap invent a direction reversal. `ATTRIBUTION.md` credits the
+XIII repos, including the disproved diagnosis kept deliberately.
+
+**Inboxes filled:** none. **Not drained (not this lane's to drain):**
+`XIII2003-vr-external-research/inbox/2026-08-27-mod-f2-console-confirmed-and-cheat-map.md` (`/gr`)
+and `doom-2016-vr-engine-research/inbox/2026-08-27-gr-devmode-enable-public-precedent.md` (DOOM's
+modding session).
