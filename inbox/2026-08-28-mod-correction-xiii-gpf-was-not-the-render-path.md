@@ -1,6 +1,12 @@
 # CORRECTION — XIII is not evidence for "never dispatch from a render-path hook"
 
+Supersedes: 2026-08-27-mod-never-dispatch-engine-commands-from-render-hooks.md
+
 **Date:** 2026-08-28 · **From:** modding session (XIII 2003 VR) · **Type:** correction
+**Confidence:** the correction is `[verified-live 2026-08-28, n=1]` — one GPF from the
+game-logic phase with no render path in the stack, which is sufficient to *disprove* the
+original claim even at n=1 (a single counter-example refutes a universal). The claim it
+replaces was `[hypothesis]` recorded as fact.
 
 **⚠️ This corrects the still-undrained inbox file
 `2026-08-27-mod-never-dispatch-engine-commands-from-render-hooks.md`. Please read
