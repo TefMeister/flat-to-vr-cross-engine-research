@@ -32,12 +32,12 @@ for the last sweep date and what it found.
 
 | Project | Engine | What to watch for | Where |
 |---|---|---|---|
-| Visceral RE2 VR / RE Village scope | RE Engine | `via.render.Mirror`, render-target/GPU-backing examples, new REFramework Lua script collections | REFramework issues/discussions, [alphazolam/EMV-Engine](https://github.com/alphazolam/EMV-Engine), REFramework Discord (web-indexed posts only) |
+| Visceral RE2 VR / RE Village scope | RE Engine | `via.render.Mirror` and `via.render.layer.Scene`, render-target/GPU-backing examples, new REFramework Lua script collections — and **REFramework Lua-API regressions**, after PR #1503/#1809 silently broke the `false` return of `on_pre_gui_draw_element` for nine days | REFramework issues/discussions, [alphazolam/EMV-Engine](https://github.com/alphazolam/EMV-Engine), REFramework Discord (web-indexed posts only) |
 | The Evil Within | id Tech 5 | Any first public VR mod/injector attempt (none exists yet) | ModDB id Tech 5 page, Nexus Mods (Evil Within/Rage/Wolfenstein NOB-TOB), general search |
 | Far Cry 2 | Dunia | Renderer architecture write-ups (e.g. the REAC 2023 Dunia shader-pipeline talk), any VR prior art | [enginearchitecture.realtimerendering.com](https://enginearchitecture.realtimerendering.com/) archive, Nexus Far Cry 2, general search |
 | XIII (2003) | Unreal Engine 2 | UE2-era manual VR techniques (below UEVR's floor) | oldunreal.com, general UE2 modding forums |
 | Unreal Gold | Unreal Engine 1 | 227k SDK updates, any new community render-device work | oldunreal.com, [OldUnreal GitHub org](https://github.com/OldUnreal) |
-| Psychonauts | (see project engine-research) | — | — |
+| Psychonauts | Double Fine bespoke (2005) | Any public camera/engine documentation; nothing turnkey exists. Our own generalised findings are on the [engine page](./engines/double-fine-psychonauts.md). | General search |
 | DOOM (2016) | id Tech 6 | Whether the engine's **dormant inherited stereo path** is live or vestigial; any first public VR conversion attempt (none exists); Vk3DVision DOOM fix updates | [Vk3DVision fix list](https://3dsurroundgaming.com/Vk3DVisionGames.html), MTBS3D, Nexus (DOOM), general search |
 
 ## Generic-driver ecosystem (fallback when not writing an adapter)
@@ -182,3 +182,85 @@ XIII repos, including the disproved diagnosis kept deliberately.
 `XIII2003-vr-external-research/inbox/2026-08-27-mod-f2-console-confirmed-and-cheat-map.md` (`/gr`)
 and `doom-2016-vr-engine-research/inbox/2026-08-27-gr-devmode-enable-public-precedent.md` (DOOM's
 modding session).
+
+### 2026-08-31 — full sweep (web delta from 2026-08-27; in-house delta from 2026-08-27)
+
+**Bookmark note for the next sweep:** the web-delta start is now **2026-08-31**. The 2026-08-28
+entry above was inbox-only and correctly told the next sweep to use 2026-08-26; that gap is closed —
+the 2026-08-27 entry's web pass plus this one cover it.
+
+**⚠️ Estate layout changed under this library.** On 2026-08-30 the account consolidated 101 repos
+into 22: each game is now ONE public repo `<prefix>` with folders `mod/ dev-archive/
+modding-notes/ engine-research/ external-research/`, and the 79 old `<prefix>-<lane>` repos were
+**deleted** (the old `-mod` repos were renamed, so those redirect; the deleted ones do not).
+**Every in-account link in this library was therefore dead.** All 32 were rewritten this sweep to
+the folder form (`…/<prefix>/tree/main/<lane>` and `…/<prefix>/blob/main/<lane>/ENGINE-DOSSIER.md`),
+across `ATTRIBUTION.md`, both case studies, all eleven `docs/engines/` pages and
+`docs/techniques/`. The engine pages' "All project repos" column is now "Project repo".
+
+**Inbox drained: 4 files; `inbox/` is now empty.** No `Supersedes:` headers were present (checked
+before draining, per the protocol). Two arrived from a `doom-2016-vr` modding session *during* this
+sweep and were drained in the same pass.
+
+- `2026-08-29-gr-re-engine-prefab-instantiate-pattern.md` → RE Engine family page
+- `2026-08-29-gr-re-engine-family-anim-and-fire-origin.md` → RE Engine family page
+- `2026-08-31-mod-measure-input-backends-against-a-control.md` → new techniques section
+- `2026-08-31-mod-autocrlf-breaks-self-verifying-builds.md` → new techniques section
+
+**Web sources checked.** *Two genuinely new items, both silent-failure bugs in tools we depend on:*
+
+- **UEVR** — [PR #433](https://github.com/praydog/UEVR/pull/433) (Remleo, merged 2026-08-30): a
+  gamma hook installed itself into a garbage vtable slot because an empty `std::optional` satisfied
+  a `!= 0` test, so the "found it" branch ran precisely when it had not. Also a UESDK bump the same
+  day. No new release; still 1.05.
+- **REFramework** — [PR #1809](https://github.com/praydog/REFramework/pull/1809) (ErwinGunsmith,
+  merged 2026-08-28): `on_pre_gui_draw_element` stopped honouring a `false` return as of
+  [PR #1503](https://github.com/praydog/REFramework/pull/1503) (2026-08-19), so HUD-hiding scripts
+  silently drew anyway for nine days. **Directly relevant to `visceral-re2-vr`, which shipped a
+  crosshair-hiding script built on exactly that callback on 2026-08-30** — inbox drop filed.
+- Unchanged: **mutars** (starfield2vr 2026-05-05, anvilengine2vr 2026-01-25, Geo3D, stalker2-uevr),
+  **vrframework** (12 commits, no change), **OldUnreal** (still v227k_15), **Vk3DVision** (DOOM 2016
+  and DOOM Eternal fix entries still 2025-08-30 / 2023-11-24 — no new stereo signal for the DOOM
+  project), **Flat2VR Studios** news (nothing dated past 2026-07-23). **PCVR Central** is now **991**
+  tracked games, up from ~967 four days ago — figure updated in `ATTRIBUTION.md`. **MTBS3D** was not
+  re-attempted (403 to automated fetch in two prior sweeps).
+
+**Project-repo harvest (delta since 2026-08-27, all 16 game repos pulled).** Eleven had only the
+consolidation commits — Alan Wake, Alice: Madness Returns, arcade-controls, Burnout Paradise,
+Enslaved, Far Cry 2, Mad Max, Prince of Persia, The Evil Within, Unreal Gold, and Manhunt (whose one
+real commit was archival). Five had real content:
+
+- **`psychonauts-vr`** — the black void **solved**: the camera transform the engine actually culls
+  with, the three matrices that turned out to be derived outputs, the measured FOV-widen ceiling, and
+  head-follow wired and monitor-validated. Dossier now **covered in full**.
+- **`visceral-re2-vr`** — the aim-pose saga closed by pelvis-drop foot grounding, v0.1.0 shipped, and
+  a full record of the animation-layer approaches that failed.
+- **`re-village-scope-vr`** — the argument-encoding ABI root cause, the render-layer clipping kill,
+  the layer control surface, and live exposure via tone mapping.
+- **`doom-2016-vr`** — the developer-mode public-precedent-vs-first-party-reading tension (2026-08-27
+  topic), plus the two mid-sweep inbox drops above.
+- **`XIII2003-vr`** — dossier confidence-tagging and the corrected GPF diagnosis; already generalised
+  in the 2026-08-28 entry, nothing further to lift.
+
+**Generalised up this sweep.** Seven new sections in
+[`docs/techniques/README.md`](./techniques/README.md): *the void behind the player* (with the
+headset-free measurement method and the measured two-lever table), *finding the camera matrix the
+engine actually reads*, *VR body height: the HMD-anchored float*, *silent no-ops: verification that
+cannot see the failure* (the UEVR and REFramework bugs plus our own read-back-against-zero case),
+*hook to acquire a handle the API will not give you*, *setting a gate before the process can guard
+it*, *injected input: measure it against a control* (with a per-engine input-route table), and *tool
+defaults that fabricate false negatives*. Two engine pages had their **first-ever shared findings**:
+[`re-engine.md`](./engines/re-engine.md) (eight items) and
+[`double-fine-psychonauts.md`](./engines/double-fine-psychonauts.md) (five). New credits in
+`ATTRIBUTION.md`: alphazolam, Ekey, godlock2000-eng, Junh2x, Remleo, ErwinGunsmith, and prideslayer
+(VRIK, cited only to distinguish the adjacent floor-calibration problem), plus first-party research
+entries for the Psychonauts, Visceral and RE Village work.
+
+**Two things worth flagging beyond the library.** (1) Every durable claim added this sweep carries a
+confidence tag per the 2026-08-28 protocol, and one item is deliberately recorded as *disproved* —
+the animation-layer attack on the aim pose, so a third RE Engine project does not walk it. (2) The
+two independent public bugs found this week and our own ABI bug are the same shape, which is why
+they were written up together rather than as three unrelated notes.
+
+**Inboxes filled:** one — `visceral-re2-vr/external-research/inbox/` (the REFramework `false`-return
+regression against their shipped crosshair script).

@@ -14,9 +14,9 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Our projects on this engine
 
-| Game | Engine dossier | All project repos |
+| Game | Engine dossier | Project repo |
 | --- | --- | --- |
-| Burnout Paradise Remastered — project paused 2026-08-25 (third-party-launcher gating) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/burnout-paradise-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`burnout-paradise-vr-*`](https://github.com/TefMeister?tab=repositories&q=burnout-paradise-vr) |
+| Burnout Paradise Remastered — project paused 2026-08-25 (third-party-launcher gating) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/burnout-paradise-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr) |
 
 ## Shared findings
 

@@ -14,9 +14,9 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Our projects on this engine
 
-| Game | Engine dossier | All project repos |
+| Game | Engine dossier | Project repo |
 | --- | --- | --- |
-| Alan Wake (PC) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/alan-wake-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`alan-wake-vr-*`](https://github.com/TefMeister?tab=repositories&q=alan-wake-vr) |
+| Alan Wake (PC) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/alan-wake-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) |
 
 ## Shared findings
 

@@ -217,9 +217,9 @@ output rather than a 6DoF conversion.
 ## Sources
 
 **Our own first-party analysis** (static inspection of an owned copy; full evidence published):
-- [`doom-2016-vr-engine-research`](https://github.com/TefMeister/doom-2016-vr-engine-research) — the consolidated engine dossier
-- [`doom-2016-vr-dev-archive`](https://github.com/TefMeister/doom-2016-vr-dev-archive) — raw recon evidence (`recon/2026-08-26-phase0-static/`)
-- [`doom-2016-vr-modding-notes`](https://github.com/TefMeister/doom-2016-vr-modding-notes) — the session write-up
+- [`doom-2016-vr/engine-research/`](https://github.com/TefMeister/doom-2016-vr/tree/main/engine-research) — the consolidated engine dossier
+- [`doom-2016-vr/dev-archive/`](https://github.com/TefMeister/doom-2016-vr/tree/main/dev-archive) — raw recon evidence (`recon/2026-08-26-phase0-static/`)
+- [`doom-2016-vr/modding-notes/`](https://github.com/TefMeister/doom-2016-vr/tree/main/modding-notes) — the session write-up
 
 **Developer-authored material on this renderer:**
 - Tiago Sousa & Jean Geffroy, *"The Devil is in the Details: idTech 666"*, SIGGRAPH 2016 Advances in Real-Time Rendering — [slides](https://www.slideshare.net/TiagoAlexSousa/siggraph2016-the-devil-is-in-the-details-idtech-666) · [text summary (80.lv)](https://80.lv/articles/idtech-666-the-secret-of-dooms-render). Describes the renderer as a hybrid clustered-forward + deferred design with roughly 100 unique shaders in total, and notes the id Tech 6 job system's scheduling gaps that id Tech 7 later rewrote.

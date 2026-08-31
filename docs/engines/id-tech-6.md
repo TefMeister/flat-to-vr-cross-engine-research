@@ -17,9 +17,9 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Our projects on this engine
 
-| Game | Engine dossier | All project repos |
+| Game | Engine dossier | Project repo |
 | --- | --- | --- |
-| DOOM (2016) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/doom-2016-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`doom-2016-vr-*`](https://github.com/TefMeister?tab=repositories&q=doom-2016-vr) |
+| DOOM (2016) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/doom-2016-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr) |
 
 ## Shared findings
 

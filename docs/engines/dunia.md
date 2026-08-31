@@ -17,9 +17,9 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Our projects on this engine
 
-| Game | Engine dossier | All project repos |
+| Game | Engine dossier | Project repo |
 | --- | --- | --- |
-| Far Cry 2 (2008) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/far-cry-2-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`far-cry-2-vr-*`](https://github.com/TefMeister?tab=repositories&q=far-cry-2-vr) |
+| Far Cry 2 (2008) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/far-cry-2-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr) |
 
 ## Shared findings
 

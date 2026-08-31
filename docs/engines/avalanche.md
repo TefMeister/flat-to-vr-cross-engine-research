@@ -13,9 +13,9 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Our projects on this engine
 
-| Game | Engine dossier | All project repos |
+| Game | Engine dossier | Project repo |
 | --- | --- | --- |
-| Mad Max (2015) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/mad-max-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`mad-max-vr-*`](https://github.com/TefMeister?tab=repositories&q=mad-max-vr) |
+| Mad Max (2015) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/mad-max-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`mad-max-vr`](https://github.com/TefMeister/mad-max-vr) |
 
 ## Shared findings
 

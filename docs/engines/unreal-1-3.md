@@ -18,12 +18,12 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Our projects on this engine
 
-| Game | Engine dossier | All project repos |
+| Game | Engine dossier | Project repo |
 | --- | --- | --- |
-| Unreal Gold (Unreal, 1998, plus its expansion) — UE1 via OldUnreal 227k | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/unreal-gold-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`unreal-gold-vr-*`](https://github.com/TefMeister?tab=repositories&q=unreal-gold-vr) |
-| XIII (2003) — UE2.x | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/XIII2003-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`XIII2003-vr-*`](https://github.com/TefMeister?tab=repositories&q=XIII2003-vr) |
-| Enslaved: Odyssey to the West (Premium Edition) — UE3 + Ninja Theory's NTEngine layer | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/enslaved-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`enslaved-vr-*`](https://github.com/TefMeister?tab=repositories&q=enslaved-vr) |
-| Alice: Madness Returns (2011) — UE3 | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/alice-madness-returns-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`alice-madness-returns-vr-*`](https://github.com/TefMeister?tab=repositories&q=alice-madness-returns-vr) |
+| Unreal Gold (Unreal, 1998, plus its expansion) — UE1 via OldUnreal 227k | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/unreal-gold-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`unreal-gold-vr`](https://github.com/TefMeister/unreal-gold-vr) |
+| XIII (2003) — UE2.x | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/XIII2003-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr) |
+| Enslaved: Odyssey to the West (Premium Edition) — UE3 + Ninja Theory's NTEngine layer | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/enslaved-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr) |
+| Alice: Madness Returns (2011) — UE3 | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/alice-madness-returns-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr) |
 
 ## Shared findings
 

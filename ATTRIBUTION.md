@@ -81,6 +81,38 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   Source SDK 2013 material; no license file — all rights reserved by default; referenced as
   public prior art only).
   - <https://github.com/Gistix/portal2vr> · <https://www.portal4dead.com/>
+- **alphazolam** — **EMV Engine**, the long-running RE Engine editor/inspector script suite for
+  REFramework. Referenced as public precedent for prefab instantiation being the sanctioned way to
+  spawn a complete object, and for its own documented caution about component-level spawning.
+  Studied online only; no code reused. See the repo for its license.
+  - <https://github.com/alphazolam/EMV-Engine>
+- **Ekey** — **REE.PAK.Tool**, whose published per-title file lists let a game's shipped asset paths
+  be enumerated offline without unpacking anything. Referenced for the file lists as a public index;
+  no game content redistributed here.
+  - <https://github.com/Ekey/REE.PAK.Tool>
+- **godlock2000-eng** — **ResidentEvil2\_CustomAnimationFramework\_NonRTX**, whose documentation of
+  the RE Engine motion / motion-list formats and runtime dynamic-motion-bank registration is the
+  clearest public write-up of that subsystem we have found. Described in our own words; no code or
+  files reused.
+  - <https://github.com/godlock2000-eng/ResidentEvil2_CustomAnimationFramework_NonRTX>
+- **Junh2x** — **RE9-Movement-Speed-Mod**, source of the pair-the-animation-speed-with-the-movement-
+  driver technique for changing locomotion speed without foot-sliding.
+  - <https://github.com/Junh2x/RE9-Movement-Speed-Mod>
+- **Remleo** — [UEVR PR #433](https://github.com/praydog/UEVR/pull/433) (merged 2026-08-30), the fix
+  for a gamma hook installing itself into a garbage vtable slot because an empty `std::optional`
+  satisfied a `!= 0` test. Cited as one of the worked examples in
+  [techniques → silent no-ops](./docs/techniques/README.md#silent-no-ops-verification-that-cannot-see-the-failure).
+- **ErwinGunsmith** — [REFramework PR #1809](https://github.com/praydog/REFramework/pull/1809)
+  (merged 2026-08-28), restoring `on_pre_gui_draw_element`'s `false` return after a nine-day silent
+  regression introduced in [PR #1503](https://github.com/praydog/REFramework/pull/1503). Cited in the
+  same section, and as a live warning on the
+  [RE Engine family page](./docs/engines/re-engine.md).
+- **prideslayer** and contributors — **VRIK Player Avatar** (Skyrim VR). Cited only to draw the
+  distinction between the well-known VR floor-calibration/height-offset problem it addresses and the
+  pose-dependent, animation-driven body float documented in
+  [techniques](./docs/techniques/README.md#vr-body-height-the-hmd-anchored-float). No code or
+  technique reused.
+  - <https://www.nexusmods.com/skyrimspecialedition/mods/23416>
 
 ## Tools, drivers & communities
 
@@ -155,9 +187,10 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   - **Impact Inked** — a sibling publishing label; announced (Aug 2026) a PSVR2 publishing
     partnership including **Drop Dead: The Cabin**.
 - **Camracks** — **PCVR Central**, a community-run, non-rehosting directory of PC VR mods and
-  conversions (added 2026-08-24; ~968 flat games tracked, ~900 mods cataloged with quality/
-  freshness labels, a Steam-library VR-compatibility checker, and per-mod links back to each
-  creator's own page). Useful as a landscape/discovery cross-check alongside this library.
+  conversions (added 2026-08-24; 991 flat games tracked as of 2026-08-31, up from ~967 four days
+  earlier; ~900 mods cataloged with quality/freshness labels, a Steam-library VR-compatibility
+  checker, and per-mod links back to each creator's own page). Useful as a landscape/discovery
+  cross-check alongside this library.
   <https://pcvrcentral.com/>
 - The **flatscreen-to-VR modding community** broadly — forums, wikis, Discord/Reddit threads,
   and countless per-game fix authors whose collected knowledge underlies all of the above.
@@ -214,24 +247,46 @@ Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every
 The [id Tech 6 case study](./docs/case-studies/id-tech-6-dormant-stereo.md) is our own static
 analysis of a legitimately-owned copy, not a summary of someone else's work. The full evidence and
 working notes are published openly at
-[`doom-2016-vr-engine-research`](https://github.com/TefMeister/doom-2016-vr-engine-research),
-[`doom-2016-vr-dev-archive`](https://github.com/TefMeister/doom-2016-vr-dev-archive), and
-[`doom-2016-vr-modding-notes`](https://github.com/TefMeister/doom-2016-vr-modding-notes).
+[`doom-2016-vr/engine-research/`](https://github.com/TefMeister/doom-2016-vr/tree/main/engine-research),
+[`doom-2016-vr/dev-archive/`](https://github.com/TefMeister/doom-2016-vr/tree/main/dev-archive), and
+[`doom-2016-vr/modding-notes/`](https://github.com/TefMeister/doom-2016-vr/tree/main/modding-notes).
 
 The [RenderWare packed-binary case study](./docs/case-studies/packed-binary-live-memory-scan.md) is
 likewise our own static-and-live analysis of a legitimately-owned copy of Manhunt (2003). Full
 evidence at
-[`manhunt-2003-vr-engine-research`](https://github.com/TefMeister/manhunt-2003-vr-engine-research),
-[`manhunt-2003-vr-dev-archive`](https://github.com/TefMeister/manhunt-2003-vr-dev-archive), and
-[`manhunt-2003-vr-external-research`](https://github.com/TefMeister/manhunt-2003-vr-external-research).
+[`manhunt-2003-vr/engine-research/`](https://github.com/TefMeister/manhunt-2003-vr/tree/main/engine-research),
+[`manhunt-2003-vr/dev-archive/`](https://github.com/TefMeister/manhunt-2003-vr/tree/main/dev-archive), and
+[`manhunt-2003-vr/external-research/`](https://github.com/TefMeister/manhunt-2003-vr/tree/main/external-research).
 
 The [harness tick-sites section](./docs/techniques/README.md#driving-a-live-game-from-a-hook) and
 the UE1–3 family page's automation findings come from our own live work on a legitimately-owned
 copy of XIII (2003). Full evidence — including the **disproved** render-path diagnosis, kept on
 purpose so nobody re-walks it — at
-[`XIII2003-vr-engine-research`](https://github.com/TefMeister/XIII2003-vr-engine-research),
-[`XIII2003-vr-dev-archive`](https://github.com/TefMeister/XIII2003-vr-dev-archive), and
-[`XIII2003-vr-modding-notes`](https://github.com/TefMeister/XIII2003-vr-modding-notes).
+[`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research),
+[`XIII2003-vr/dev-archive/`](https://github.com/TefMeister/XIII2003-vr/tree/main/dev-archive), and
+[`XIII2003-vr/modding-notes/`](https://github.com/TefMeister/XIII2003-vr/tree/main/modding-notes).
+
+The [void-behind-the-player](./docs/techniques/README.md#the-void-behind-the-player) and
+[camera-matrix](./docs/techniques/README.md#finding-the-camera-matrix-the-engine-actually-reads)
+sections, and the [Double Fine engine page](./docs/engines/double-fine-psychonauts.md), are our own
+live analysis of a legitimately-owned copy of Psychonauts (2005), including the measured void
+percentages and the three failed hypotheses that preceded the answer. Evidence at
+[`psychonauts-vr/modding-notes/`](https://github.com/TefMeister/psychonauts-vr/tree/main/modding-notes)
+and [`psychonauts-vr/dev-archive/`](https://github.com/TefMeister/psychonauts-vr/tree/main/dev-archive).
+
+The [HMD-anchored body float](./docs/techniques/README.md#vr-body-height-the-hmd-anchored-float) and
+the list of animation-layer approaches that **failed** to fix it come from our own work on a
+legitimately-owned copy of Resident Evil 2 Remake (2019). Evidence at
+[`visceral-re2-vr/modding-notes/`](https://github.com/TefMeister/visceral-re2-vr/tree/main/modding-notes).
+
+The RE Engine family page's [argument-encoding silent-zero
+finding](./docs/engines/re-engine.md#scalar-floats-passed-to-invoke-from-the-native-c-plugin-sdk-can-land-as-zero),
+the mirror render-layer control surface, and the
+[hook-to-acquire-a-handle](./docs/techniques/README.md#hook-to-acquire-a-handle-the-api-will-not-give-you)
+pattern are our own measurements on a legitimately-owned copy of Resident Evil Village (2021).
+Evidence at
+[`re-village-scope-vr/modding-notes/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/modding-notes)
+and [`re-village-scope-vr/external-research/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/external-research).
 
 Like everything else we write, these are CC-BY-4.0 — take them and build on them, just say where
 they came from.

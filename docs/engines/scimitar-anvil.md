@@ -18,9 +18,9 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Our projects on this engine
 
-| Game | Engine dossier | All project repos |
+| Game | Engine dossier | Project repo |
 | --- | --- | --- |
-| Prince of Persia (2008) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/prince-of-persia-2008-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`prince-of-persia-2008-vr-*`](https://github.com/TefMeister?tab=repositories&q=prince-of-persia-2008-vr) |
+| Prince of Persia (2008) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/prince-of-persia-2008-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr) |
 
 ## Shared findings
 

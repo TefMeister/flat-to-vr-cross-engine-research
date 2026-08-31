@@ -15,9 +15,9 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Our projects on this engine
 
-| Game | Engine dossier | All project repos |
+| Game | Engine dossier | Project repo |
 | --- | --- | --- |
-| Manhunt (2003) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/manhunt-2003-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`manhunt-2003-vr-*`](https://github.com/TefMeister?tab=repositories&q=manhunt-2003-vr) |
+| Manhunt (2003) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/manhunt-2003-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`manhunt-2003-vr`](https://github.com/TefMeister/manhunt-2003-vr) |
 
 ## Shared findings
 
