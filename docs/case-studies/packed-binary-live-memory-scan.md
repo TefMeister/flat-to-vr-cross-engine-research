@@ -92,9 +92,9 @@ implementation — never reuse the tool's code.
 ## Sources
 
 **Our own first-party analysis** (static + live inspection of an owned copy; full evidence published):
-- [`manhunt-2003-vr-engine-research`](https://github.com/TefMeister/manhunt-2003-vr-engine-research) — the consolidated engine dossier (§4, §11)
-- [`manhunt-2003-vr-dev-archive`](https://github.com/TefMeister/manhunt-2003-vr-dev-archive) — raw recon evidence
-- [`manhunt-2003-vr-external-research`](https://github.com/TefMeister/manhunt-2003-vr-external-research) — the SecuROM technique-family cross-check
+- [`manhunt-2003-vr/engine-research/`](https://github.com/TefMeister/manhunt-2003-vr/tree/main/engine-research) — the consolidated engine dossier (§4, §11)
+- [`manhunt-2003-vr/dev-archive/`](https://github.com/TefMeister/manhunt-2003-vr/tree/main/dev-archive) — raw recon evidence
+- [`manhunt-2003-vr/external-research/`](https://github.com/TefMeister/manhunt-2003-vr/tree/main/external-research) — the SecuROM technique-family cross-check
 
 **Community tool referenced (technique studied, no code reused):**
 - [Fire-Head/MHNoDRM](https://github.com/Fire-Head/MHNoDRM) — documents the 16 addresses and the

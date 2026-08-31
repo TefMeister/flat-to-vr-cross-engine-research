@@ -15,9 +15,9 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Our projects on this engine
 
-| Game | Engine dossier | All project repos |
+| Game | Engine dossier | Project repo |
 | --- | --- | --- |
-| The Evil Within (2014) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/the-evil-within-vr-engine-research/blob/main/ENGINE-DOSSIER.md) | [`the-evil-within-vr-*`](https://github.com/TefMeister?tab=repositories&q=the-evil-within-vr) |
+| The Evil Within (2014) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/the-evil-within-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr) |
 
 ## Shared findings
 
