@@ -30,6 +30,49 @@ orientation row. Curated by the cross-project research sweep.*
 *Seeded 2026-08-26; grown by the research sweep as cross-project truths emerge. The per-project
 dossiers linked above remain the source of truth for game-specific detail.*
 
+### Camera delivery: where the view actually lives, per generation
+
+**UE3 / D3D9 — there IS a shared view-projection, and it is at `c0`.**
+`[inferred-static 2026-09-01, n=1 — read from a game's own shipped `Engine/Shaders/*.usf`]` Enslaved
+ships its UE3 HLSL sources, and `Common.usf` reserves the engine registers explicitly, noting they
+must match `EVertexShaderRegister` in `RHI.h`:
+
+| Register | Contents |
+|---|---|
+| **`c0`–`c3`** | **`ViewProjectionMatrix`** — world space to projection space |
+| **`c4`** | **`CameraPosition` / `ViewOrigin`** — the world-space camera position, handed to you directly |
+| **`c5`** | **`PreViewTranslation`** — the far-from-origin precision offset applied to `LocalToWorld` |
+
+`LocalToWorld` and `PreviousLocalToWorld` are declared in the **vertex factories**, so they are
+compiler-allocated and land at whatever higher registers the shader happens to use. That makes
+`SetVertexShaderConstantF(StartRegister == 0, Vector4fCount == 4)` a **clean single injection point**
+for a per-eye offset, and it means the camera position does not have to be solved out of a matrix.
+
+**⚠️ The trap that comes with it: `PreViewTranslation` means vertices arrive in *translated* world
+space.** A per-eye offset that ignores `c5` looks correct near the origin and drifts as you move away
+from it — a bug that passes its first test and fails later, far from where it was written.
+
+**⚠️ And the reading this corrects is instructive.** A capture had recorded `c0` receiving 47 uploads
+per frame and concluded there was no shared view-projection. UE3's D3D9 RHI **re-applies the reserved
+view registers around bound-shader-state changes**, so those are 47 writes of the same value. See
+[counting events is not measuring content](../techniques/#counting-events-is-not-measuring-content).
+
+**UE2 / D3D8 — everything funnels through one transform setter.**
+`[inferred-static 2026-09-01, from XIII]` `FD3DRenderInterface::SetTransform` in the render-device
+DLL is where every world, view and projection matrix passes on its way to
+`IDirect3DDevice8::SetTransform`; its type argument maps to `D3DTS_WORLD` / `VIEW` / `PROJECTION` and
+each is cached on the interface object. Both halves of true stereo in one `__thiscall`, which makes
+it the natural per-eye hook.
+
+**⚠️ That setter early-outs on an unchanged matrix**, so a naive per-eye write can leave the second
+eye inheriting the first's view and stereo collapses to mono **silently**. Full treatment:
+[a setter that early-outs on an unchanged matrix](../techniques/#stereo-hazard-a-setter-that-early-outs-on-an-unchanged-matrix).
+
+**Family-wide habit this earns:** UE1–3 titles frequently ship their own `.usf` shader sources or an
+unpacked shader cache. **Look for them before planning a capture** — on this family a register map
+that a frame capture would answer ambiguously is often written down, by Epic, in the game folder. See
+[read the shipped files before you attach anything](../techniques/#read-the-shipped-files-before-you-attach-anything).
+
 ### Driving the game from an injected hook (UE2, from XIII)
 
 `[verified-live 2026-08-28, n=2 — two faults, two different call sites]`

@@ -23,9 +23,80 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Shared findings
 
-*Seeded 2026-08-26; grown by the research sweep as cross-project truths emerge. Nothing has been
-generalised up to this page yet — the per-project dossiers linked above are the current source of
-truth for this family.*
+*Seeded 2026-08-26; first populated 2026-09-01. Only one project sits on this family so far, so
+everything here is `n=1` by construction — it is recorded as family truth because it is
+engine-level rather than title-level, not because it has been seen twice.*
+
+### The camera
+
+- **The binary names its own camera.** id Tech 6 exposes shader constants as named **renderparms**
+  and ships the whole name table as plain strings: `viewMatrixX/Y/Z/W`, `projectionMatrix*`,
+  `mvpMatrix*`, and the quartet **`globalViewOrigin` / `globalViewFwd` / `globalViewLeft` /
+  `globalViewUp`**. Matrices arrive as four separate vec4 renderparms, so override granularity is
+  per-row. `[inferred-static 2026-08-26]`
+- **Basis and convention:** **Z-up**, classic id/Quake lineage; view angles in degrees 0–360; roll
+  not exposed for the player view. The console prints the live camera, which makes it a permanent
+  ground-truth instrument. `[verified-live 2026-08-26]` **Careful with the print order** — on DOOM
+  2016 it is **yaw then pitch**, and a swapped pair produces a plausible-looking but wrong camera.
+  `[verified-live 2026-08-31, derived from the matrix]`
+- **The authoritative view lives in a single static global, not on the heap.** On DOOM 2016 that is
+  twelve contiguous floats — origin plus a full orthonormal basis, the renderparm quartet above — in
+  the executable's **image** region. The per-draw copies visible in GPU-mapped memory are downstream
+  replicas, replicated dozens of times per frame. `[verified-live 2026-09-01, n=1 process instance]`
+- **Culling follows the camera, for free.** Displacing the view origin renders the world correctly
+  from a position the player is not at — no culling collapse, no black void. That is not luck: the
+  engine ships a **detached photo-mode camera**, so the path was designed for it. This is precisely
+  what other engine families in this library have spent weeks failing to get.
+- **Uniform delivery is CPU-written host-visible memory.** DOOM 2016 imports neither
+  `vkCmdPushConstants` nor `vkCmdUpdateBuffer`, so every uniform arrives through mapped memory the
+  CPU writes directly. **But the camera buffer is `HOST_COHERENT`**, so `vkFlushMappedMemoryRanges`
+  never carries it and is the wrong interception point despite being the obvious one — the queue
+  submit is the real gate. `[measured 2026-08-31]`
+
+### Stereo
+
+- The family carries a **dormant inherited stereo-3D path** (`stereoRenderMode_t`, `stereoRender_*`),
+  traceable to the Doom 3 BFG generation and to Carmack's own 2012 Rift work. Retail production mode
+  never registers those cvars.
+- **Separation is applied at the view stage as well as the projection stage.** id's own GPL source
+  for the previous generation declares the view origin as *already adjusted for stereo world
+  separation*, with a separate *screen* separation term shifting the projection horizontally — which
+  is why two separation cvars exist. See the case study for the full correction and the tension it
+  leaves open. **Practical consequence for this family: try the view stage first.**
+- **Public prior art is stereo-only on id Tech 6.** The one Vulkan stereo driver with a DOOM 2016 fix
+  provides no head tracking, and its repository was archived 2026-03-05. The 6DoF VR package from the
+  same author exists only for **id Tech 7 / DOOM Eternal**, built on single-pass stereo instancing.
+- **TAA with jittered projection and motion-vector reprojection is present** (`mvpMatrixNoJitter*`
+  alongside `mvpMatrixLast*`) — a known VR hazard, and spotted statically before ever launching.
+
+### Getting in, and getting the console
+
+- **Injection is over-supplied and unprotected.** No packing; ASLR and Control Flow Guard on. The
+  renderer choice is an **executable-level fork** — one binary imports `OPENGL32`, the other
+  `vulkan-1` — and the Vulkan build imports ~96 entry points **statically and directly**, with no
+  `vkGetInstanceProcAddr` / `vkGetDeviceProcAddr`, so a plain `vulkan-1` proxy sees all Vulkan
+  traffic with no dispatch-table funnel. `dinput8` and `winmm` are imported in both.
+- **Retail boots into production mode**, registering a small fraction of the console vocabulary, with
+  the master switch itself unregistered. **But a public community unlocker exists** and re-adds the
+  hidden interface without developer mode — including a renderparm read/write command and a
+  set-view-position command. See
+  [Before you build it, check whether the game shipped it](../techniques/#before-you-build-it-check-whether-the-game-shipped-it).
+- **A reflection database with the developers' own doc-comments ships in the binary** — fully
+  qualified C++ class, enum and field names next to human-written descriptions. Functionally a
+  built-in symbol source, the way reflection serves UEVR on Unreal or REFramework on RE Engine,
+  except native to the file. Mining it properly is its own worthwhile task.
+- **Named override-shaped fields already exist:** `explicitProjectionMatrix`, `explicitFov_x` /
+  `explicitFov_y`, `forceIdentityViewMatrix`. If honoured on the main world view, a per-eye
+  projection override could be a *supported engine input* rather than a patch. Unverified.
+
+### Input
+
+**Not raw input.** DirectInput 8 in **non-exclusive** mode for gameplay keyboard and mouse, XInput
+1.4 linked directly, Win32 key state for menus and text entry, and centre-the-cursor mouse-look via
+`Get`/`SetCursorPos`. `SendInput` therefore drives the game completely, with the game foregrounded;
+in-process key-state hooks install perfectly and do nothing. `[measured + verified-live 2026-08-31]`
+Full detail and the general rule:
+[injected input](../techniques/#injected-input-measure-it-against-a-control-never-against-zero).
 
 ## See also
 

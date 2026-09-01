@@ -358,6 +358,178 @@ bugs masquerading as engine findings** (the compounding spin, and the diverging 
 produced broken images that read as evidence about the engine. See
 [the method lesson](#the-method-lesson-the-most-transferable-part).
 
+### Search by VALUE, not by address, where the game will tell you the answer
+
+On modern engines the address-based hunt has a structural problem before it has a tuning problem.
+Games that write uniforms into **per-frame dynamic or ring buffers** reuse a given address for a
+different object every frame, so "the bytes at this address changed between two snapshots" measures
+**buffer recycling**, not the camera. `[inferred-static]` for the mechanism, which follows from how
+ring allocators work — an attempt to demonstrate it directly on one engine was later withdrawn as a
+broken experiment, so it is recorded here as the well-founded expectation it is, not as a measurement.
+
+Structural filters are weak here for a second reason: **orthonormality barely narrows anything.** A
+64 MB uniform buffer legitimately contains thousands of orthonormal transforms — a candidate list
+filled to its 4096 cap even at a tolerance of 1e-5.
+
+**The replacement is much stronger and needs no stable address at all: find a value you already
+know, and search for that.** Where a game exposes ground truth — a position readout, a debug
+overlay, a console command that prints the camera — read it, then scan memory for those floats.
+
+The worked sequence, which found a camera in one session after the address approach had failed
+`[verified-live 2026-08-31, n=2 independent positions]`:
+
+1. Drive the console and print the camera position; put a live readout on screen if the engine has
+   one.
+2. **Screenshot the numbers.** They are the ground truth, and looking beats any derived metric.
+3. Scan for those floats.
+4. **Move the player, re-read, and scan again.** One position match is a coincidence; two matches at
+   different positions is a finding.
+
+Two matches also gets you the **layout** for free — which column holds translation, whether the
+basis is row- or column-major, and which axis is up — because you can check the recovered matrix
+arithmetically against the printed angles rather than by eye.
+
+A pleasant consequence worth expecting: on engines that replicate the camera **per draw**, a value
+search returns dozens of hits rather than one. That is an *advantage* for stereo, since each eye
+needs its own view — but it also means poking any single address does nothing, and control belongs
+on the write path or at the upstream source rather than on a copy.
+
+Generalised from a `doom-2016-vr` modding-session hand-off, 2026-08-31.
+
+## Read the shipped files before you attach anything
+
+`[verified across five projects, 2026-08-26 → 2026-09-01]` The strongest single pattern this
+account has: **the answer to "how does the camera reach the GPU" is very often sitting in files the
+game already installed**, readable with no debugger, no capture, no launch, and — importantly — no
+cooperation from the game's DRM.
+
+Five projects on four unrelated engines, all answered statically:
+
+| What shipped | What it gave up |
+| --- | --- |
+| **Loose shader bundle with reflection intact** (Avalanche / Mad Max) | 1363 DXBC shaders with their `RDEF` chunks; the per-object camera transform **named and located** — `WorldViewProjMatrix` at offset 0 of a 368-byte `InstanceConsts`, in 112 shaders — plus the shadow and light matrices identified as things *not* to touch |
+| **The engine's own HLSL sources** (UE3 / Enslaved) | `Common.usf` reserves `c0`–`c3` as `ViewProjectionMatrix`, `c4` as world-space camera position, `c5` as `PreViewTranslation`, with a note that they must match the RHI's register enum. A capture question, settled by reading |
+| **A named constant table in the executable's strings** (id Tech 6 / DOOM 2016) | The complete renderparm name table plus a reflection database carrying the developers' own doc-comments |
+| **Shader bytecode on disk** (id Tech 5 / The Evil Within) | The layout gap bounded: 168 vertex shaders sorted into contiguous, no-MVP, and scattered-row groups, the last collapsing into ten distinct shapes with one covering fifteen of them |
+| **The PE itself** (UE2 / XIII) | The single `__thiscall` every world, view and projection matrix passes through on its way to the D3D8 device |
+
+### DRM protects the executable, not the data
+
+This is the sub-lesson worth the most. **A Denuvo title that cannot be attached to can still have its
+shader bundle read off disk in full.** One project in this account had stalled at first-injection for
+exactly that reason; static shader reflection made its camera work startable without touching the
+protected process at all.
+
+Before recording "DRM blocks this project", ask what DRM actually covers. Anti-tamper protects the
+binary's execution. It does not usually encrypt shipped shaders, script sources, config, reflection
+tables, or asset metadata — and those are frequently where the camera is *described*, even when the
+place it is *stored* is out of reach.
+
+### Reflection names the per-object buffer; it usually cannot name the shared one
+
+A limit worth knowing before you spend a session on it, and it showed up cleanly on the same project.
+Reflection recovered rich member names for the **per-object** constant buffer, and **nothing** for the
+shared per-frame one — because the engine fills that from C++ as a raw `float4[20]` array rather than
+a struct, so the type record has no members to report.
+
+**So expect this shape:** reflection hands you the per-object WVP by name, and the shared view
+matrix — the one you actually want for a single per-eye injection point — has to be found **by
+value**. That is not a failure of the technique. It narrows "somewhere in the renderer" to "one of
+about twenty float4 slots in one named buffer", which is exactly the size of problem the
+[value-search method](#search-by-value-not-by-address-where-the-game-will-tell-you-the-answer)
+solves. The probe writes itself: watch that buffer for a slot that changes when the camera moves but
+stays constant across draws within a frame.
+
+Generalised from `mad-max-vr`, `enslaved-vr`, `doom-2016-vr`, `the-evil-within-vr` and `XIII2003-vr`
+engine dossiers, all 2026-09-01.
+
+## Counting events is not measuring content
+
+A failure shape that has now produced two wrong published conclusions on two unrelated engines, and
+it is subtle enough to deserve naming: **a frequency metric read as if it were a semantic one.**
+
+- **UE3 / D3D9 (Enslaved)** `[corrected 2026-09-01]` — a capture recorded a vertex-shader constant
+  register receiving **47 uploads per frame** and concluded the engine had no shared
+  view-projection, since a shared value should be uploaded once. It was wrong: UE3's D3D9 RHI
+  **re-applies the reserved view registers around bound-shader-state changes**, so those 47 uploads
+  are 47 writes of *the same value*. The register really is the shared view-projection. Upload
+  frequency was never evidence about sharedness, and the same capture actually **corroborated** the
+  correct mapping once it was read for content rather than for counts.
+- **id Tech 6 / Vulkan (DOOM 2016)** — a differential counted *"did the bytes at this address
+  change"*, in memory where per-frame ring buffers hand a given address to a different object every
+  frame. It was measuring buffer recycling. Detail in
+  [search by value](#search-by-value-not-by-address-where-the-game-will-tell-you-the-answer).
+
+**The rule: when a metric counts events, ask what a positive count would mean if the content never
+changed — and what a low count would mean if it changed every time.** In both cases above the metric
+had no answer to that question, which is exactly why it produced a confident wrong one.
+
+Practical form: **record values, not just counts.** A capture that logs the first sixteen bytes
+written alongside the write count costs almost nothing and makes both failures impossible. Where a
+value is expensive to log, log a hash of it — you only need to know whether it *changed*.
+
+## Stereo hazard: a setter that early-outs on an unchanged matrix
+
+`[inferred-static 2026-09-01, UE2 / D3D8]` A clean, high-value hook can carry a trap that destroys
+stereo *silently*, and this one is easy to walk into.
+
+Where an engine funnels every world, view and projection matrix through a single transform setter,
+that setter is the obvious per-eye injection point — both halves of true stereo in one function.
+**But such setters commonly early-out when handed a matrix identical to the one already cached.**
+
+The failure that produces: you write eye 1's view, then write eye 2's — and if your second write is
+ever equal to the cached value (or your override is applied *after* the dirty check), **eye 2
+silently inherits eye 1's view and stereo collapses to mono.** No error, no artefact, no log line;
+the image simply looks flat, which reads as "the headset is not getting two views" and sends you to
+the submission layer.
+
+**Guards:**
+
+- **Find the dirty check before you use the hook**, and write on the far side of it, or defeat it
+  deliberately for the frames you are overriding.
+- **Verify per-eye difference numerically, not by eye.** Compare the two eyes' matrices for
+  inequality each frame; a flat image is far easier to diagnose when something has already asserted
+  the two views were identical.
+- The same caution applies to any cached-state setter in a graphics API wrapper, not just transforms.
+
+Generalised from the `XIII2003-vr` dossier.
+
+## Composition bugs that masquerade as handedness
+
+`[verified numerically 2026-09-01, Dunia / Far Cry 2]` When a head-tracking composition comes out
+wrong, the instinct is to reach for a handedness or axis-convention flip — the knob everyone knows is
+fiddly on this kind of work. **That instinct hides a whole class of bug that flipping will
+sometimes appear to fix, and never actually fixes.**
+
+Two real bugs, both caught by a **numerical harness rather than by reading the code**, in a
+head-tracking composition that looked correct:
+
+1. **A position solve that mixed normalised basis rows with raw translation terms.** Arithmetically
+   wrong; visually just an offset.
+2. **A rotation composed as the *camera* rotation where the transform being modified is its
+   inverse** — a world transform. This *"presents exactly like a handedness problem"*, so the
+   obvious knob would have masked it while leaving the composition wrong, and the error would have
+   resurfaced later as drift or as a fix that only works in one part of a level.
+
+**The guards, in order of value:**
+
+- **Test the maths numerically before testing it in a headset.** A harness that composes a known
+  pose and checks the result against a hand-computed answer catches both bugs above in seconds, and
+  neither is visible by reading.
+- **Before flipping a sign, state which direction each matrix goes.** Camera-to-world or
+  world-to-camera; view or inverse-view. Most "handedness" bugs in this account have turned out to be
+  a transform used in the wrong direction.
+- **Derive rather than assume.** The same project deliberately avoided hard-coding a runtime-to-engine
+  axis table: it reads the game's camera basis from the matrix's own rows every frame, so the whole
+  conversion reduces to one change of basis, and the camera's world position is *solved* from the
+  matrix rather than assumed. That removes an entire category of convention bug instead of debugging
+  it.
+
+Related: [do not rotate twice](#do-not-rotate-twice), which is the same family — a correct rotation
+applied in the wrong place.
+
+Generalised from the `far-cry-2-vr` dossier and modding notes.
+
 ## VR body height: the HMD-anchored float
 
 A distinctive third-person-body symptom, and one that is easy to spend weeks mis-attributing:
@@ -522,32 +694,334 @@ Compiled from our own live tests; incomplete on purpose, extend it as you measur
 | Unreal Engine 2 era | **No** — exclusive DirectInput for the mouse | keyboard works | Mouse and keyboard take different routes; test them separately |
 | Capcom RE Engine | **No** | **Yes** (`WM_KEYDOWN`/`WM_KEYUP`) | `[verified-live 2026-08-24]` |
 | Double Fine bespoke (Psychonauts) | mouse: **no** | keyboard reaches gameplay, **not** menus | Title/credits screens need a real gamepad |
-| id Tech 6 | Raw Input | **untested** | `[hypothesis]` — listed so the next session knows it is unmeasured |
+| id Tech 6 (DOOM 2016) | **Yes — both movement and look** | untested | `[verified-live 2026-08-31, movement n=2, look n=3 incl. a reversal]` · **DirectInput 8 non-exclusive**, so `SendInput` reaches it · needs the game **foregrounded** · links **XInput 1.4** directly |
 
-### If you are already inside the process, stop pushing from outside
+**The discriminator is not the API family — it is exclusivity.** UE2-era XIII and id Tech 6 both use
+DirectInput, and `SendInput` fails completely on one while driving the other. What separates them is
+that XIII takes the mouse in **exclusive** mode, which `SendInput` cannot cross, while DOOM's DI8
+reads the ordinary OS input stack that `SendInput` feeds. Record exclusivity, not just the API name.
 
-Where a proxy or injected DLL is already loaded, there is a better route than any external
-injection API: **post the game a raw-input message carrying a sentinel handle, hook the raw-input
-read function, and answer that one handle with data you fabricated.** The game never asks the OS
-about it — it asks you. That sidesteps both walls above at once: a posted message needs no window
-focus, and you are not travelling through the input stack that exclusive-mode capture owns.
+**Add an "imports XInput?" note as you extend this table.** Where a game links XInput directly, a
+**ViGEmBus virtual gamepad** is likely the *strongest* route rather than the fallback: the game sees
+a genuine controller, movement and look sit on the sticks, and DirectInput's exclusive mode never
+enters into it. That turns "which backend do I try first" from a guess into a lookup.
 
-Two implementation notes worth carrying:
+### Read the import table before you design the input layer
+
+One `llvm-objdump -p` (or equivalent) tells you which input API the game actually calls, and that
+decides the entire approach. It is the highest-leverage two minutes available in this area.
+
+**The worked failure** `[disproved 2026-08-31]`: an entire in-process backend was designed and built
+around posting `WM_INPUT` and answering `GetRawInputData` for DOOM (2016) — a game that imports
+**zero** raw-input functions in either shipped executable. The premise came from reasoning about the
+game's release year rather than from measurement. It was caught by a static check run *before* the
+live session it would otherwise have wasted, and rebuilt the same day.
+
+**The corollary deserves stating on its own: "the game is from year N, therefore it uses API X" is
+not evidence.** DOOM (2016) sits on the same input path as XIII (2003).
+
+### Saturate first, then tune down — a too-small injection reads exactly like failure
+
+`[verified-live 2026-08-31]` About 5,400 pixels of injected mouse motion produced a few degrees of
+yaw, and mouse-look was nearly written off as unreachable. About **36,000 pixels swung the view
+fully round.** A marginal stimulus and a dead path are indistinguishable. When establishing whether
+an input route works *at all*, push it far past anything you would use in practice; calibrate after.
+
+### If you are already inside the process — a real option, with a wall this account has now hit
+
+Where a proxy or injected DLL is already loaded, there is an appealing route: **hook the function
+the game uses to read input and answer it with data you fabricated.** The game never asks the OS —
+it asks you. In principle that sidesteps both walls above at once, since it needs no window focus
+and never travels through the stack that exclusive-mode capture owns.
+
+**In practice it works only if you hook the function the game actually consults, and that is the
+part that fails.** `[disproved 2026-08-31, id Tech 6]` An in-process backend answering
+`GetAsyncKeyState` / `GetKeyState` / `GetKeyboardState` installed perfectly and moved the player
+**zero** metres, while `SendInput` moved 40 m under identical conditions — because DOOM's *gameplay*
+keyboard goes through **DirectInput 8** (`CreateDevice(SysKeyboard)`, confirmed live). Those Win32
+key-state calls really are in the import table; they serve menus and text entry, not movement.
+
+**So an import being present does not mean the gameplay path uses it.** The import table tells you
+which APIs are *available* to hook; only a live test tells you which one carries movement.
+Instrument the device-creation call (here `DirectInput8Create` → `CreateDevice`) to log what the
+game actually opens, and measure that before building the harder COM-level path.
+
+An earlier version of this section presented in-process fabrication as strictly stronger than
+`SendInput`. On this engine the reverse held. Both routes remain worth having; neither is the
+default, and which one wins is a measurement.
+
+Two implementation notes that do survive unchanged:
 
 - **Patch the import table rather than installing an inline trampoline.** It writes a data page
   instead of code, so it needs no disassembler and does not argue with **Control Flow Guard**,
   which is enabled on plenty of modern targets.
-- **The known failure mode is bulk reads.** A game that drains input in bulk never calls the
-  single-message read at all, so your hook installs perfectly and produces nothing. Log whether
-  that import is even present, so the first live run can tell "the hook did not land" apart from
-  "the hook landed on the function this game does not use."
+- **Log whether the function you are hooking is even imported**, so the first live run can tell "the
+  hook did not land" apart from "the hook landed on a function this game never calls" — which is
+  precisely the case that cost the afternoon above.
 
-`[built-not-proven 2026-08-31]` for the in-process route itself — designed and implemented against
-id Tech 6, not yet confirmed to move a camera in a live game. Treat it as a plan with two known
-walls already routed around, not as a proven result.
+Generalised from `doom-2016-vr` modding-session hand-offs (2026-08-31, including two of that
+session's own corrections), and from the XIII and RE Village sessions it cites.
 
-Generalised from a `doom-2016-vr` modding-session hand-off, and from the XIII and RE Village
-sessions it cites.
+## Controls: a negative needs a positive one, a positive needs a no-op one
+
+The single most productive thing this account did in one week was stop trusting results and start
+running controls. Three rules came out of it, and they compose: **the first two protect the two
+directions a result can point, and the third protects the instrument that produced it.**
+
+### 1. Before recording a NEGATIVE as fact, confirm the test could have gone positive
+
+`[verified-live 2026-08-31]` — from three wrong conclusions in a single session, all reconstructed
+from logs afterwards, and all **setup** failures rather than analysis failures. The measurement was
+accurate and the reasoning from it was valid each time; what was wrong was the state of the world
+when the measurement was taken, which does not show up in the data.
+
+Check three things: **the mechanism applying the variable actually works**, **only one thing changed
+before the observation**, and **the system was in a state where the effect was possible.**
+
+The three failures, because the shapes are recognisable:
+
+- **A variable that was never applied.** A memory-differential technique was declared unable to
+  discriminate camera motion because "walking scored the same as standing still". The walk had been
+  issued through an input backend that an isolated test proved inert three minutes later. Both runs
+  were the standing-still condition, so the comparison had no independent variable at all.
+- **Three things changed before anyone looked.** A probe ran `control → backendA → backendB` and was
+  screenshotted once, after all of it. Fifteen metres of movement was credited to backendA. It was
+  backendB's.
+- **A state that guaranteed a null.** A backend was written off because the player did not move. The
+  player was **jammed against a wall** — and the *known-good* backend tested four seconds earlier
+  had managed only 1.2 m for exactly that reason. The positive control was sitting in the log and
+  was not read as the warning it was.
+
+### 2. Before recording a POSITIVE as an *attribution*, confirm the mechanism alone does nothing
+
+`[verified-live 2026-09-01]` The other half, and the newer one. "I wrote a displaced value into this
+address every frame, and the camera moved and the HUD vanished" contains two claims and supports
+one. **Writing into live engine memory sixty times a second is itself an intervention** — it could
+plausibly break rendering on its own, whatever value it writes.
+
+**The control costs one extra run: hold the address at the value it already holds.** In the worked
+case nothing changed at all — HUD, crosshair and weapon all stayed. Only then is the attribution
+earned, and the finding gets stronger rather than weaker, because the no-op run says something real
+about the system rather than merely defending the claim.
+
+The general shape: **for any intervention `f(x)` that produces an effect, run `f(x₀)` where `x₀` is
+the value the system already had.** If the effect persists, you have measured your own tool.
+
+This bites hardest anywhere we write to live memory every frame — camera holds, constant-buffer
+patching, bone-pose overrides, animation-bank poisoning. In all of them "I wrote something and the
+picture changed" is ambiguous between the value and the writing, and a no-op hold separates them for
+free, because the run is already set up.
+
+### 3. Validate the instrument before you trust either
+
+A derived metric can be confidently wrong in a way no amount of care in the analysis recovers.
+
+`[measured 2026-08-31]` A control-based probe reported **"no clear reaction"** for a backend that had
+just walked the player fifteen metres. Control scored 274 changed matrices; that backend 235; another
+134 — **both below the control.**
+
+**The tell generalises: a backend that does nothing should score the *same* as the control, never
+less. Scoring below your control means the instrument is measuring noise, not your variable.** That
+check is free and would have caught it instantly. (The metric was counting "did the bytes at these
+addresses change", but the addresses lived in per-frame ring buffers whose contents are reused for
+unrelated data every frame — it was measuring buffer recycling.)
+
+Two seconds of *looking* settled what two derived metrics got wrong: the game's own on-screen
+waypoint distance. A near-miss worth recording alongside it — the replacement metric (mean pixel
+difference between before/after captures) was **also** misleading, reporting 0.93 % for a working
+backend, because by then the player was against a wall. **Two different derived metrics failed in one
+session; opening the two images never did.**
+
+### The practical guards, cheapest first
+
+1. **Screenshot before the test, not only after.** Two seconds, and it captures the precondition.
+   Every failure above would have been caught by it.
+2. **Prove the manipulation separately, first.** Before using an injection, a cheat, a poke or a
+   console command as the independent variable in some *other* experiment, verify in isolation that
+   it does what its name says. A named command that silently does nothing is common in this work.
+3. **One variable per observation.** If a sequence changes three things, observe after each.
+4. **Prefer a control you can see** — an on-screen readout, a waypoint distance, a screenshot — over
+   a derived number.
+5. **Treat a suspiciously clean null as a red flag.** Two conditions matching almost exactly is often
+   the same condition twice.
+6. **Re-audit after fixing a tool.** When something turns out to have been broken, revisit every
+   conclusion drawn while it was in use — not only the one that exposed it. That sweep is what found
+   the third failure above, a full day after it had been recorded as fact.
+
+Generalised from `doom-2016-vr` modding-session hand-offs, 2026-08-31 and 2026-09-01. The re-audit
+habit came from the human partner asking whether earlier results might be wrong because the game was
+not in the assumed state; the specific confound turned out to be a different one, but the instinct
+found it.
+
+## Never CPU-scan mapped GPU memory in place — it is write-combined
+
+`[measured 2026-08-31]` Scanning about 96 MB of `HOST_VISIBLE` Vulkan memory for candidate matrices
+took **3 minutes 45 seconds** and froze the game solid for the whole duration — no frames presented.
+Effective read throughput was roughly **430 KB/s**, about three orders of magnitude below normal RAM.
+
+**The cause is not the scan, it is the memory type.** `HOST_VISIBLE` upload memory is typically
+**write-combined**: designed for streaming CPU *writes* toward the GPU, with CPU *reads* out of it
+bypassing cache and defeating prefetch entirely. The scan compounded it with ~24 million small
+strided reads (4-byte stride over 64-byte spans), close to the worst possible access pattern for WC.
+
+**The fix is cheap, general, and was measured at ~56× on the same workload — 3 m 45 s down to about
+four seconds:**
+
+1. **One bulk sequential `memcpy` of each region into ordinary cached RAM, then scan the copy.**
+   Sequential bulk reads are the one thing WC memory does acceptably.
+2. **Widen the stride to the alignment you actually need.** Uniform-buffer matrices are at least
+   16-byte aligned, so a 4-byte stride does four times the work for nothing.
+3. **Cheap reject first.** A basis vector is unit length, so six multiplies eliminate almost every
+   offset before any expensive check runs, and NaN fails the comparison for free.
+4. **Order regions by flush count.** A per-frame uniform buffer flushes thousands of times; a static
+   upload flushes once. When a budget runs out, spend it where the camera actually is. In the worked
+   case one region showed 27,907 flushes against another's 2,983 and zero for the rest — and the
+   camera was in the first.
+
+**A second-order point worth as much as the speed:** a scan that freezes the game for minutes is not
+merely slow, it **changes the experiment**. Nothing moves while it runs, so any differential that
+depends on the game continuing has already been invalidated by the instrument. Make the scan
+non-blocking before drawing conclusions from it.
+
+Applies to any D3D or Vulkan project hunting matrices in mapped memory, which is most of this
+estate. Generalised from a `doom-2016-vr` modding-session hand-off.
+
+## Driving a game console with synthetic keys: scancodes, layouts, and dead keys
+
+Every project here that automates a developer console hits the same three traps, and all three
+present as **"the input backend does not work"** — which sends you to rewrite the input layer
+instead of the four lines that open the console. Applies to id Tech, Unreal, Source, and every
+console this account has automated.
+
+### 1. The virtual-key constant is not portable; the scancode is
+
+DirectInput, and most engines' key handling, binds the **physical scancode**. The console is on
+**scancode `0x29`** — the key left of `1` — on every layout. Which *virtual key* reaches that
+scancode is layout-dependent, and no constant is right everywhere.
+
+**And it is worse than "layouts differ between machines"** `[measured 2026-09-01]`. Two launches of
+the same game, on the same machine, hours apart:
+
+| | morning launch | afternoon launch |
+|---|---|---|
+| active layout (`GetKeyboardLayout`) | `0x04250425` | `0x08090809` |
+| VK reaching physical scancode `0x29` | `0xDE` (`VK_OEM_7`) | **`0xDF` (`VK_OEM_8`)** |
+| scancode reached by `VK_OEM_3` (`0xC0`) | `0x1A` | `0x28` |
+
+Nobody mis-measured. The thing being measured moved. **Anything cached — a constant in code, a value
+in a dossier, a helper script written earlier in the same session — can be stale by the next
+launch.**
+
+**The fix that removes the problem rather than managing it: send the physical scancode and keep a VK
+out of the path entirely.** In Win32 terms that is a keyboard `INPUT` with `wScan = 0x29` and
+`KEYEVENTF_SCANCODE` set, no `wVk` at all. If a tool must accept a VK, resolve it **at the moment of
+use, from the layout of the game's own UI thread** — `GetWindowThreadProcessId` → `GetKeyboardLayout`
+→ `MapVirtualKeyExA(0x29, MAPVK_VSC_TO_VK, hkl)` — never from the caller's layout and never from a
+constant written down earlier.
+
+**Why this is the worst failure mode available:** an *unmapped* VK sends nothing while every API call
+reports success, and a *mapped but wrong* VK types a character into the game instead of opening the
+console. Neither raises an error. Both look exactly like a dead input backend.
+
+### 2. That key is often a DEAD KEY, and it eats your first character
+
+On many non-US layouts the key left of `1` is a dead key — an accent that composes with whatever
+follows. Opening the console leaves the accent pending, so **the first character of the command you
+then type is silently transformed**: `getviewpos` arriving as `Çgetviewpos`, `com_showCameraPosition`
+as `*om_showCameraPosition`. Two commands that never ran, with no error attributable to input, in a
+session where the input backend was already under suspicion.
+
+**Fix: after opening the console, send SPACE then BACKSPACE.** The space absorbs the composition, the
+backspace removes it, the real command types clean. Two keystrokes, and **do it unconditionally** —
+the dead-key behaviour is layout-dependent too (it appeared on the morning layout above and not on
+the afternoon one), so you cannot know in advance whether you need it, and it is harmless when you
+do not.
+
+### 3. A console toggle has state — make the helper symmetric
+
+A "read a value from the console" helper that toggles open and closed only works if it is *entered*
+with the console closed. Called with it already open, it closes the console and types the command
+into the game as movement keys. Build such a helper as **open → type → capture → close** in one
+unit, so its pre- and post-state match and it is safe to call repeatedly.
+
+Generalised from `doom-2016-vr` modding-session hand-offs, 2026-09-01, including that session's own
+same-day correction of its first write-up.
+
+## Before you build it, check whether the game shipped it
+
+Two habits, both cheap, both of which turned out to matter more than the work they replaced.
+
+### Check for a community console-unlocker before declaring a production gate closed
+
+Engines that ship in "production mode" register a fraction of their console vocabulary, and this
+library already documents how to establish that cheaply and how much that knowledge is worth. What
+the worked case added is the step that came after: **somebody had already published the key.**
+
+For DOOM (2016), a live session established that retail registers 40 commands and 171 cvars, that the
+stereo cvars are never registered, and that the master switch is itself unreachable — all correct. A
+public mod for the same game re-adds the hidden interface on the **retail** build **without developer
+mode**, taking it from **39 commands / 170 cvars to 290 / 6592**. Those numbers match the first-party
+live measurement to within one each: two parties measuring the same gate independently.
+
+**The heuristic:** a production-gated engine with an active modding scene very often has exactly one
+tool whose whole purpose is unlocking the console, because that is the first thing every modder on
+that engine wants. Spend **one search** before writing "the console is not a route" into a dossier —
+try the engine or game name with *console unlocker*, *hidden cvars*, *dev mode*, *readd commands*,
+*debug menu*.
+
+**Two things such a tool gives you even if you never install it:**
+
+- **A published interface dump.** The one found here ships its command and cvar lists as plain text —
+  377 commands and over 11,000 cvar lines, **with the developers' own help text** — readable online,
+  no download and no execution. That is a free symbol source, and it answered questions that would
+  otherwise have needed live testing: a renderparm read/write command and a *set*-view-position
+  command both turned out to be real named engine commands rather than strings of uncertain status.
+- **An answer to "hidden, or never constructed?"** — the question this library's own id Tech 6 case
+  study poses as the one that remains open. Thousands of cvars complete with help text cannot be
+  hand-authored; they are an enumeration of structures the binary already contains. Where such a dump
+  exists, the economical reading is **hidden and constructible**. Tag it `[reported]` until measured,
+  but it is a strong prior.
+
+**Caveats to carry:** such tools are frequently **closed-source and unlicensed**, which makes them
+**prior art and feasibility proof, not something to study line-by-line** — the same category this
+library already uses for commercial stereo drivers. Their patches are usually **build-specific**, so
+compatibility must be verified rather than assumed. And check which DLL they proxy: a collision with
+your own proxy is a problem, and even without one you have two things hooking early on purpose, so
+run each alone first.
+
+### Check whether the game shipped a photo mode before building a detached camera
+
+Camera decoupling is the central problem of nearly every conversion here, and this library already
+records games that hand it over (a `-freecamera` launch option; a community free-cam plugin). **The
+one easiest to miss is a shipped Photo Mode**, because it is filed mentally as a screenshot toy.
+
+The worked case has a retail, player-facing photo mode behind **no console, no dev mode and no cheat
+gate** — an options checkbox — whose camera detaches from the player and flies on WASD **while the
+game keeps running** (enemies track the camera; a key steps single frames). FOV is adjustable, the
+HUD can be hidden, and its tuning knobs are ordinary cvars, including one reading like the maximum
+distance the camera may travel — a value roughly **eighty times** larger than the safety clamp that
+project had chosen for its own hand-built displacement.
+
+**Why it is worth more than the screenshots:**
+
+- **It proves the culling path follows the camera.** A shipped detached camera means the engine was
+  *designed* to render correctly from where the player is not. That project had already observed an
+  elevated camera rendering with no culling collapse and no black void, and recorded it as surprising
+  good luck. It was not luck; it was a designed-in property, and one you can rely on.
+- **It is a free instrument.** Entering photo mode and reading a candidate camera address tells you
+  whether the address is the *view* or the *player body*, with no memory writes at all.
+- **It shows you the engine's own answer to "what happens to first-person elements."** Photo modes
+  routinely hide the HUD and weapon on purpose. If your displaced camera loses the HUD too, the
+  engine may be doing what it was built to do rather than breaking.
+- **It tells you whether a player body model even exists.** In the worked case the answer was no —
+  the protagonist has no third-person model at all, decisive for any body-presence plan and free to
+  learn.
+
+Photo modes are usually restricted (completed campaigns, not the hardest difficulty, replay only).
+Those restrictions limit their use as a *development instrument* but do not diminish what their
+existence tells you about the engine.
+
+Generalised from a `/gr doom-2016-vr` research hand-off, 2026-09-01.
 
 ## Tool defaults that fabricate false negatives
 
@@ -568,6 +1042,16 @@ answer.** Two cases from this account, both of which cost real time:
   when you grep a binary for console commands and cvars (`god`, `fov`, `map`, `set`). This produced
   one wrong published conclusion in this library before it was caught; see the
   [id Tech 6 case study](../case-studies/id-tech-6-dormant-stereo.md#a-method-trap-worth-stealing).
+- **Automated fetch versus a file too large to read.** `[measured 2026-09-01]` Asking an automated
+  fetcher whether a name appears in a **695 KB, 11,103-line** alphabetically-sorted list returned
+  **"not found"** — for a name that is genuinely in the file. Only the head of the alphabet had been
+  read, and **nothing in the answer said so.** It reads exactly like a real negative and would have
+  been recorded as one.
+  **What caught it: a positive control in the same query.** The list of names to search also included
+  one we had already verified live ourselves. That came back "not found" too, which is impossible,
+  and the whole negative collapsed at once. This is the document-research sibling of the
+  [control rules above](#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one) —
+  the same failure shape, in a different tool.
 
 ### What to do
 

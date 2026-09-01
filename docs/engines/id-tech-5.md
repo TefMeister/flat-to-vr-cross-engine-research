@@ -21,9 +21,24 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Shared findings
 
-*Seeded 2026-08-26; grown by the research sweep as cross-project truths emerge. Nothing has been
-generalised up to this page yet — the per-project dossiers linked above are the current source of
-truth for this family.*
+*Seeded 2026-08-26; first populated 2026-09-01 from The Evil Within's dossier, so `n=1` by
+construction.*
+
+- **Per-draw MVP delivery is confirmed, and the shader-coverage gap is bounded rather than
+  mysterious.** `[inferred-static 2026-09-01]` Of 168 vertex shaders: **112 place the MVP
+  contiguously** and are handled; **22 carry no MVP at all** (a Domain-Shader group); and **34 carry
+  an MVP with scattered rows**. Those 34 collapse into just **ten distinct `(cb0 size, mvp offset)`
+  shapes**, one of which accounts for fifteen of them — so handling shapes in frequency order lifts
+  shader coverage from 66.7% to 86.9%. The useful shape of this finding is that an "unexplained
+  remainder" turned out to be a short, sortable list.
+- **Record the limit alongside the number.** Those are *shader* counts, not the *draw* counts the
+  coverage figure is measured in, and an offset table storing only a base offset cannot say where
+  the remaining matrix rows sit — that needs the bytecode. Two different denominators for one metric
+  is exactly the thing that reads as a contradiction six weeks later if it is not written down when
+  it is still obvious.
+- **Reflection and offset tables live on disk and can be read without launching.** See
+  [read the shipped files before you attach anything](../techniques/#read-the-shipped-files-before-you-attach-anything)
+  — this family has now contributed to that pattern alongside its successor, id Tech 6.
 
 ## See also
 
