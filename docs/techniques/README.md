@@ -22,6 +22,11 @@ Each is distilled from public projects credited in
 - [Setting a gate before the process can guard it](#setting-a-gate-before-the-process-can-guard-it)
 - [Injected input: measure it against a control](#injected-input-measure-it-against-a-control-never-against-zero)
 - [Tool defaults that fabricate false negatives](#tool-defaults-that-fabricate-false-negatives)
+- [The switch you cannot find may be an argument, not a global](#the-switch-you-cannot-find-may-be-an-argument-not-a-global)
+- [A repeated launch is not an ASLR test](#a-repeated-launch-is-not-an-aslr-test)
+- [A third-party stereo fix is free intelligence about the engine](#a-third-party-stereo-fix-is-free-intelligence-about-the-engine--read-it-dont-install-it)
+- [A proxy DLL must export everything the target actually imports](#a-proxy-dll-must-export-everything-the-target-actually-imports)
+- [The instrument can be the bug](#the-instrument-can-be-the-bug)
 
 ---
 
@@ -398,7 +403,7 @@ Generalised from a `doom-2016-vr` modding-session hand-off, 2026-08-31.
 
 ## Read the shipped files before you attach anything
 
-`[verified across five projects, 2026-08-26 → 2026-09-01]` The strongest single pattern this
+`[verified-live 2026-09-01, n=5 projects]` (first seen 2026-08-26) The strongest single pattern this
 account has: **the answer to "how does the camera reach the GPU" is very often sitting in files the
 game already installed**, readable with no debugger, no capture, no launch, and — importantly — no
 cooperation from the game's DRM.
@@ -496,7 +501,7 @@ Generalised from the `XIII2003-vr` dossier.
 
 ## Composition bugs that masquerade as handedness
 
-`[verified numerically 2026-09-01, Dunia / Far Cry 2]` When a head-tracking composition comes out
+`[verified-numerically 2026-09-01, n=1 game]` (Dunia / Far Cry 2) When a head-tracking composition comes out
 wrong, the instinct is to reach for a handedness or axis-convention flip — the knob everyone knows is
 fiddly on this kind of work. **That instinct hides a whole class of bug that flipping will
 sometimes appear to fix, and never actually fixes.**
@@ -577,9 +582,9 @@ Generalised from [`visceral-re2-vr/modding-notes/`](https://github.com/TefMeiste
 
 ## Silent no-ops: verification that cannot see the failure
 
-Three independent cases inside two weeks, two of them in major public tools and one our own, all
-share a shape worth naming: **a check that appears to confirm success while being structurally
-incapable of detecting the failure.** None of them threw, logged an error, or left a wrong value
+Four independent cases, two of them in major public tools, one our own and one documented outright
+by the vendor, all share a shape worth naming: **a check that appears to confirm success while being
+structurally incapable of detecting the failure.** None of them threw, logged an error, or left a wrong value
 anywhere an inspector would look.
 
 - **A truthiness test on a wrapper reads the wrapper, not the value.** In UEVR, a lookup returning
@@ -601,6 +606,28 @@ anywhere an inspector would look.
   Writes of zero "verified" perfectly; every other write read back as a failure — so the broken path
   masqueraded as an engine that was refusing our values, and months of design were built on top of
   it. Details in the [RE Engine family page](../engines/re-engine.md#scalar-floats-passed-to-invoke-from-the-native-c-plugin-sdk-can-land-as-zero).
+- **The worst variant: an API that offers no verification surface at all, by design.** `[reported
+  2026-09-01]` Microsoft's own reference for
+  [`ID3D11DeviceContext::ExecuteCommandList`](https://learn.microsoft.com/en-us/windows/desktop/api/D3D11/nf-d3d11-id3d11devicecontext-executecommandlist)
+  states that the runtime validates around queries, and that where a query begun on one context
+  would be manipulated indirectly by the list, **the method does not execute the command list** —
+  while still clearing the context state on its way past. **The method returns `void`.** There is no
+  `HRESULT`, no out-parameter, nothing to check: an entire list can be submitted, discarded, and
+  take the context state with it, leaving a frame that renders wrongly with nothing raised anywhere.
+  For a VR hook that injects, reorders or duplicates command-list execution around a renderer using
+  occlusion queries, timestamps or predication — all ordinary at this class — the symptom is a
+  missing or wrongly-stated pass, and the natural misdiagnosis is *"my patch is wrong"* rather than
+  *"my list never ran"*.
+  - The guard is cheap and specific: **bring up with the D3D11 debug layer enabled.** The validation
+    quoted above is exactly what the debug layer surfaces, so it turns an invisible discard into a
+    message — worth doing *before* chasing a patching bug, not after.
+  - A quieter hazard sits on the same call. Its `RestoreContextState` parameter, passed **`FALSE`**,
+    returns the target context to its **default state** after execution — and the documentation
+    recommends `FALSE` for performance
+    ([Command List, Microsoft Learn](https://learn.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-render-multi-thread-command-list)).
+    So on most real engines anything running afterwards inherits **nothing**: no render targets, no
+    constant buffers, no shaders. A per-eye pass written to assume it inherits what the previous
+    list left will fail in a way that reads as a patching bug rather than a state-management one.
 
 ### What to do about it
 
@@ -617,6 +644,12 @@ anywhere an inspector would look.
   contradict each other are the clearest possible signal, and the easiest to skim past.
 - **Bound anything you use as an index.** UEVR's fix added a vtable-bounds check alongside the
   correctness fix — the cheap guard that turns silent corruption into a clean refusal.
+- **When a function returns `void`, find out what it does on failure before you rely on it.** A call
+  that *cannot* report failure has not thereby become infallible — it has moved the failure report
+  somewhere you have to go looking for it. Where a debug or validation layer exists, that is
+  normally where it went, which makes "enable the validation layer during bring-up" a structural
+  precaution rather than a debugging step. This generalises past D3D11 to Vulkan's validation layers
+  and to any `void` submit/execute entry point.
 
 ## Hook to acquire a handle the API will not give you
 
@@ -847,6 +880,17 @@ session; opening the two images never did.**
 6. **Re-audit after fixing a tool.** When something turns out to have been broken, revisit every
    conclusion drawn while it was in use — not only the one that exposed it. That sweep is what found
    the third failure above, a full day after it had been recorded as fact.
+7. **Check your signal can separate the states before you threshold it.** Distinct from guard 5:
+   there the two conditions were accidentally the same; here they genuinely differ and the *chosen
+   measurement* cannot tell them apart. Working the RE2 arcade-controls front, camera-to-head
+   distance was proposed as a "has the camera left first person?" test and measured **0.111 m at
+   rest against 0.112 m during an actual enemy grab** — the camera never leaves the head, so **no
+   threshold could ever have worked**, and any tuning effort would have gone into an undecidable
+   question. The same project's other attempt failed the opposite way: a damage flag was true for
+   *any* hit, including an ordinary punch that never leaves first person — a signal firing far too
+   widely. **Before tuning a threshold, measure the candidate signal in both states you need to
+   distinguish and look at the gap.** If it is within noise, or if one state is a superset of the
+   other, change the signal rather than the threshold. `[measured 2026-08-24, n=2 signals]`
 
 Generalised from `doom-2016-vr` modding-session hand-offs, 2026-08-31 and 2026-09-01. The re-audit
 habit came from the human partner asking whether earlier results might be wrong because the game was
@@ -1361,13 +1405,263 @@ Evidence:
 [re-village-scope-vr](https://github.com/TefMeister/re-village-scope-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
 §2 and §5.
 
+## The switch you cannot find may be an argument, not a global
+
+When a renderer clearly *has* a capability — stereo, a debug view, an alternate projection — the
+instinct is to hunt for the thing that turns it on: a cvar, a config key, a mode enum, a global to
+flip. That hunt can fail for a reason that looks nothing like failure: **the feature may never have
+had an on-switch, because the mode is threaded through the render call as a parameter.**
+
+DOOM 2016's dormant stereo path is the worked example, and it took **two independent negative reads**
+to settle. The engine's **published cvar dump — all 6,572 of them, the binary's full inventory — was
+read end to end** `[reported 2026-09-01]`: all four `stereoRender_*` parameters are in it, so are
+`multiView_60Hz` and `com_production`, and **nothing in it selects the render mode**. Separately, the
+retail build registers only **171** of those at runtime and `listCvars stereo` returns nothing
+`[verified-live 2026-08-26]`. Two different questions — *does the name exist?* and *is it reachable
+live?* — both answered no for a mode selector. An earlier note had recorded that the mode cvar's name
+simply "was not resolvable statically, find it live"; that advice pointed at nothing, and is now
+tagged `[disproved 2026-09-01]` in the project's own dossier rather than deleted, precisely because
+it would otherwise have cost a live session.
+
+**Keep those two reads apart when you do this yourself.** A name appearing in a shipped cvar dump,
+symbol table or strings pass proves only that the *binary* knows it. Whether the running build
+**registers** it is a separate measurement, and conflating the two turns "present" into "available"
+— a mistake that plans live sessions around switches the process will never accept.
+
+What the previous generation's **published** source shows instead `[reported 2026-09-01, from id
+Software's GPL release of Doom 3 BFG]` is a call signature:
+
+```c
+void RB_DrawView( const void *data, const int stereoEye );   // 0 = mono, -1 / +1 = eyes
+```
+
+— with the eye carried downstream as first-class state on the view object (`viewEyeBuffer`: `-1`
+left, `+1` right, `0` for mono or a GUI), and the per-eye GUI shift computed as
+`stereoEye * stereoScreenSeparation`. The one cvar that *does* look like a switch,
+`stereoRender_swapEyes`, turns out to be consulted only when comparing a shader's eye against the
+current one — a late cosmetic flip, not the gate.
+
+**The diagnostic is the shape of the inventory, and it is worth learning to read.** Every *parameter*
+of a feature exposed as tunable state, while nothing selects the *mode*, is exactly what a call-site
+argument looks like from the outside. It is not evidence that the feature was stripped, and it is
+not evidence that the name is hidden. It is evidence that you are looking for the wrong kind of
+object.
+
+**So change what you hunt for.** Stop looking for a global to flip and start looking for **a function
+that takes a small signed or enumerated argument and is called more than once per frame**, plus **a
+matching field on the view/frame object**. Two practical consequences:
+
+- **A named-field search beats a live cvar dump for this**, and costs no launch at all. Where an
+  engine ships a reflection or symbol table (see
+  [read the shipped files](#read-the-shipped-files-before-you-attach-anything)), searching it for an
+  eye/mode field on the view struct is static work available immediately. Engines name things
+  consistently across generations, so the ancestor's field name is a good query.
+- **It re-prices whatever you were doing to reach the switch.** DOOM's console gate was being pursued
+  partly to reach the stereo toggle; once the toggle is known to be an argument, opening the console
+  yields the *parameters* and not the on-switch, which moves the whole gate off the critical path.
+  A finding that removes work is worth as much as one that adds a lever.
+
+`[reported 2026-09-01]` for id Tech 4/5, where the source is published; **`[hypothesis]` for id Tech
+6**, a generation and several years later. What lifts the id Tech 6 case above a guess is that the
+call-argument model *explains the observed cvar inventory* — it predicts exactly the pattern that was
+measured. Generalised from
+[`doom-2016-vr/engine-research/`](https://github.com/TefMeister/doom-2016-vr/tree/main/engine-research);
+the underlying research came via a `/gr` pass.
+
+## A repeated launch is not an ASLR test
+
+A specific trap, cheap to fall into and cheap to avoid, recorded because this account fell into it
+and had to withdraw the claim a few hours later.
+
+Having found a camera or state address at some absolute location, the natural next question is
+whether it survives a restart. DOOM 2016's module loaded at **the same base on three consecutive
+launches**, and the conclusion drawn was that Windows randomises image base **per boot**, so only a
+**reboot** could test rebasing.
+
+**That is false** `[disproved 2026-09-01]`. A fourth launch, with **no reboot at all**, loaded at a
+different base. The likely mechanism `[hypothesis]` is that the relocated image is kept while its
+section object stays alive in the standby cache, and a new base is picked once it is evicted — which
+is exactly why three launches in quick succession look pinned and one hours later does not.
+
+**The methodological point is the transferable part, and it is not about ASLR.** Three trials that
+all ran inside the same cache-warm window are not three independent trials; they are one trial
+repeated. `n=3` counts only if the runs can actually differ from each other, and for anything
+timing- or cache-dependent, *back-to-back* is precisely the arrangement that guarantees they cannot.
+When a result is suspiciously stable, ask what the repeats had in common before recording the
+stability as a property of the system. Space the runs, or vary the thing you think might matter,
+before writing `n=K`. See also
+[a negative needs a positive control](#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one).
+
+**The operational rule, meanwhile, never depended on the answer**, and that is the reassuring half:
+resolve the address as `GetModuleHandle(NULL) + <RVA>` (or the target process's module base) every
+session and re-verify before writing. That is correct whether the base moves per boot, per launch or
+never, costs nothing, and is why the wrong belief blocked no actual work. **When a cheap procedure is
+immune to an open question, adopt the procedure and stop needing the answer** — and note that the
+question this leaves genuinely open is a different one: whether the **RVA** holds across a rebase,
+which the same re-verification answers on the next run.
+
+Generalised from
+[`doom-2016-vr/engine-research/`](https://github.com/TefMeister/doom-2016-vr/tree/main/engine-research).
+
+## A third-party stereo fix is free intelligence about the engine — read it, don't install it
+
+Many older D3D9/D3D11 titles have a **stereoscopic-3D fix** published by the HelixMod / geo-11
+community: a per-game shader patch that makes the title behave under a generic stereo driver. Our
+projects keep finding that such a fix is worth reading closely **even when it is useless as a
+component** — closed-source, wrong renderer, or simply not something we would ever copy. It is a
+report written by somebody who already did per-eye work on this exact binary, and it answers
+questions that otherwise cost live sessions.
+
+`[reported 2026-08-25, n=4 projects]` — Alice: Madness Returns, Alan Wake, Prince of Persia (2008)
+and Burnout Paradise. Three distinct kinds of intelligence come out of it.
+
+**1. What the fix did *not* have to touch tells you what the game already gets right.** This is the
+most valuable and the least obvious. The Alice: Madness Returns fix describes its own job as pushing
+*"2D UI to 3D depths"*, and its author notes the game *"comes with Stereoscopic support"* that merely
+"wasn't 100%". A fix scoped to the UI layer, on a game shipping its own stereo mode, is evidence that
+**the native per-eye camera and projection path was already substantially correct** — the hard part
+of the problem this library exists to solve. Alan Wake reads the same way from a different direction:
+reported "almost 3D Vision ready out of the box", with **live in-game separation hotkeys**, implying a
+per-eye offset mechanism already wired up and reachable rather than dormant. In both cases the cheap
+next step is to find and toggle the native mode and watch what changes in the constant registers
+between mono and stereo — far more direct than reverse-engineering the mono path alone.
+
+**2. The fix's own issue list is a free pass inventory.** The Prince of Persia (2008) fix enumerates
+what broke under stereo: skybox depth (**and separately for the dark and sunny weather variants**),
+lens/sun-flare doubling, UI rendered flat at screen depth, background-landscape depth — plus a
+residual flicker on some effects that even the mature 2016 rebuild never fully fixed. That is a
+ready-made list of the passes a from-scratch VR conversion will have to handle on the same engine,
+compiled by somebody who hit each one, and it arrives before you have opened a capture.
+
+**3. The fix's *configuration structure* encodes engine structure.** The same fix ships **separate
+convergence presets for cutscenes and for exploration gameplay**. You cannot need two presets unless
+the game drives the camera through two different paths. That is a structural fact about the engine
+inferred for free from a settings file — and it says: scope the live investigation to check both
+paths early, rather than assuming the one you found covers cinematics too.
+
+### The caveats, which matter as much as the method
+
+- **Check the fix targets your exact build and renderer, not your title.** Burnout Paradise is the
+  worked negative: a HelixMod fix exists for the **original 2008 D3D9 release**, and the same source
+  confirms **no equivalent exists for the Remastered D3D11 build**, which is the actual target. Name
+  matching is worth nothing; the renderer and build have to match too.
+- **A fix's existence proves the renderer is hookable, not that the conversion is tractable.** For
+  Prince of Persia the fix is the project's evidence that D3D9-level hooking works against that
+  binary — a genuinely weaker claim than a vorpX Geometry-3D profile, and much weaker than 6DoF.
+  Keep the classes apart: shader-level stereo fix < generic-driver geometry stereo < engine-level
+  6DoF.
+- **A second iteration of a fix is itself a signal.** The Prince of Persia fix was rebuilt in 2016
+  specifically because the 2012 version's blanket shader matching had broken unrelated combat
+  effects; the rebuild had to distinguish shader/texture **pairs** to avoid it. That is a warning
+  about the technique, not just that game: matching shaders too coarsely causes collateral damage.
+- **Read online; take nothing.** These fixes are closed-source or unlicensed. Everything above comes
+  from a fix's public description, changelog and settings documentation — no code, and no
+  installation. See [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
+
+Generalised from [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr),
+[`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr),
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr) and
+[`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr).
+
+## A proxy DLL must export everything the target actually imports
+
+The proxy-DLL foothold — drop a same-named `d3d9.dll` / `dinput8.dll` / `winmm.dll` beside the exe,
+forward the real calls, intercept the interesting one — is this account's default way in, and it has
+one failure mode that costs a session every time it is met fresh. **The failure looks like the game
+rejecting your mod. It is actually the Windows loader rejecting your export table.**
+
+`[verified-live 2026-08-25, n=3 projects]` The instructive contrast is between two games proxied in
+the same week:
+
+- **Alice: Madness Returns** statically imports **two** functions from `d3d9.dll` —
+  `Direct3DCreate9` **and `D3DPERF_SetOptions`**, a real performance-marker export. A proxy exporting
+  only `Direct3DCreate9` left the loader unable to resolve the executable's import table at all, so
+  **the process died before running a single instruction**: about two seconds, no window, no log
+  output, nothing written anywhere. Adding the second forwarding wrapper fixed it outright.
+- **Prince of Persia (2008)** needed only `Direct3DCreate9`, and worked on the first attempt.
+
+So the count is per-game, and **the DLL name appearing in the import table tells you nothing about
+which functions are needed.** Enumerate the executable's actual per-function imports for that DLL
+before writing the proxy — one `dumpbin /imports`, `objdump -x` or equivalent — and it is the
+difference between a first-attempt success and an evening spent on a game that "just exits".
+
+### The failure mode depends on *how* the game resolves the function
+
+This is the part worth internalising, because the two cases need completely different debugging:
+
+| Resolution | A missing export produces |
+| --- | --- |
+| **Static import** (name in the PE import table) | The loader fails the whole process **before `main`**. No log, no window, no error dialog, no crash report — an instant silent exit that reads as an incompatibility. |
+| **Dynamic** (`LoadLibrary` + `GetProcAddress`) | The call site's own failure path runs — typically a logged, graceful error, because the developers wrote a handler for it. |
+
+Alan Wake is the dynamic case: its `d3d_sf_Win32.dll` carries `Direct3DCreate9` and
+`Direct3DCreate failed` as adjacent strings, the signature of a `LoadLibrary` + `GetProcAddress` pair
+with a handled failure. A same-named proxy still works — `LoadLibrary` follows the same
+application-directory-first search order — but an incomplete one degrades into the game's own error
+message instead of killing the process. **If your proxy produces total silence, suspect the export
+table; if it produces a tidy error message, suspect your logic.**
+
+**A related check that pays for itself:** confirm how many functions of that DLL the game references
+*anywhere*, not just the one you plan to intercept. Alan Wake's recon verified `Direct3DCreate9` was
+the only D3D9 export referenced across all ten of its module binaries — a check performed
+specifically because of the Alice result. That is the re-audit habit working as intended.
+
+## The instrument can be the bug
+
+`[verified-live 2026-08-25, n=1]` A single well-documented case, recorded because the shape is
+general and the debugging cost was real.
+
+A from-scratch `d3d9.dll` proxy crashed Alan Wake outright — an access violation in `ntdll`, with a
+control test (proxy removed) launching fine. The natural response is to instrument: an
+`IDirect3D9::CreateDevice` vtable hook was added **to see further into the failure**. The game then
+failed reliably. A Windows Fault-Tolerant Heap compatibility shim was tried next, on the theory that
+a latent 2010-era heap bug was being exposed, and briefly appeared to help.
+
+**Both readings were wrong. The vtable hook was itself the cause.** With the hook disabled and
+nothing else changed, the game launched and ran cleanly; removing the FTH shim afterwards changed
+nothing either way. The instrument added to observe the fault was manufacturing it, and the shim had
+drawn credit for a fix it never performed.
+
+Three transferable habits:
+
+- **When a diagnostic is added and the failure changes, the diagnostic is a suspect — not just a
+  lens.** Hooks, logging wrappers and interposed vtables are code running inside someone else's
+  process at a moment the process is fragile. Test with the instrument disabled and everything else
+  identical, the same way you would test with your mod removed. This is
+  [remove your own code before accepting the blame](#remove-your-own-code-before-accepting-the-blame--then-fix-the-producer)
+  applied one level in: your *debugging apparatus* is also your own code.
+- **Never let a mitigation take credit while another variable is moving.** The shim "seemed to help"
+  because it was applied in the same window as other changes. A mitigation earns belief only from a
+  run where it is the single difference — and the cheap confirmation is to **remove it again
+  afterwards** and check the fix survives. Here it did, which is exactly how the red herring was
+  caught.
+- **Keep a known-bad instrument, disabled, with a note.** The hook was left in the proxy source,
+  switched off, with a written warning not to re-enable it before understanding why it broke startup.
+  That preserves the finding for whoever needs `CreateDevice` interception later, instead of leaving
+  a deleted mystery for them to rediscover.
+
+Generalised from [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr).
+
 ## Sources
 
 - **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, the log-before-the-call habit, and the exclusive-mode DirectInput wall that `SendInput` cannot cross; generalised out of [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research) §9a/§9b
 - **Psychonauts VR** (this account) — the void-behind-the-player characterisation and measurement method, the camera-matrix identification arithmetic, and the double-rotation trap; generalised out of [`psychonauts-vr/modding-notes/`](https://github.com/TefMeister/psychonauts-vr/tree/main/modding-notes) and [`psychonauts-vr/dev-archive/`](https://github.com/TefMeister/psychonauts-vr/tree/main/dev-archive)
 - **Visceral — RE2 VR** (this account) — the HMD-anchored body float and the pelvis-drop grounding fix; generalised out of [`visceral-re2-vr/modding-notes/`](https://github.com/TefMeister/visceral-re2-vr/tree/main/modding-notes)
 - **RE Village sniper scope** (this account) — the argument-encoding silent-zero case, the hook-to-acquire-a-handle pattern, and the posted-window-message input route; generalised out of [`re-village-scope-vr/modding-notes/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/modding-notes)
-- **DOOM (2016) VR** (this account) — the launch-time gate and the date-match-your-evidence point, the line-endings false negative, the `strings` minimum-length trap, and the in-process raw-input route; generalised out of [`doom-2016-vr/external-research/`](https://github.com/TefMeister/doom-2016-vr/tree/main/external-research) and [`doom-2016-vr/modding-notes/`](https://github.com/TefMeister/doom-2016-vr/tree/main/modding-notes)
+- **DOOM (2016) VR** (this account) — the launch-time gate and the date-match-your-evidence point, the line-endings false negative, the `strings` minimum-length trap, the in-process raw-input route, the call-argument-not-a-global switch shape, and the repeated-launch/ASLR sampling trap; generalised out of [`doom-2016-vr/external-research/`](https://github.com/TefMeister/doom-2016-vr/tree/main/external-research) and [`doom-2016-vr/modding-notes/`](https://github.com/TefMeister/doom-2016-vr/tree/main/modding-notes)
+- **Alice: Madness Returns VR**, **Alan Wake VR**, **Prince of Persia (2008) VR** and **Burnout
+  Paradise VR** (this account) — the third-party-stereo-fix-as-intelligence method, the proxy-export
+  completeness rule and its static-vs-dynamic failure modes, and the instrument-can-be-the-bug case;
+  generalised out of each project's `engine-research/` folder:
+  [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr) ·
+  [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) ·
+  [`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr) ·
+  [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr)
+- **Arcade Controls for RE2 VR** (this account) — the signal-cannot-separate-the-states guard;
+  generalised out of [`arcade-controls-re2-vr`](https://github.com/TefMeister/arcade-controls-re2-vr)
+- **HelixMod community** (incl. **Chiz**) and the **geo-11 / 3D Vision fix scene** — their published
+  per-game fix write-ups, changelogs and settings documentation, read online as reports on engine
+  behaviour. No code taken. <https://helixmod.blogspot.com/>
 - **Remleo** — [UEVR PR #433](https://github.com/praydog/UEVR/pull/433), the optional-truthiness/garbage-vtable-slot gamma fix (merged 2026-08-30)
 - **ErwinGunsmith** — [REFramework PR #1809](https://github.com/praydog/REFramework/pull/1809), restoring the `false` return of `on_pre_gui_draw_element` (merged 2026-08-28)
 - **prideslayer** and contributors — **VRIK Player Avatar** (Skyrim VR), cited only to distinguish the familiar VR floor-calibration/height-offset problem from the pose-dependent float described above: [nexusmods.com/skyrimspecialedition/mods/23416](https://www.nexusmods.com/skyrimspecialedition/mods/23416)

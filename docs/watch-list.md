@@ -70,6 +70,18 @@ for the last sweep date and what it found.
 
 ## Sweep log
 
+> **Reading the entries below 2026-08-30:** they name repos as `<prefix>-engine-research`,
+> `<prefix>-external-research` and so on, because that is what those repos were called on the day
+> each entry was written. The [2026-08-30 consolidation](https://github.com/TefMeister/TefMeister)
+> turned every one of them into a **folder inside one repo per game** — read
+> `doom-2016-vr-engine-research` as `doom-2016-vr/engine-research/`, and so on throughout.
+>
+> ⚠️ **The old repos still exist as frozen duplicates** until the approved deletion pass, so those
+> names still resolve — a reader who follows one lands in real-looking but stale content with no
+> error to warn them, and the standing rule is **never push to those**. The historical entries are
+> left as written rather than rewritten, because each correctly records the estate as it stood; this
+> note is the fix. *(Raised by `/gs`, 2026-09-01.)*
+
 - **2026-08-24:** Added Vireio Perception, Flat2VR Studios' August 2026 VR Games Showcase
   titles, and the Dunia REAC 2023 shader-pipeline talk. Confirmed no change needed for id Tech 5,
   Dunia VR prior art, or XIII/Unreal Gold engine identification (already accurate).
@@ -470,3 +482,132 @@ that: *the setting you want may be data, not code* is engine-agnostic, was nowhe
 the library, and is the kind of thing that saves ten live tests. **A delta scan reports what changed;
 it does not tell you whether the unchanged part was ever harvested.** That is what the coverage
 bookmark is for, and it is why this pass was worth running five hours after the last one.
+
+### 2026-09-01 (third sweep, evening) — the coverage backlog cleared, and four withdrawn claims generalised
+
+**Web: checked, effectively nothing to find.** The previous sweep ran at 14:22 today, so this was a
+four-hour delta and treated as such rather than padded out. UEVR and REFramework were checked
+directly for releases and for commits since 14:00: **zero commits on either, and the latest releases
+are unchanged** — UEVR **1.05** (2024-11-16) and REFramework **v1.5.9.1** (2025-03-05), matching what
+this log has recorded since 2026-08-24. No other watch-list source was worth re-querying on a
+four-hour delta. Recording this explicitly because "nothing new" is a real result and the next sweep
+should not re-check these two for a same-day delta.
+
+**Inbox drained: six files, by explicit name** (`flat-to-vr-cross-engine-research/inbox/`) —
+`2026-09-01-gr-executecommandlist-is-a-void-that-can-decline.md`,
+`2026-09-01-gs-correction-the-changelog-split-was-08-28-not-09-01.md`,
+`2026-09-01-gs-four-library-docs-use-off-vocabulary-tags.md`,
+`2026-09-01-gs-id-tech-5-console-claim-is-undated.md`,
+`2026-09-01-gs-sr-changelog-carve-out-points-at-the-wrong-file.md`,
+`2026-09-01-gs-watch-list-names-retired-repos.md`. The whole inbox was read before any of it was
+folded in, and `grep "^Supersedes:"` run first — which mattered: the correction drop withdraws the
+provenance of the changelog-split drop (the split was `0dae26d` on **2026-08-28**, not `03daa1d` on
+2026-09-01), and draining oldest-first would have written the wrong date into this log.
+
+**Tag hygiene fixed (`/gs` check 3b).** Five off-vocabulary confidence tags, four of them a hyphen
+away from valid: `docs/case-studies/id-tech-6-dormant-stereo.md` and `docs/techniques/README.md` ×2
+and `docs/engines/dunia.md` now use `[reported]` / `[verified-live … n=]` /
+`[verified-numerically …]`, with the precision moved into prose. `docs/engines/id-tech-5.md`'s bare
+`[verified-live]` on the console/cvar claim is now `[verified-live 2026-08-21, n=1 game]` and says
+outright that the family here **is** one game (The Evil Within), with any other id Tech 5 title
+`[hypothesis]`.
+
+**The `/sr` changelog carve-out needs nothing from me** — it was fixed by the modding lane on
+2026-09-01 and this session's command file already names `STATUS-CHANGELOG.md`.
+
+**Retired repo names in this file: fixed by a note, not by rewriting history.** `/gs` flagged five
+pre-consolidation repo names here. All five are inside **dated sweep-log entries**, which is the
+category `/gs`'s own scope note says not to rewrite — each correctly records the estate as it stood.
+Rewriting them would falsify the record; leaving them lets a reader land in a frozen duplicate with
+no error. **Both problems are solved by one note at the top of this log** explaining the folder
+mapping and warning never to push to the old repos. Recorded here because it is a judgement call the
+next sweep may want to revisit.
+
+**Project-repo harvest (delta since 14:22 today; all 16 game repos pulled).** Fourteen had no commits
+at all. `the-evil-within-vr` carried only a `/gs` inbox drop. **`doom-2016-vr` had six commits and
+was the whole harvest** — an engine-research inbox drain and an ASLR correction, both substantive.
+
+**Dossier-coverage backlog: CLEARED.** Every project's `ENGINE-DOSSIER.md` has now been read in full
+at least once. This sweep covered the last six — `unreal-gold-vr`, `alan-wake-vr`,
+`alice-madness-returns-vr`, `burnout-paradise-vr`, `prince-of-persia-2008-vr` and
+`arcade-controls-re2-vr` — which together are smaller than DOOM's dossier alone (~640 lines) and had
+been deferred as low-priority because the projects are early or paused. That was the wrong reason:
+**early-stage dossiers are where the recon and first-injection lessons are**, and four of the five
+new library sections below came out of them. Future sweeps revert to delta-only, except where a
+dossier grows substantially.
+
+**Generalised up this sweep — five new sections in
+[`docs/techniques/README.md`](./techniques/README.md), plus one new guard:**
+
+- *The switch you cannot find may be an argument, not a global* (DOOM) — the two independent negative
+  reads (6,572-cvar published dump; 171 registered at runtime), `RB_DrawView(data, stereoEye)` and
+  `viewEyeBuffer` from id's published GPL source, and the diagnostic that transfers: **every
+  parameter of a feature exposed while nothing selects the mode is the signature of a call-site
+  argument.** Carries the present-vs-registered distinction explicitly, because that is the trap next
+  door.
+- *A repeated launch is not an ASLR test* (DOOM) — three same-base launches then a fourth, no reboot,
+  at a different base. The transferable half is not about ASLR: **trials inside one cache-warm window
+  are one trial repeated**, so `n=3` counted as `n=1`. Plus the reassuring corollary — the
+  `GetModuleHandle(NULL) + RVA` procedure was immune to the question either way.
+- *A third-party stereo fix is free intelligence about the engine* (Alice, Alan Wake, Prince of
+  Persia, Burnout — `n=4`) — **the best find of the sweep.** Three inference routes: what the fix did
+  *not* fix tells you the native camera is already right; its issue list is a free pass inventory;
+  its config structure encodes engine structure (separate cutscene/gameplay convergence presets mean
+  two camera paths). With the Burnout negative — a fix for the D3D9 original and none for the D3D11
+  remaster — as the caveat that build and renderer must match, not the title.
+- *A proxy DLL must export everything the target actually imports* (Alice, Alan Wake, Prince of
+  Persia — `n=3`) — Alice statically imports **two** `d3d9.dll` functions, so a one-export proxy died
+  before `main` with no log at all; Prince of Persia needed one and worked first time. The table of
+  **static-vs-dynamic failure modes** is the part that transfers: total silence means the export
+  table, a tidy error message means your logic.
+- *The instrument can be the bug* (Alan Wake, `n=1`) — a `CreateDevice` vtable hook added to diagnose
+  a crash *was* the crash, and a Fault-Tolerant Heap shim took credit for a fix it never performed.
+  Also the habit of keeping a known-bad instrument disabled with a note.
+- **New guard 7** under *Controls* (arcade-controls-re2-vr) — **a signal must be able to separate the
+  states before you tune a threshold on it**: camera-to-head distance measured 0.111 m at rest
+  against 0.112 m during an enemy grab, so no threshold could ever have worked. Distinct from guard
+  5, where the two conditions were accidentally identical rather than genuinely indistinguishable.
+
+**Engine pages.** [`id-tech-6.md`](./engines/id-tech-6.md) gained the call-argument stereo switch with
+its consequence that **the console gate is off the critical path for stereo**, and a correction: the
+`explicit*` override fields are **not cvars at all**, so `rp` or a patch is their route.
+[`remedy-alan-wake.md`](./engines/remedy-alan-wake.md) and
+[`scimitar-anvil.md`](./engines/scimitar-anvil.md) were **populated for the first time** — both had
+sat as empty seed pages since 2026-08-26. Remedy's covers the thin-loader/per-subsystem-DLL
+architecture (which changes how you do recon on it), dynamic D3D9 resolution, the shipped
+`-freecamera` / `-developermenu` tools, reported native 3D Vision, and the vtable-hook warning.
+Scimitar's covers the confirmed AC1 codebase lineage, `.forge`, D3D9-not-Ex, the embedded default
+command line with its `/noconsole` tell, and the two-camera-path inference. `id-tech-5.md` and
+`engines-index.md` took the tag and stereo-switch corrections.
+
+**Case study.** [`id-tech-6-dormant-stereo.md`](./case-studies/id-tech-6-dormant-stereo.md) gained a
+dated update section: its three lessons all stand, but **the prize behind the gate is smaller than it
+looked** — winning the console yields stereo parameters, not the on-switch. A fourth lesson was added:
+*when a switch cannot be found, question the category before questioning the search.*
+
+**Inboxes filled: two.**
+`doom-2016-vr/engine-research/inbox/` — **§13's number-one next step calls `multiView_60Hz`
+"registered, ungated" while §9 lists it as never registered.** §12 read it from the published dump
+(the binary's inventory); §9 measured what retail registers. Those are different axes and §13
+conflated them, so the top item's stated price — "needs no gate work at all" — may be wrong by the
+width of that project's largest open blocker. One `listCvars multiView` in any future session settles
+it. Flagged item 3 in the same list too, which still says a reboot is needed to test rebasing after
+the same evening's commit disproved exactly that.
+`alice-madness-returns-vr/engine-research/inbox/` — **§6's `c0` caution is superseded.** That dossier
+tells the next session to expect the hard per-object-WVP case, on a sibling project's reading that
+has since been corrected: `c0`–`c3` **is** the shared `ViewProjectionMatrix`, `c4` hands over the
+camera position, and the 47-uploads-per-frame observation was UE3's RHI re-applying reserved
+registers. Includes the clean injection point, the `PreViewTranslation` drift trap, and an honest
+statement that this is `[inferred-static, n=1]` from Enslaved's shaders and needs verifying on
+Alice's own binary.
+
+**Attribution.** Microsoft's D3D11 reference (the `ExecuteCommandList` hazard) and the HelixMod
+community including Chiz (per-game fix write-ups, **read online only, never installed or copied**)
+were added, alongside the four projects behind the new sections.
+
+**One thing worth carrying forward.** Four of the six new entries came from claims their own projects
+had **withdrawn** — the ASLR reasoning, the "find the mode cvar live" advice, the FTH shim, the `c0`
+reading. The corrections were the transferable content, not the original findings, and none of them
+would have surfaced from a delta scan of changed files: three were sitting in unchanged dossiers that
+had simply never been read here. That is the case for clearing a coverage backlog even when every
+repo reports no commits.

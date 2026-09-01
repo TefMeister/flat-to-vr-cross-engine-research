@@ -276,6 +276,18 @@ Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every
   `vieworg`, `viewEyeBuffer` and `stereoScreenSeparation`) and of the `stereoRender_*` cvar family
   it later left dormant in id Tech 6. Read online as documentation; **no code taken.**
   <https://github.com/id-Software/DOOM-3-BFG>
+- **Microsoft** — the Direct3D 11 reference documentation on **Microsoft Learn**, used as the
+  first-party statement that `ID3D11DeviceContext::ExecuteCommandList` returns `void` and may decline
+  to execute a list on query-validation grounds, and that `RestoreContextState = FALSE` returns the
+  context to its default state. Cited as vendor documentation of a silent-no-op hazard.
+  [`ExecuteCommandList`](https://learn.microsoft.com/en-us/windows/desktop/api/D3D11/nf-d3d11-id3d11devicecontext-executecommandlist) ·
+  [Command List overview](https://learn.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-render-multi-thread-command-list)
+- **The HelixMod community**, including **Chiz** (Prince of Persia 2008 and Alice: Madness Returns
+  fixes) — their published per-game stereoscopic-3D fix write-ups, changelogs and settings
+  documentation, used here purely as **reports on engine behaviour**: what each fix had to correct,
+  what it did not, and what its configuration implies about the game's camera paths. These fixes are
+  closed-source or unlicensed; they were **read online only, never installed or copied**.
+  <https://helixmod.blogspot.com/>
 - **Epic Games** — UE3's own `Engine/Shaders/Common.usf`, as **shipped with a licensed retail game**,
   which documents the reserved vertex-shader registers (`ViewProjectionMatrix`, `CameraPosition`,
   `PreViewTranslation`) and their required agreement with the RHI's register enum. Read as
@@ -302,6 +314,26 @@ the [write-combined memory section](./docs/techniques/README.md#never-cpu-scan-m
 and the [console-automation section](./docs/techniques/README.md#driving-a-game-console-with-synthetic-keys-scancodes-layouts-and-dead-keys)
 were generalised out of the DOOM (2016) work, including several of that project's own withdrawn
 claims — kept and cited because the corrections are the transferable part.
+
+The [third-party stereo fix as intelligence](./docs/techniques/README.md#a-third-party-stereo-fix-is-free-intelligence-about-the-engine--read-it-dont-install-it),
+[proxy export completeness](./docs/techniques/README.md#a-proxy-dll-must-export-everything-the-target-actually-imports)
+and [the instrument can be the bug](./docs/techniques/README.md#the-instrument-can-be-the-bug)
+sections were generalised out of the 2026-08-25 static-recon and first-injection work on
+legitimately-owned copies of **Alice: Madness Returns**, **Alan Wake**, **Prince of Persia (2008)**
+and **Burnout Paradise**:
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr) ·
+[`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) ·
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr) ·
+[`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr). The
+signal-must-separate-the-states guard came from
+[`arcade-controls-re2-vr`](https://github.com/TefMeister/arcade-controls-re2-vr).
+
+The [call-argument switch shape](./docs/techniques/README.md#the-switch-you-cannot-find-may-be-an-argument-not-a-global)
+and the [repeated-launch ASLR sampling trap](./docs/techniques/README.md#a-repeated-launch-is-not-an-aslr-test)
+were likewise generalised out of the DOOM (2016) work — both of them out of *withdrawn* claims, which
+is again where the transferable content was:
+[`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr). The underlying cvar-dump read that
+settled the first came via that project's `/gr` research pass.
 
 The [id Tech 6 case study](./docs/case-studies/id-tech-6-dormant-stereo.md) is our own static
 analysis of a legitimately-owned copy, not a summary of someone else's work. The full evidence and

@@ -63,11 +63,14 @@ joint-palette buffer, so a camera-side change leaves animation untouched.
 
 ### The console and cvar culture is intact, and it is a real asset
 
-`[verified-live]` The id console survives into this branch: `+com_allowconsole 1` at launch, then
-`listcmds`, `devmapjump <stage>` to reach a scene in seconds, `noclip`, `g_fov`, third-person camera
-cvars, HUD and shadow toggles, and the developers' own frame-capture-to-disk commands. A
-deterministic unattended launch straight into gameplay is therefore available on this family without
-writing an input harness first — with one caveat measured on The Evil Within: a **photosensitivity
+`[verified-live 2026-08-21, n=1 game]` — **The Evil Within only**, which is the whole family here, so
+read this as one game confirmed many times rather than a pattern seen across siblings. The id console
+survives into this branch: `+com_allowconsole 1` at launch, then `listcmds`, `devmapjump <stage>` to
+reach a scene in seconds, `noclip`, `g_fov`, third-person camera cvars, HUD and shadow toggles, and
+the developers' own frame-capture-to-disk commands. It has carried an unattended launch harness since
+2026-08-21, so the confirmation is repeated rather than a single lucky run. A deterministic unattended
+launch straight into gameplay is therefore available on this title without writing an input harness
+first — and `[hypothesis]` on any other id Tech 5 game, since no second one has been tried — with one caveat measured on the same game: a **photosensitivity
 warning splash was not dismissible by synthetic keyboard input, only by a synthetic mouse click**,
 and the skip-intro cvars did not cover it.
 
