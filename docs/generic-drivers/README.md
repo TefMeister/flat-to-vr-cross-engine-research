@@ -62,6 +62,15 @@ layer is actually built (vorpX's internals are closed).
 pairs with [3Dmigoto](https://github.com/bo3b/3Dmigoto) for per-game shader fixes — but **it is
 D3D11-only and does not natively support D3D9.**
 
+> **What it is doing under the hood is documented, and it is not a black box.** The 3D Vision lineage
+> this replaces worked by appending a **clip-space footer** to every vertex shader and issuing each
+> draw twice — which is also why both it and geo-11 need per-game shader fixes, and why deferred and
+> post-processed renderers give them trouble. The mechanism, its costs, and the static check that
+> tells a driver-stereo title from a natively stereo one are written up in
+> [the clip-space stereo footer](../techniques/#the-clip-space-stereo-footer-geometry-stereo-without-ever-finding-the-camera).
+> It is worth reading before routing a game through any driver here — **the same technique is
+> implementable by our own proxy**, with no NVIDIA driver or GPU involved.
+
 To use it on a genuine D3D9 game you insert a translation layer:
 
 ```

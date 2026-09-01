@@ -7,6 +7,7 @@ Each is distilled from public projects credited in
 - [Frame timing: Reflex-marker vs two-hook](#frame-timing)
 - [Stereo submission: native, synchronized-sequential, AFR, AER](#stereo-submission-strategies)
 - [Dormant native stereo paths (check before you build)](#dormant-native-stereo-paths)
+- [The clip-space stereo footer: stereo without finding the camera](#the-clip-space-stereo-footer-geometry-stereo-without-ever-finding-the-camera)
 - [Temporal effects under AFR (the TAA problem)](#temporal-effects-under-afr)
 - [Basis & handedness (why the world "swims")](#basis--handedness)
 - [Telling the main camera from shadow/reflection cameras](#main-camera-discrimination)
@@ -102,6 +103,84 @@ in [`engines-index.md`](../engines-index.md#how-to-identify-an-unknown-engine-st
 
 Even with all three caveats, a dormant path is worth finding: it hands you the engine authors' own
 answers to "how do I get two views out of this renderer", which is normally the expensive part.
+
+## The clip-space stereo footer: geometry stereo without ever finding the camera
+
+`[reported 2026-09-01]` — from NVIDIA's own published developer documentation. Nothing here has been
+built or run by this account.
+
+This library spends a lot of effort on [finding the camera matrix the engine actually
+reads](#finding-the-camera-matrix-the-engine-actually-reads), because that is the usual way to two
+eyes. **There is a second route that never touches the camera at all**, and it is the documented
+mechanism behind NVIDIA 3D Vision Automatic — and therefore behind the geo-11 / HelixMod / 3Dmigoto
+ecosystem this library already catalogues as [generic drivers](../generic-drivers/).
+
+The driver monitored **vertex shader creation** and appended a footer to every shader. The footer
+operates in **clip space**, chosen because it sits directly before the perspective divide, so a
+horizontal shift there changes apparent stereoscopic depth **without moving the rasterised position
+or the z-buffer depth** of the resulting fragments. The whole of it is one line:
+
+```hlsl
+ClipPos.x += Separation * (ClipPos.w - Convergence);
+```
+
+Each application draw call is then issued **twice**, with `Separation` positive for one eye and
+negative for the other, into per-eye buffers.
+
+**Read what that costs you: nothing about the application's camera, view matrix, projection matrix or
+handedness needs to be known.** `w` is the view-space depth that every projection already produces,
+and the two scalars are yours to choose. For a proxy that can already see draw calls and shader
+creation, this is the cheapest known path from "I can see the rendering" to "I have two correct eyes"
+— and it needs no NVIDIA driver, no NVIDIA GPU, and no surviving 3D Vision ecosystem. It is real
+geometry stereo, not reprojection.
+
+**What it does not give you is head tracking.** It is orthogonal to the 6DoF problem and solves none
+of it — but it is combinable, and it means stereo need not be blocked on the camera hunt.
+
+### The documented costs, which are the reason this needed per-game profiles
+
+- **Not every draw should be stereoised.** Skyboxes, HUD, full-screen quads and anything already in
+  screen space must be excluded, or they separate wrongly. NVIDIA used heuristics *plus a hand-built
+  per-title profile from its own QA*. This is [main-camera
+  discrimination](#main-camera-discrimination) arriving from a new direction, and it is precisely why
+  3D Vision needed thousands of per-game profiles and why HelixMod fixes are per-game.
+- **Post-processing and deferred renderers break.** Both *unproject* from window space back toward
+  world space, and that unprojection cannot undo a clip-space shift it does not know was applied.
+  NVIDIA's documented remedy was to publish the live `Separation` and `Convergence` into a small
+  texture that the **application's own shaders** sample to invert the transform. A mod doing this
+  itself must patch those shaders too, or accept broken screen-space effects — which is a substantial
+  caveat on any modern deferred renderer.
+- **Convergence is a comfort parameter with no on-screen representation**, so it needs tuning per
+  title, by eye, in a headset.
+
+### ⚠️ The diagnostic that matters for recon: Automatic vs Direct
+
+3D Vision had two modes, and confusing them will make you overrate a game:
+
+| | **Automatic** | **Direct** (NVAPI) |
+| --- | --- | --- |
+| Who splits the draws | the **driver** | the **application** |
+| Who owns separation/convergence | driver + per-game profile; the **user** tunes with `Ctrl+F3`/`Ctrl+F4` | the application |
+| What the app must do | nothing — but its post-processing breaks unless it reads the stereo-parameters texture | render left, render right, present |
+| How selected | default | `NvAPI_Stereo_SetDriverMode(..._DIRECT)`, **before device creation** |
+
+**So a game whose binary references NVAPI stereo is not necessarily a game that renders two eyes**,
+and a game with working `Ctrl+F3`/`Ctrl+F4` separation hotkeys is showing you *the driver's* controls,
+not its own. In Automatic mode a title's stereo symbols are a **correction layer over work the driver
+did**. Finding `Separation` / `Convergence` uniforms in a 2008–2013-era renderer is therefore evidence
+of 3D-Vision *awareness*, not of a native two-eye path — and which driver mode the title requests
+separates the two **statically**, before anything is launched.
+
+### It also names a mechanism the library had been treating as a black box
+
+[Dormant native stereo paths](#dormant-native-stereo-paths) warns that vintage stereo may apply
+separation as a projection/screen-space step rather than as two offset eye views. That caution is
+right — and this section says the idiom is a **known, characterised technique of the era** rather than
+a puzzle. (Context only: it is not a claim about any particular engine. id Tech 6's case is separately
+and better resolved, where id's own published lineage genuinely does move `vieworg` per eye.)
+
+Contributed by a `/gr` estate sweep, 2026-09-01, out of the `alan-wake-vr` 3D Vision question; the
+technique itself is engine-agnostic.
 
 ## Temporal effects under AFR
 
@@ -1520,11 +1599,20 @@ most valuable and the least obvious. The Alice: Madness Returns fix describes it
 *"2D UI to 3D depths"*, and its author notes the game *"comes with Stereoscopic support"* that merely
 "wasn't 100%". A fix scoped to the UI layer, on a game shipping its own stereo mode, is evidence that
 **the native per-eye camera and projection path was already substantially correct** — the hard part
-of the problem this library exists to solve. Alan Wake reads the same way from a different direction:
-reported "almost 3D Vision ready out of the box", with **live in-game separation hotkeys**, implying a
-per-eye offset mechanism already wired up and reachable rather than dormant. In both cases the cheap
-next step is to find and toggle the native mode and watch what changes in the constant registers
-between mono and stereo — far more direct than reverse-engineering the mono path alone.
+of the problem this library exists to solve. Alan Wake looked like the same signal from a different
+direction — reported "almost 3D Vision ready out of the box", with separation adjustable in-game on
+`Ctrl+F3`/`Ctrl+F4` — but **that one needs qualifying, and it is a useful correction to hold onto.**
+`Ctrl+F3`/`Ctrl+F4` are the **driver's** hotkeys in 3D Vision *Automatic* mode, where the driver
+splits the draws and owns the parameters; they are evidence that 3D Vision worked *on* the game, not
+that the game contains a native per-eye path. See [the clip-space stereo
+footer](#the-clip-space-stereo-footer-geometry-stereo-without-ever-finding-the-camera) for the
+distinction and for the static check that settles it. **Alice's signal survives this and Alan Wake's
+weakens**, because Alice's rests on the fix author's own statement that the *game* ships stereo
+support, not on driver-side controls.
+
+Where the signal does hold, the cheap next step is to find and toggle the native mode and watch what
+changes in the constant registers between mono and stereo — far more direct than reverse-engineering
+the mono path alone.
 
 **2. The fix's own issue list is a free pass inventory.** The Prince of Persia (2008) fix enumerates
 what broke under stereo: skybox depth (**and separately for the dark and sunny weather variants**),
@@ -1670,6 +1758,12 @@ Generalised from [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr).
 - **starfield2vr** (mutars) — Reflex-marker timing, keep-and-fix-TAA per eye: [github.com/mutars/starfield2vr](https://github.com/mutars/starfield2vr)
 - **anvilengine2vr** (mutars) — two-hook timing, disable-TAA, basis round-trip: [github.com/mutars/anvilengine2vr](https://github.com/mutars/anvilengine2vr)
 - **vrframework** (Elliott Tate) — the framework these techniques are described against: [github.com/elliotttate/vrframework](https://github.com/elliotttate/vrframework)
+- **NVIDIA** — published developer documentation for 3D Vision Automatic (the clip-space shader
+  footer, the per-game profile requirement, the post-processing/deferred caveat) and the NVAPI stereo
+  headers that define Automatic vs Direct mode:
+  [3D Vision Automatic background](https://archive.docs.nvidia.com/gameworks/content/technologies/desktop/nv3dva_background.htm) ·
+  [stereoscopic issues](https://archive.docs.nvidia.com/gameworks/content/technologies/desktop/nv3dva_stereoscopic_issues.htm) ·
+  [nvapi_lite_stereo.h](https://github.com/NVIDIA/nvapi/blob/main/nvapi_lite_stereo.h)
 - Inspection tools: [RenderDoc](https://renderdoc.org/) · [PIX](https://devblogs.microsoft.com/pix/)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).
