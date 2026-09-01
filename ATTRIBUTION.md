@@ -140,7 +140,21 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   and DOOM Eternal. **Closed source, Patreon-funded** — the public repo hosts compiled releases
   only; referenced here purely as public prior art and a feasibility proof that per-eye override at
   the Vulkan level works on modern closed commercial titles. No code inspected or reused.
+  Also the author of a **6DoF VR mod for DOOM Eternal** (id Tech 7) using single-pass stereo
+  instancing — distinct from the stereo-only Vk3DVision fixes, and cited here as technique prior art
+  on that engine family. **Status noted 2026-09-01:** the Vk3DVision repository was archived by its
+  owner on 2026-03-05 and is read-only, final release 4.25.5.
   <https://github.com/helifax/Vk3DVision-Public> · <https://3dsurroundgaming.com/Vk3DVisionGames.html>
+- **emoose** (original author) and **brunoanc** (2024 update and re-host) — **DOOMLegacyMod**, which
+  re-adds DOOM (2016)'s hidden console commands and cvars on the retail build without developer mode,
+  and publishes `doom_cmds.txt` / `doom_cvars.txt` as plain-text interface dumps. **Closed source, no
+  licence stated** — referenced here purely as public prior art, read online, never downloaded or
+  studied as an implementation. It is what established, for this library, that a production-gated
+  engine's cvars can be hidden-but-constructible rather than absent.
+  <https://github.com/brunoanc/DOOMLegacyMod> · <https://github.com/emoose>
+- **Flat2VR** — reporting that first documented Helifax's DOOM Eternal 6DoF work and its single-pass
+  stereo-instancing approach, cited above.
+  <https://x.com/Flat2VR/status/1704495949978984506>
 - **3Dmigoto** (bo3b, DarkStarSword, DHR, contributors) — D3D11 shader-injection modding tool.
   <https://github.com/bo3b/3Dmigoto> · <https://www.3dmigoto.com/>
 - **vrperfkit** (fholger) — VR performance toolkit (foveated / VRS upscaling).
@@ -241,8 +255,37 @@ Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every
   renderer's passes. <https://www.adriancourreges.com/blog/2016/09/09/doom-2016-graphics-study/>
 - **Ubisoft** — *Dunia shader-pipeline architecture*, REAC 2023.
   <https://enginearchitecture.realtimerendering.com/downloads/reac2023_dunia_shader_pipeline.pdf>
+- **id Software** — the official GPL source release of **Doom 3 BFG Edition**, used here as
+  first-party documentation of how the id lineage applies stereo separation (`renderView_t`'s
+  `vieworg`, `viewEyeBuffer` and `stereoScreenSeparation`) and of the `stereoRender_*` cvar family
+  it later left dormant in id Tech 6. Read online as documentation; **no code taken.**
+  <https://github.com/id-Software/DOOM-3-BFG>
+- **Epic Games** — UE3's own `Engine/Shaders/Common.usf`, as **shipped with a licensed retail game**,
+  which documents the reserved vertex-shader registers (`ViewProjectionMatrix`, `CameraPosition`,
+  `PreViewTranslation`) and their required agreement with the RHI's register enum. Read as
+  documentation from a legitimately-owned installation; no engine source is redistributed here.
 
 ### Our own first-party research
+
+The [read the shipped files](./docs/techniques/README.md#read-the-shipped-files-before-you-attach-anything),
+[counting events is not measuring content](./docs/techniques/README.md#counting-events-is-not-measuring-content),
+[stereo early-out](./docs/techniques/README.md#stereo-hazard-a-setter-that-early-outs-on-an-unchanged-matrix)
+and [composition bugs that masquerade as handedness](./docs/techniques/README.md#composition-bugs-that-masquerade-as-handedness)
+sections, and the Avalanche, Dunia, id Tech 5 and UE1–3 family pages' camera-delivery findings, were
+generalised out of our own static analysis of legitimately-owned copies of **Mad Max**, **Enslaved**,
+**The Evil Within**, **Far Cry 2** and **XIII (2003)**. Full evidence in each project's
+`engine-research/` and `modding-notes/` folders:
+[`mad-max-vr`](https://github.com/TefMeister/mad-max-vr) ·
+[`enslaved-vr`](https://github.com/TefMeister/enslaved-vr) ·
+[`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr) ·
+[`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr) ·
+[`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr).
+
+The [control rules](./docs/techniques/README.md#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one),
+the [write-combined memory section](./docs/techniques/README.md#never-cpu-scan-mapped-gpu-memory-in-place--it-is-write-combined)
+and the [console-automation section](./docs/techniques/README.md#driving-a-game-console-with-synthetic-keys-scancodes-layouts-and-dead-keys)
+were generalised out of the DOOM (2016) work, including several of that project's own withdrawn
+claims — kept and cited because the corrections are the transferable part.
 
 The [id Tech 6 case study](./docs/case-studies/id-tech-6-dormant-stereo.md) is our own static
 analysis of a legitimately-owned copy, not a summary of someone else's work. The full evidence and

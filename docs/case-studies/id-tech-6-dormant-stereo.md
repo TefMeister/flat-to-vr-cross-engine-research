@@ -47,16 +47,72 @@ The engine's own documentation comment describes its view setup like this: there
 world view, but there will be *"two unique ones in split-screen multiplayer and **two identical ones
 in stereo-3D (both centered between the eyes)**."*
 
-Read that carefully, because it changes the plan. The two stereo views are **identical and centered**
-— the eye offset is **not** expressed as two different view matrices. Separation is applied
-**downstream** of view setup, as a projection/screen-space step (consistent with a
-`screenSeparation` cvar existing alongside a world-units one).
+Read carefully, that appears to change the plan: the two stereo views are **identical and centered**,
+so the eye offset would not be expressed as two different view matrices, and separation would be
+applied **downstream** of view setup as a projection or screen-space step — consistent with a
+`screenSeparation` cvar existing alongside a world-units one.
 
-**Consequence:** a dormant path of this vintage may give you correct *stereo* without correct
-*per-eye positional geometry*. That is genuinely valuable — real binocular depth, for free, from
-code the engine's own authors wrote and shipped — but it is not automatically 6DoF, and an adapter
-built on it would likely still need to override at the **projection** stage rather than assume the
-view stage will carry an eye offset.
+**That was this page's published reading for a week, and a later pass over id's own source
+contradicts it.** `[corrected 2026-09-01]`
+
+#### The correction, from id's own published source
+
+id Software's GPL release of **Doom 3 BFG Edition** — the previous generation of this same codebase,
+first-party primary source — declares its `renderView_t` in `neo/renderer/RenderWorld.h` like this,
+verbatim:
+
+```c
+idVec3   vieworg;                   // has already been adjusted for stereo world seperation
+idMat3   viewaxis;                  // transformation matrix, view looks down the positive X axis
+int      viewEyeBuffer;             // -1 = left eye, 1 = right eye, 0 = monoscopic view or GUI
+float    stereoScreenSeparation;    // projection matrix horizontal offset, positive or negative based on camera eye
+```
+
+Read the `vieworg` and `stereoScreenSeparation` comments together and the id lineage applies **both**
+halves of a textbook stereo setup, as two distinct steps — which is exactly why the engine ships
+**two** separately-named separation cvars rather than one:
+
+| cvar | the engine's own help text | what BFG's source shows it doing |
+|---|---|---|
+| `stereoRender_separation` | "world units from center to eyes" | **moves `vieworg`** — a genuine per-eye world-space camera translation |
+| `stereoRender_screenSeparation` | "screen units from center to eyes" | **shifts the projection matrix horizontally** — the convergence term |
+
+So the world-space eye offset is **not** downstream and **not** a skew. The view origin is already
+per-eye by the time the renderer sees it, and the projection offset is a complementary convergence
+step on top.
+
+`viewEyeBuffer` is worth noticing on its own: a single int, `-1` / `+1` / `0`, where **0 means
+monoscopic view *or* GUI**. A one-integer eye selector with the GUI as a first-class member of the
+same enum is a recognisable shape to go looking for in any engine of this family.
+
+**Independent corroboration on the successor engine.** Helifax's **6DoF** VR mod for DOOM Eternal
+(id Tech 7) is publicly described as using *"synced eye, single pass, stereo instancing"* — a
+technique that indexes **per-eye view-projection matrices** from the instance ID and cannot be built
+on one shared centered view plus a screen-space shift.
+
+#### The tension, kept rather than resolved
+
+Neither source disproves the other, and this page does not pretend otherwise:
+
+- DOOM 2016's own compiled-in comment really does say *"two identical ones in stereo-3D (both
+  centered between the eyes)"* — `[inferred-static, 2026-08-26]`, id Tech 6 text about id Tech 6.
+- BFG's `renderView_t` comments really do say `vieworg` is already per-eye —
+  `[verified from published first-party source, 2026-09-01]`, id Tech 4/5 text, one generation
+  earlier.
+
+Plausible reconciliations, none established: the id Tech 6 comment may describe the world-view list
+*as constructed*, before per-eye adjustment is applied to each; it may be stale commentary carried
+forward with the code; id Tech 6 may genuinely have simplified the path; or "identical" may mean "of
+the same scene" rather than "of the same camera".
+
+**What changed in the recommendation.** The earlier consequence — *"an adapter built on it would
+likely still need to override at the projection stage"* — is withdrawn as a default. The **view
+stage is now the better first bet on this family**, and there is a live result behind that: the
+DOOM 2016 project has a working control point writing the `globalViewOrigin` / `Fwd` / `Left` / `Up`
+quartet at a single static global, with the world rendering correctly from the displaced position.
+Under this reading that is not a workaround for a missing stereo path — it is **the same lever the
+engine's own stereo code pulls**, reached from another direction. The projection route has not been
+tried at all, and remains the fallback rather than the plan.
 
 **Status: partly answered, and the answer is instructive.** A live console session on the retail
 build established that these cvars are **never registered at runtime** — see
@@ -159,6 +215,42 @@ What remains open is narrower and better posed: whether the gated cvars are mere
 *constructed*. If the latter, in-process registration won't resurrect them either, and the dormant
 render code would have to be driven directly rather than through its cvars.
 
+### …and then somebody had already published the key
+
+`[reported, 2026-09-01]` Everything above is correct, and one thing was missing from it. A **public
+mod for this same game re-adds the hidden console interface on the retail build, without developer
+mode**, taking it from **39 commands / 170 cvars to 290 / 6592** — numbers that match the first-party
+live measurement above to within one each. It works via a proxy DLL that patches *before the engine
+initialises*, and it separately **reimplements** a handful of commands that were stripped rather than
+merely hidden.
+
+**That reframes the open question rather than closing it.** Thousands of cvars complete with the
+developers' own help text cannot be hand-authored by a modder; they are an enumeration of structures
+the binary already contains. The economical reading is therefore **hidden and constructible**, not
+absent — which is the good outcome, because it means in-process registration is a live option.
+Recorded at `[reported]` confidence: nobody has tested it on the build in question, and "a tool
+exists that says it does X" is not "X happened here."
+
+**Two lessons follow, and they generalise past this game.** First: before writing *"the console is
+not a route"* into a dossier, spend one search on whether the engine's modding scene has already
+built the unlocker — production-gated engines with active scenes usually have exactly one, because
+it is the first thing every modder there wants. Second: **such a tool is worth reading even if you
+never install it.** This one publishes its command and cvar lists as plain text, which is a free
+symbol source complete with help text — and it settled, from a public page, that a renderparm
+read/write command and a *set*-view-position command are real named engine commands rather than
+strings of uncertain status. Both are directly relevant to a camera hunt on this engine.
+
+The usual caveats apply and are worth stating: tools like this are frequently closed-source and
+unlicensed, which makes them **prior art and feasibility proof rather than something to study
+line-by-line**; their patches are build-specific, so compatibility is a thing to verify rather than
+assume; and if they proxy a DLL you are also proxying, that is a problem you want to find before a
+live run rather than during one.
+
+See [Before you build it, check whether the game shipped it](../techniques/#before-you-build-it-check-whether-the-game-shipped-it)
+for the generalised form, which also covers the shipped **photo mode** this same game turned out to
+have — an ungated, player-facing detached camera that explains why an elevated view on this engine
+renders with no culling collapse.
+
 ## A method trap worth stealing
 
 The static pass that found all of the above also produced a **confidently-stated wrong conclusion**,
@@ -183,11 +275,19 @@ usable stereo path with **no VR-runtime strings at all**, because it predates th
 Search for `stereo*` cvars and enums, eye/separation/IPD terminology, and split/multi-view render
 modes too. Long-lived engine families inherit this kind of code silently across generations.
 
-**2. Read the engine's own doc-comments — they are load-bearing.**
-The single most consequential fact here (two *centered* views, separation applied downstream) came
-from a developer comment compiled into the binary, not from disassembly. Engines with declarative
-reflection or cvar-help systems often ship their authors' prose. It is primary-source engine
-documentation sitting in the file, and it is cheap to read.
+**2. Read the engine's own doc-comments — they are load-bearing, and they can still be wrong for
+you.** The single most consequential claim on this page originally came from a developer comment
+compiled into the binary rather than from disassembly, and reading those comments remains one of the
+cheapest high-value moves available. Engines with declarative reflection or cvar-help systems often
+ship their authors' prose; it is primary-source engine documentation sitting in the file.
+
+**But that same claim is the one this page had to correct.** A compiled-in comment can be stale,
+generation-shifted, or describing a narrower scope than it appears to. So sharpen the rule rather
+than abandoning it: **where an engine family has a *published* ancestor, check the ancestor's source
+before building a plan on the descendant's comment.** id Tech 6 has one — id's own GPL Doom 3 BFG
+release — and one pass over it reversed a conclusion that had shaped the recommendation here. That
+cross-check is cheap, repeatable, and applies to every long-lived engine family with an open
+generation somewhere behind it.
 
 **3. A dormant path is a starting point, not a finished feature.**
 Vintage stereo support was built for 3D TVs and shutter glasses, not head-mounted 6DoF. Expect to
@@ -202,15 +302,25 @@ before launching the game once. On an unprotected binary this is cheap, safe, an
 
 ## Prior art for stereo on this engine (not head tracking)
 
-For context on what already exists publicly: **Vk3DVision** (Helifax) is a maintained Vulkan
-stereoscopic-3D driver with an actively-updated DOOM (2016) fix, which independently demonstrates
-that per-eye override at the Vulkan level is achievable on this title. It is closed-source, so it is
-a **feasibility proof, not something to study line-by-line**. See
-[generic drivers](../generic-drivers/#vulkan--vk3dvision) for details and limits. vorpX's Geometry-3D
-mode is reported by its own users as no longer working for this game.
+For context on what already exists publicly: **Vk3DVision** (Helifax) is a Vulkan stereoscopic-3D
+driver with a DOOM (2016) fix, which independently demonstrates that per-eye override at the Vulkan
+level is achievable on this title. It is closed-source, so it is a **feasibility proof, not something
+to study line-by-line**. See [generic drivers](../generic-drivers/#vulkan--vk3dvision) for details
+and limits. vorpX's Geometry-3D mode is reported by its own users as no longer working for this game.
 
-Neither is confirmed to provide true positional head tracking; both are best understood as stereo
-output rather than a 6DoF conversion.
+**Status update `[checked 2026-09-01]`, and it matters for planning:** the Vk3DVision repository was
+**archived by its owner on 2026-03-05** and is now read-only, with **4.25.5** as its final release.
+The maintained fix list still shows DOOM (2016) last updated 2025-08-30. The feasibility proof
+stands; **no future fixes will come**, so nothing should be planned around the tool keeping pace with
+game patches.
+
+**The split between the two id generations is now explicit and worth stating plainly:** on **id Tech
+6 the public prior art is stereo-only**, while the **6DoF VR package exists only for DOOM Eternal on
+id Tech 7** (a separate *"Virtual Reality"* build, listed at version 0.90). The long-open question of
+whether Vk3DVision's VR naming implied real positional head tracking therefore resolves, *for DOOM
+2016*, to **no** — that variant was never built for it. Head tracking on id Tech 6 remains entirely
+something a conversion has to supply, and that is now an evidenced statement rather than an absence
+of evidence.
 
 ---
 
@@ -225,8 +335,13 @@ output rather than a 6DoF conversion.
 - Tiago Sousa & Jean Geffroy, *"The Devil is in the Details: idTech 666"*, SIGGRAPH 2016 Advances in Real-Time Rendering — [slides](https://www.slideshare.net/TiagoAlexSousa/siggraph2016-the-devil-is-in-the-details-idtech-666) · [text summary (80.lv)](https://80.lv/articles/idtech-666-the-secret-of-dooms-render). Describes the renderer as a hybrid clustered-forward + deferred design with roughly 100 unique shaders in total, and notes the id Tech 6 job system's scheduling gaps that id Tech 7 later rewrote.
 - Adrian Courrèges, *"DOOM (2016) — Graphics Study"* — [adriancourreges.com](https://www.adriancourreges.com/blog/2016/09/09/doom-2016-graphics-study/). Frame-by-frame breakdown of a real capture; the reference to reach for when doing pass inventory.
 
+**First-party engine source (the correction above):**
+- [id-Software/DOOM-3-BFG](https://github.com/id-Software/DOOM-3-BFG) — id Software's own GPL release of the previous generation of this codebase; `neo/renderer/RenderWorld.h` (`renderView_t`) and `neo/renderer/RenderSystem_init.cpp` (the `stereoRender_*` cvars and the `STEREO3D_*` mode enum).
+
 **Third-party tools referenced:**
-- [Vk3DVision](https://github.com/helifax/Vk3DVision-Public) (Helifax / Octavian Vasilov) — closed-source, Patreon-funded; releases only.
+- [Vk3DVision](https://github.com/helifax/Vk3DVision-Public) (Helifax / Octavian Vasilov) — closed-source, Patreon-funded; releases only. **Archived 2026-03-05**, final release 4.25.5. Per-title fix versions and dates: [3dsurroundgaming.com](https://3dsurroundgaming.com/Vk3DVisionGames.html).
+- DOOM Eternal 6DoF VR mod (Helifax) — technique prior art on id Tech 7; reported by [Flat2VR](https://x.com/Flat2VR/status/1704495949978984506), [demo video](https://www.youtube.com/watch?v=6Z-LGvDUlv8).
+- [DOOMLegacyMod](https://github.com/brunoanc/DOOMLegacyMod) — **emoose** (original), updated and re-hosted by **brunoanc**. Re-adds DOOM 2016's hidden console commands and cvars on retail; publishes `doom_cmds.txt` and `doom_cvars.txt` as plain-text interface dumps. Closed-source, no licence stated — referenced as prior art and read online only.
 - [vorpX](https://www.vorpx.com/) (Ralf Ostertag) — commercial.
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

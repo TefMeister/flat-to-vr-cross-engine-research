@@ -264,3 +264,110 @@ they were written up together rather than as three unrelated notes.
 
 **Inboxes filled:** one — `visceral-re2-vr/external-research/inbox/` (the REFramework `false`-return
 regression against their shipped crosshair script).
+
+### 2026-09-01 — full sweep (web delta from 2026-08-31; in-house delta from 2026-08-31)
+
+**The shape of this one:** the web was almost silent (one day since the last sweep), and the
+in-house side was the richest single day this estate has had — **six projects across four engine
+families all landed static-analysis wins on 2026-09-01**. Most of what follows was generalised out
+of our own repos rather than found on the internet.
+
+**Inbox drained: ten files, all of them.** `inbox/` is now empty but for its `README.md`. Five
+`mod` drops from 2026-08-31 (id Tech 6 input measured; the attribution trap; verify the knob turns;
+negatives need a positive control; write-combined reads and instrument validity), three `mod` drops
+from 2026-09-01 (the no-op control for positives; console keys as layout-dependent dead keys, and
+that file's own same-day correction), and two `gr` drops from 2026-09-01 (the stereo-separation
+correction; three transferable heuristics).
+
+**⚠️ The supersession scan earned its keep this time.** Running
+`grep -rn "^Supersedes:" inbox/` before draining anything, per the 2026-08-28 claim-hygiene rule,
+caught three claims that would otherwise have been curated as facts and only then met their
+withdrawal:
+
+- The *"per-frame ring buffers defeat address-based matrix hunting, proven by 319 vs 331
+  survivors"* claim. Two later files in the same inbox withdraw that measurement — the "walk"
+  condition never walked. The **mechanism** is still well-founded and is written up; the **number**
+  is not cited, and the section says why.
+- The earlier console-key file's specific VK values, superseded hours later by the discovery that
+  the *active layout itself* changed between two launches on one machine. The corrected version is
+  what was curated.
+- A smaller one: a drop concluded *"the HUD is positioned from the view, so it follows the camera
+  out of frame."* This session's own `/gr` research contradicts it — a developer-authored frame
+  breakdown shows that game's UI is drawn to its own render target and composited last, so it cannot
+  be culled by moving the world camera. The **rule** in that drop was curated; its HUD explanation
+  was not.
+
+**Web sources checked.** *Nothing new, as expected one day on.* **UEVR** and **REFramework** — zero
+commits since 2026-08-31. **mutars** — most recent public activity 2026-08-22, unchanged.
+**OldUnreal** — still v227k_15 (2026-08-16). **MTBS3D** not re-attempted (403 to automated fetch in
+three prior sweeps). One genuinely new item, surfaced by this session's `/gr` rather than by the
+watch-list walk: **Vk3DVision was archived by its owner on 2026-03-05**, read-only, final release
+**4.25.5** — the fix list still shows DOOM (2016) at 2025-08-30, so the feasibility proof stands but
+no future fixes will come. Recorded in the case study and `ATTRIBUTION.md`. Clarified alongside it:
+the **6DoF** VR package from the same author exists **only for DOOM Eternal on id Tech 7**, built on
+single-pass stereo instancing — so on id Tech 6 the public prior art is stereo-only, and the
+long-open head-tracking question resolves to *no* for DOOM 2016.
+
+**Project-repo harvest (delta since 2026-08-31; all 16 game repos pulled).** Seven had no
+research-lane commits: Alan Wake, Alice: Madness Returns, arcade-controls, Burnout Paradise, Prince
+of Persia, RE Village scope, Unreal Gold. Nine had real content, six of them substantial:
+
+- **`mad-max-vr`** — **Denuvo blocks the executable, not the shader bundle.** 1363 DXBC shaders ship
+  loose with `RDEF` reflection intact; `WorldViewProjMatrix` named at offset 0 of `InstanceConsts`.
+  A project stalled at first injection became startable with no debugger. **Dossier covered in full.**
+- **`enslaved-vr`** — the game ships its UE3 `.usf` sources; `c0`–`c3` is `ViewProjectionMatrix`,
+  `c4` the camera position, `c5` `PreViewTranslation`. Settles a capture question by reading, and
+  corrects an earlier reading that had counted *writes* rather than values. **Covered in full.**
+- **`far-cry-2-vr`** — head tracking built and **verified numerically**; two composition bugs caught
+  by a harness, one of which presents exactly as a handedness problem. **Covered in full.**
+- **`XIII2003-vr`** — `FD3DRenderInterface::SetTransform` located statically as the single per-eye
+  hook, **with an early-out on unchanged matrices that would collapse stereo silently.**
+- **`the-evil-within-vr`** — the shader-layout coverage gap bounded to ten shapes, entirely off disk.
+- **`doom-2016-vr`** — thirteen research-lane commits: the camera isolated to one static global, plus
+  this session's own `/gr` topics. **Covered in full.**
+- **`psychonauts-vr`**, **`manhunt-2003-vr`**, **`visceral-re2-vr`** — confidence-tagging passes and
+  a windowed-mode registry finding; nothing further to lift that is not already generalised. Worth
+  recording for its own sake: `visceral-re2-vr` **date-checked its pinned REFramework revision
+  against the 2026-08-19→28 GUI-callback regression this sweep reported last time**, and confirmed it
+  is not affected. That is the hand-off loop working end to end.
+
+**Generalised up this sweep.** Eight new sections in
+[`docs/techniques/README.md`](./techniques/README.md): *read the shipped files before you attach
+anything* (with the DRM sub-lesson and the reflection-names-the-per-object-buffer-not-the-shared-one
+limit), *counting events is not measuring content*, *stereo hazard: a setter that early-outs on an
+unchanged matrix*, *composition bugs that masquerade as handedness*, *controls: a negative needs a
+positive one, a positive needs a no-op one*, *never CPU-scan mapped GPU memory in place*, *driving a
+game console with synthetic keys*, and *before you build it, check whether the game shipped it*.
+
+The existing injected-input section was **substantially corrected**: the id Tech 6 row is now
+measured rather than hypothesised, the **exclusivity** distinction replaces the API-family one, and
+the "in-process is strictly stronger than SendInput" framing is withdrawn — that route installed
+perfectly on id Tech 6 and moved the player zero metres. *Search by value, not by address* was added
+to the camera-matrix section, and the large-file false-negative case to *tool defaults*.
+
+**Four engine pages gained their first-ever shared findings** —
+[`id-tech-6.md`](./engines/id-tech-6.md) (camera, stereo, injection, input),
+[`avalanche.md`](./engines/avalanche.md), [`dunia.md`](./engines/dunia.md) and
+[`id-tech-5.md`](./engines/id-tech-5.md) — and [`unreal-1-3.md`](./engines/unreal-1-3.md) gained a
+camera-delivery section covering both UE3 and UE2.
+
+The [id Tech 6 case study](./case-studies/id-tech-6-dormant-stereo.md) took its **first substantive
+correction**: id's own GPL source says the view origin *is* adjusted per eye, which withdraws that
+page's "override at the projection stage" recommendation in favour of the view stage. Its
+doc-comment lesson was **sharpened rather than deleted** — *where an engine family has a published
+ancestor, check the ancestor's source before building a plan on the descendant's comment.* The gate
+section gained the community console-unlocker finding, and the prior-art section the archival status.
+
+**Inboxes filled: three.** `doom-2016-vr/engine-research/` (try `+com_allowconsole 1` — the id Tech 5
+gate name — as a launch-time probe against the known production gate);
+`the-evil-within-vr/external-research/` (that game's console opens with `+com_allowconsole 1` and
+`noclip` works, a live capability an entirely static project did not have on its board);
+`far-cry-2-vr/external-research/` (`-DEVMODE` launch flag and a self-enumerating console, useful now
+that head tracking needs a live check). All three came from asking whether DOOM's console-gate shape
+recurs elsewhere in the estate — this sweep's own generalisation pointing back down at the projects.
+
+**One thing deliberately not curated here.** `XIII2003-vr` recorded that its proxy source exists in
+no repository — zero source files across 59 commits, the cited branch gone with the pre-consolidation
+repos, and one unversioned copy on the home PC. `the-evil-within-vr` committed a recon log for the
+same reason on the same day. That is estate hygiene rather than flat-to-VR knowledge, so it belongs
+in `claude-memory`, not in this public library; flagged in the changelog line instead.

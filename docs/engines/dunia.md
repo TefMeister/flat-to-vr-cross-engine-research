@@ -23,9 +23,23 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Shared findings
 
-*Seeded 2026-08-26; grown by the research sweep as cross-project truths emerge. Nothing has been
-generalised up to this page yet — the per-project dossiers linked above are the current source of
-truth for this family.*
+*Seeded 2026-08-26; first populated 2026-09-01 from the Far Cry 2 dossier, so `n=1` by
+construction.*
+
+- **Head tracking is composed into the per-frame view-projection without splitting it.**
+  `[verified numerically 2026-09-01; not yet headset-tested]` The HMD pose is folded into the
+  combined matrix directly, never decomposed into separate projection and view halves — which
+  removes a whole class of reconstruction error before it can arise.
+- **Derive the axis convention, do not hard-code it.** Rather than carrying a runtime-to-engine axis
+  table, the camera basis is read from the matrix's own rows every frame, so the entire conversion
+  reduces to one change of basis and the camera's world position is *solved* from the matrix rather
+  than assumed. That is the recommended shape for this family, and it generalises well beyond it.
+- **⚠️ Two composition bugs on this engine looked exactly like handedness problems**, and both were
+  caught by a numerical harness rather than by reading: a position solve mixing normalised basis
+  rows with raw translation terms, and a rotation composed as the *camera* rotation where the
+  transform being modified is its inverse. Reaching for the handedness knob would have masked the
+  second while leaving it wrong. See
+  [composition bugs that masquerade as handedness](../techniques/#composition-bugs-that-masquerade-as-handedness).
 
 ## See also
 
