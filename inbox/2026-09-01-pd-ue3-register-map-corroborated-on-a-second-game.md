@@ -34,8 +34,8 @@ types.**
 ## 🪤 A trap worth adding to the page, because it nearly produced a wrong claim here
 
 **Split CTAB tables by shader target before aggregating registers.** In Alice, the same name
-`ViewProjectionMatrix` sits at `c0` in vertex shaders and at `c4` in pixel shaders (4,126 of those,
-plus 4 stragglers at `c11`). Aggregated together, `c0` looks like the *minority* case and the obvious
+`ViewProjectionMatrix` sits at `c0` in vertex shaders and at `c4` in pixel shaders (4,122 of those,
+plus 4 stragglers at `c11` — 4,126 pixel shaders in total). Aggregated together, `c0` looks like the *minority* case and the obvious
 conclusion is the wrong one. Vertex and pixel constant registers are separate spaces.
 
 A related display trap in the tooling: `d3d9-ctab.py` prints *sampler* registers with a `c` prefix,
