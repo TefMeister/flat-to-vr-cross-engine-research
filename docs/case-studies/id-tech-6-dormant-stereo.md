@@ -97,8 +97,9 @@ Neither source disproves the other, and this page does not pretend otherwise:
 - DOOM 2016's own compiled-in comment really does say *"two identical ones in stereo-3D (both
   centered between the eyes)"* — `[inferred-static, 2026-08-26]`, id Tech 6 text about id Tech 6.
 - BFG's `renderView_t` comments really do say `vieworg` is already per-eye —
-  `[verified from published first-party source, 2026-09-01]`, id Tech 4/5 text, one generation
-  earlier.
+  `[reported 2026-09-01]`, read from id Software's own published GPL release of Doom 3 BFG, so it is
+  first-party text rather than a community account, but it is id Tech 4/5 text describing one
+  generation earlier.
 
 Plausible reconciliations, none established: the id Tech 6 comment may describe the world-view list
 *as constructed*, before per-eye adjustment is applied to each; it may be stale commentary carried
@@ -321,6 +322,47 @@ whether Vk3DVision's VR naming implied real positional head tracking therefore r
 2016*, to **no** — that variant was never built for it. Head tracking on id Tech 6 remains entirely
 something a conversion has to supply, and that is now an evidenced statement rather than an absence
 of evidence.
+
+---
+
+## Update, 2026-09-01: the gate was never the route to the switch
+
+The whole case above is organised around one implicit assumption — that behind the production-mode
+gate sits *the thing that turns stereo on*. Reading the published cvar dump in full retired that
+assumption `[reported 2026-09-01]`.
+
+**All 6,572 cvars were read.** The four `stereoRender_*` parameters are there, so are
+`multiView_60Hz` and `com_production` — and **nothing in the entire list selects
+`stereoRenderMode_t`**. That is a second, independent negative to set beside the live
+`listCvars stereo` result: the name is not merely unregistered, it does not appear to exist as a
+cvar at all.
+
+id's published previous-generation source shows why. The eye is **an argument to the render call**,
+not a mode read from a global:
+
+```c
+void RB_DrawView( const void *data, const int stereoEye );   // 0 = mono, -1 / +1 = eyes
+```
+
+— carried downstream as a first-class `viewEyeBuffer` field on the view object. `[reported
+2026-09-01]` for id Tech 4/5; **`[hypothesis]` for id Tech 6**, a generation later. What makes it
+more than a guess is that it *predicts the inventory that was measured*: every stereo **parameter**
+present as a cvar while no **mode** is, is the signature of a call-site argument.
+
+**So the conclusion this case study reached is unchanged and its lessons all stand — but the prize
+behind the door is smaller than it looked.** Winning the gate yields the stereo *parameters*, which
+are genuinely useful, and **not** the on-switch, which was never a cvar to begin with. The
+`explicit*` override fields are in the same position: the dump read found none of them present as
+cvars, so they are renderparms or code-level fields reached by `rp` or a patch, not by typing at a
+prompt.
+
+There is a fourth transferable lesson in that, added to the three above:
+
+4. **When a switch cannot be found, question the category before questioning the search.** Weeks can
+   go into looking harder for a global that was never a global. The tell is an inventory where every
+   *parameter* of a feature is exposed and nothing selects the *mode* — read that as evidence about
+   the shape of the code, not about how well hidden the name is. Written up in full on the
+   [techniques page](../techniques/#the-switch-you-cannot-find-may-be-an-argument-not-a-global).
 
 ---
 

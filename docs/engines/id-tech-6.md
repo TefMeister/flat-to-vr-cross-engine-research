@@ -58,6 +58,23 @@ engine-level rather than title-level, not because it has been seen twice.*
 - The family carries a **dormant inherited stereo-3D path** (`stereoRenderMode_t`, `stereoRender_*`),
   traceable to the Doom 3 BFG generation and to Carmack's own 2012 Rift work. Retail production mode
   never registers those cvars.
+- **⭐ There is no stereo *mode* cvar to find — the switch is a call argument.** Two independent
+  negative reads settle it: the **published 6,572-cvar dump** contains all four `stereoRender_*`
+  parameters, `multiView_60Hz` and `com_production`, but **nothing selecting `stereoRenderMode_t`**
+  `[reported 2026-09-01]`; and retail registers only 171 cvars at runtime, with `listCvars stereo`
+  returning nothing `[verified-live 2026-08-26]`. id's published GPL source for the previous
+  generation threads the eye through the render call instead — `RB_DrawView(data, stereoEye)` with
+  `0` mono and `±1` per eye, plus a first-class `viewEyeBuffer` field on the view object.
+  `[reported 2026-09-01]` for id Tech 4/5, **`[hypothesis]` for id Tech 6** — but it *explains the
+  measured cvar inventory*, which is what lifts it above a guess: every stereo **parameter** exposed
+  while no **mode** is, is exactly what a call-site argument looks like from outside.
+  `stereoRender_swapEyes` is only a late cosmetic flip, not the gate.
+  - **Consequence, and it removes work:** winning the console/production-mode gate would yield the
+    stereo *parameters*, **not the on-switch** — so the gate is off the critical path for stereo.
+    Hunt instead for a function taking a small signed eye argument called twice per frame, and for
+    the matching field on the view object; the reflection database below makes that a **static**
+    search needing no launch. Generalised on the
+    [techniques page](../techniques/#the-switch-you-cannot-find-may-be-an-argument-not-a-global).
 - **Separation is applied at the view stage as well as the projection stage.** id's own GPL source
   for the previous generation declares the view origin as *already adjusted for stereo world
   separation*, with a separate *screen* separation term shifting the projection horizontally — which
@@ -85,9 +102,14 @@ engine-level rather than title-level, not because it has been seen twice.*
   qualified C++ class, enum and field names next to human-written descriptions. Functionally a
   built-in symbol source, the way reflection serves UEVR on Unreal or REFramework on RE Engine,
   except native to the file. Mining it properly is its own worthwhile task.
-- **Named override-shaped fields already exist:** `explicitProjectionMatrix`, `explicitFov_x` /
-  `explicitFov_y`, `forceIdentityViewMatrix`. If honoured on the main world view, a per-eye
-  projection override could be a *supported engine input* rather than a patch. Unverified.
+- **Named override-shaped fields already exist — but they are not cvars.** `explicitProjectionMatrix`,
+  `explicitFov_x` / `explicitFov_y`, `forceIdentityViewMatrix`. If honoured on the main world view, a
+  per-eye projection override could be a *supported engine input* rather than a patch — still
+  unverified. **Refined 2026-09-01:** the full cvar-dump read found **none of them present as cvars**
+  (every `explicit*` hit belongs to `ai_`, `pm_`, `fs_` or `prowler_`) `[reported 2026-09-01]`, so
+  they are **renderparms or code-level fields**, and the route to them is the renderparm command
+  (`rp`) or a patch — not the console variable system. Worth knowing before a session is spent
+  typing them at a prompt.
 
 ### Input
 

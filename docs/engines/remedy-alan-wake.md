@@ -9,7 +9,8 @@ orientation row. Curated by the cross-project research sweep.*
 
 - **Engine:** Remedy Entertainment's proprietary in-house engine as shipped in Alan Wake — the
   studio lineage that later produced Northlight (Quantum Break onwards).
-- **Render API:** see the dossier for the measured specifics of the Alan Wake PC build.
+- **Render API:** **Direct3D 9**, 32-bit — but resolved dynamically rather than statically imported;
+  see the shared findings below.
 - **Known public VR path:** none turnkey. Manual build.
 
 ## Our projects on this engine
@@ -20,9 +21,45 @@ orientation row. Curated by the cross-project research sweep.*
 
 ## Shared findings
 
-*Seeded 2026-08-26; grown by the research sweep as cross-project truths emerge. Nothing has been
-generalised up to this page yet — the per-project dossiers linked above are the current source of
-truth for this family.*
+*Seeded 2026-08-26; **first populated 2026-09-01** from the Alan Wake dossier, so `n=1` by
+construction — this family has one project on it.*
+
+- **The executable is a thin loader; the engine lives in per-subsystem DLLs.** `[inferred-static
+  2026-08-25]` `AlanWake.exe` is a small PE32 with only four sections, and the real engine arrives as
+  separately-named modules — `app_sf_Win32.dll`, `grph_sf_Win32.dll`, `d3d_sf_Win32.dll`,
+  `renderer_sf_Win32.dll`, `physics_sf_Win32.dll`, `ai_sf_Win32.dll` and others, one per subsystem.
+  **This is unusual for the era and it changes recon:** a string or import sweep of the executable
+  alone finds almost nothing, and every question about the renderer has to be asked of
+  `d3d_sf_Win32.dll` instead. Budget for sweeping *all* modules rather than the exe.
+- **D3D9 is resolved dynamically, not statically imported.** `[inferred-static 2026-08-25]` No module
+  imports `d3d9.dll` in its PE import table. `d3d_sf_Win32.dll` instead carries the strings
+  `Direct3DCreate9` and `Direct3DCreate failed` side by side — the signature of
+  `LoadLibrary` + `GetProcAddress` with a handled failure path. **A same-named proxy still works**
+  (`LoadLibrary` uses the same application-directory-first search order), but the failure mode of an
+  incomplete proxy is a graceful logged error rather than a silent pre-`main` exit. See
+  [a proxy DLL must export everything the target actually imports](../techniques/#a-proxy-dll-must-export-everything-the-target-actually-imports).
+- **A from-scratch `d3d9.dll` proxy is live-verified on this engine.** `[verified-live 2026-08-25,
+  n=1]` The game runs cleanly with it and needs **no compatibility flag** of any kind.
+- **⚠️ A plain `IDirect3D9::CreateDevice` vtable hook (slot 16) reliably breaks startup here, cause
+  unknown.** `[verified-live 2026-08-25, n=1]` The same hook pattern works on sibling D3D9 projects in
+  this account, so this is specific to this engine or title. It cost a full diagnostic detour, since
+  the hook had been added *to investigate* an earlier crash and became the crash. Do not re-enable
+  such a hook on this family without understanding it first — and see
+  [the instrument can be the bug](../techniques/#the-instrument-can-be-the-bug).
+- **Remedy shipped real developer tools in the retail build.** `[reported 2026-08-25]` `-freecamera`
+  (a genuine free camera, toggled with the right thumbstick — controller only, no confirmed
+  keyboard equivalent) and `-developermenu` (episode/difficulty/ammo; **not** confirmed to include
+  camera or rendering tools). A zero-injection way to observe camera behaviour before hooking
+  anything — the same category of asset as a dormant debug menu elsewhere in this account.
+- **Native stereoscopic 3D is reported present, with live separation hotkeys.** `[reported
+  2026-08-25]` Later builds are described as close to "3D Vision ready out of the box", with in-game
+  separation adjustment on `Ctrl+F3` / `Ctrl+F4`. If that holds on the installed build it implies the
+  **per-eye offset mechanism is already wired up and reachable**, which is the expensive half of the
+  problem. Unconfirmed live. Method:
+  [a third-party stereo fix is free intelligence about the engine](../techniques/#a-third-party-stereo-fix-is-free-intelligence-about-the-engine--read-it-dont-install-it).
+- **No DRM, and the GFWL history is closed.** `[inferred-static 2026-08-25]` The original release
+  shipped on Games for Windows Live; the installed Steam build has **zero** `xlive`/GFWL files or
+  strings across the exe and all nine module DLLs. Checked specifically rather than assumed.
 
 ## See also
 

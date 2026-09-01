@@ -27,7 +27,7 @@ orientation row. Curated by the cross-project research sweep.*
 construction.*
 
 - **Head tracking is composed into the per-frame view-projection without splitting it.**
-  `[verified numerically 2026-09-01; not yet headset-tested]` The HMD pose is folded into the
+  `[verified-numerically 2026-09-01, n=1 game]` (Far Cry 2; not yet headset-tested) The HMD pose is folded into the
   combined matrix directly, never decomposed into separate projection and view halves — which
   removes a whole class of reconstruction error before it can arise.
 - **Derive the axis convention, do not hard-code it.** Rather than carrying a runtime-to-engine axis
