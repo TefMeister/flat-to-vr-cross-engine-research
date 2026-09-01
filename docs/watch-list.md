@@ -39,6 +39,7 @@ for the last sweep date and what it found.
 | Unreal Gold | Unreal Engine 1 | 227k SDK updates, any new community render-device work | oldunreal.com, [OldUnreal GitHub org](https://github.com/OldUnreal) |
 | Psychonauts | Double Fine bespoke (2005) | Any public camera/engine documentation; nothing turnkey exists. Our own generalised findings are on the [engine page](./engines/double-fine-psychonauts.md). | General search |
 | DOOM (2016) | id Tech 6 | Whether the engine's **dormant inherited stereo path** is live or vestigial; any first public VR conversion attempt (none exists); Vk3DVision DOOM fix updates | [Vk3DVision fix list](https://3dsurroundgaming.com/Vk3DVisionGames.html), MTBS3D, Nexus (DOOM), general search |
+| Manhunt (2003) | RenderWare | The family's one substantial VR conversion, **Vice City VR** — releases, and any write-up of how it does stereo. Watch for whether it ever grows an *injection*-side technique; today it is a source-port route that a game without a decompilation cannot take. `librw` itself for renderer documentation. | [vice-city-vr](https://github.com/dubrovskiy-yevhen-stakelogic/vice-city-vr) · [vice-city-vr-quest](https://github.com/Blackbird88/vice-city-vr-quest) · [librw](https://github.com/aap/librw) |
 
 ## Generic-driver ecosystem (fallback when not writing an adapter)
 
@@ -371,3 +372,97 @@ no repository — zero source files across 59 commits, the cited branch gone wit
 repos, and one unversioned copy on the home PC. `the-evil-within-vr` committed a recon log for the
 same reason on the same day. That is estate hygiene rather than flat-to-VR knowledge, so it belongs
 in `claude-memory`, not in this public library; flagged in the changelog line instead.
+
+### 2026-09-01 (second sweep, later the same day) — the dossier-coverage backlog
+
+**The shape of this one:** the previous entry was committed at 13:37 today, so both deltas were
+tiny — the web had five hours to move and did not, and the only in-house commits since were the
+three `inbox/` drops that sweep itself filed. Rather than report "nothing new" and stop, this pass
+spent its budget on the **coverage bookmark**: five active projects whose dossiers had never been
+read in full. That is where all the material below came from.
+
+**Own inbox: empty** (README only). Nothing was waiting; `grep -rn "^Supersedes:" inbox/` returned
+nothing, as expected on an empty inbox.
+
+**Web sources checked — nothing new since 13:37, as expected.** **UEVR** newest commit still
+2026-08-30 (the UESDK bump and the gamma-hook fix reported last time); still 1.05. **REFramework**
+newest still 2026-08-28 (PR #1809). **mutars** — starfield2vr 2026-05-05, anvilengine2vr
+2026-01-25, unchanged. **vrframework** last pushed 2026-06-09. **OldUnreal** Unreal-testing last
+pushed 2026-08-16 (still v227k_15). **MTBS3D** not re-attempted (403 to automated fetch in four
+prior sweeps).
+
+**One genuinely new item, and it is the first VR prior art this library has found on the RenderWare
+family.** [**Vice City VR**](https://github.com/dubrovskiy-yevhen-stakelogic/vice-city-vr) — an
+unofficial stereoscopic 6DoF OpenXR conversion of the 2003 PC release of GTA: Vice City, publicly
+active as of 2026-08-31, with a native-Quest sibling by **Blackbird88**. It was found by a targeted
+query steered by the Manhunt dossier rather than by walking the watch list, which is the intended
+order. **The method is the finding:** it is built on a reverse-engineered source reimplementation of
+the game plus [**librw**](https://github.com/aap/librw) (aap, MIT) and **replaces the graphics
+pipeline outright** — D3D12, single-pass stereo, VRS foveation, DLAA/FSR 2 — rather than hooking the
+shipped renderer. So the existence proof is real and **its route does not transfer** to a
+RenderWare title with no decompilation, which is every other game on this family here. Recorded on
+the [RenderWare page](./engines/renderware.md), credited in `ATTRIBUTION.md`, and added to the
+per-project relevance table as a new Manhunt row. Noted alongside it, because it affects what can be
+planned: the underlying GTA III / Vice City reimplementation repository returns **HTTP 451 (access
+blocked)** on GitHub as of today; `librw` is a separate, unaffected MIT project.
+
+**Project-repo harvest (delta since 13:37 today; all 16 game repos pulled).** Thirteen had no
+commits at all. The three that did — `doom-2016-vr`, `far-cry-2-vr`, `the-evil-within-vr` — carried
+exactly the `inbox/` files the earlier sweep filed, so there was nothing new to lift by delta.
+
+**Dossiers now covered in full (the bookmark for the next sweep).** Previously covered:
+`psychonauts-vr`, `mad-max-vr`, `enslaved-vr`, `far-cry-2-vr`, `doom-2016-vr`. **This sweep adds
+five:** `manhunt-2003-vr`, `the-evil-within-vr`, `XIII2003-vr`, `visceral-re2-vr`,
+`re-village-scope-vr` — which is every project `STATUS.md` currently marks active. **Still never
+read in full:** `unreal-gold-vr`, `alan-wake-vr`, `alice-madness-returns-vr`,
+`burnout-paradise-vr`, `prince-of-persia-2008-vr`, `arcade-controls-re2-vr` (the last is frozen).
+
+**Generalised up this sweep — nine new sections in
+[`docs/techniques/README.md`](./techniques/README.md):**
+
+- *Capturing the finished frame: the whole-frame route to a headset* (XIII) — the D3D8→D3D11-bridge
+  mechanics, the three seam failures (overlay texture teardown, back buffer ≠ viewport, the readback
+  cost) and, importantly, the **structural ceiling**: no stereo, no 6DoF, because the sim never sees
+  the headset.
+- *An old main loop may stop rendering the moment it loses focus* (XIII) — the `GetForegroundWindow`
+  tick gate and the narrowly-scoped IAT fix, plus the zombie-process/single-instance-lock trap.
+- *Identify a resource by how it is used, not by its creation descriptor* (The Evil Within) — with
+  the two corollaries that cost that project two full rounds: check the resource's usage class before
+  debugging why your read mechanism never fires, and a mechanism that runs perfectly can still be
+  reading a decoy.
+- *Deferred-context renderers: finding the world, and patching it once per eye* (The Evil Within) —
+  including the domain-shader hazard, where a VS with no `SV_Position` is a category, not a bug.
+- *The setting you want to change may be data, not code* (Manhunt) — the registry-driven video mode,
+  the delete-the-key reset, and calling the engine's own enumerator instead of guessing an index.
+- *Make one launch answer many questions* (Manhunt, The Evil Within) — the seven-variant probe sweep
+  against a throwaway window that ended a three-session single-field hunt.
+- *Remove your own code before accepting the blame — then fix the producer* (Manhunt) — the A/B with
+  the proxy physically absent, and why patching consumers of a null is unbounded.
+- *Prove the value you are debugging is the one the feature reads* (Visceral) — lookalike systems,
+  parallel hierarchies, and measuring same-frame hook ordering with two probes instead of reasoning
+  about it.
+- *A flat game's "scope" is a fullscreen FOV zoom, and VR cannot use it* (RE Village) — with the
+  measured 63° → 24.37° ramp, and the two probe techniques (recon flat-screen first; arm the probe,
+  do not click it).
+
+**Engine pages.** [`renderware.md`](./engines/renderware.md) gained its **first-ever shared
+findings** (the prior art and what it does not transfer; the `SetTransform` lever; the protector
+stub; DRM-remnant sabotage; the client-area raster check) and its identity block now says
+fixed-function outright. [`id-tech-5.md`](./engines/id-tech-5.md) gained the deferred-renderer
+section, the `K_eye` payoff of per-draw MVP delivery, the console/cvar asset, and the explicit
+**no stereo heritage here, unlike id Tech 6**. [`unreal-1-3.md`](./engines/unreal-1-3.md) gained the
+cheap-first-milestone section (why a proxy render device is idiomatic on this family, the exported
+`eventPlayerCalcView` hook, the negated HMD yaw and the 65536-unit rotator) and its ceiling.
+[`re-engine.md`](./engines/re-engine.md) gained scoped optics and the three-parallel-hierarchies
+section.
+
+**Inboxes filled: one.** `manhunt-2003-vr/external-research/` — the Vice City VR finding, written up
+for that project as *what it proves and what it does not*, since Manhunt has no decompilation and the
+D3D8 `SetTransform` route remains its only one.
+
+**One judgement call worth recording.** The earlier sweep today saw Manhunt's registry video-mode
+finding and wrote "nothing further to lift that is not already generalised". Reading the dossier in
+full changed that: *the setting you want may be data, not code* is engine-agnostic, was nowhere in
+the library, and is the kind of thing that saves ten live tests. **A delta scan reports what changed;
+it does not tell you whether the unchanged part was ever harvested.** That is what the coverage
+bookmark is for, and it is why this pass was worth running five hours after the last one.

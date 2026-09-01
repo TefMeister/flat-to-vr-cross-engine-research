@@ -108,6 +108,34 @@ Two traps that cost real time on XIII, both plausibly family-wide:
   that runs straight through the 65536 boundary. Applying the usual shortest-arc wrap to it turns
   a real −199° turn into an apparent +161°, which looks exactly like an input reversing direction.
 
+### The cheap first milestone on UE2, and exactly what it cannot become
+
+`[verified-live 2026-08-27, Quest 3 via SteamVR]` XIII reached a headset with head-look **without any
+camera reverse-engineering at all**, by capturing the finished D3D8 back buffer each frame, presenting
+it as a flat SteamVR overlay, and driving the game's own view rotation from the HMD. Two things make
+this unusually cheap on UE1–3 specifically:
+
+- **The renderer is a pluggable DLL loaded by name**, so shipping a proxy render device is *idiomatic*
+  for the engine rather than an intrusion — no external injector, just a file in `system\`. Generate
+  the forwarding exports from the stock DLL's own export table.
+- **The view rotation is a single exported function's output parameter.**
+  `APlayerController::eventPlayerCalcView` is exported under its decorated name, so the hook needs no
+  hardcoded address; call the original, then add the HMD-derived yaw and pitch to the out `FRotator`.
+  **Negate the HMD yaw** — OpenVR/OpenXR yaw winds opposite to Unreal's — and remember `FRotator` is
+  three `int32` in Pitch/Yaw/Roll order with **65536 units per revolution**, not degrees. Getting that
+  conversion wrong is the classic "camera barely moves, or spins wildly" bug.
+
+**Its ceiling is structural:** one image to both eyes means no stereo depth, and because the headset
+pose never enters the simulation there is no 6DoF and no motion-controlled aim. On this family the
+second milestone is the `SetTransform` hook above. Full treatment of the route, its failure modes and
+its ceiling:
+[capturing the finished frame](../techniques/#capturing-the-finished-frame-the-whole-frame-route-to-a-headset).
+
+One family-relevant gotcha that comes with it: **the classic UE main loop gates `Engine->Tick` on
+`GetForegroundWindow()`**, so an unfocused game stops presenting within about a second — fatal for a
+headset. See
+[an old main loop may stop rendering the moment it loses focus](../techniques/#an-old-main-loop-may-stop-rendering-the-moment-it-loses-focus).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Unreal Engine 2 / 3" row.

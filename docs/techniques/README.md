@@ -1071,6 +1071,296 @@ answer.** Two cases from this account, both of which cost real time:
 Generalised from a `doom-2016-vr` modding-session hand-off, alongside the earlier `strings` trap
 from the same project.
 
+## Capturing the finished frame: the whole-frame route to a headset
+
+For an old game whose renderer predates every VR runtime, there is a route to a headset that needs
+no camera reverse-engineering at all: **take the finished back buffer each frame and hand it to the
+compositor as a flat panel**, then drive the game's own view rotation from the HMD. It is the
+cheapest first milestone in this whole library, and it is the one whose ceiling is most often
+misjudged — so it is worth stating both halves plainly.
+
+**The mechanics, on a pre-D3D11 renderer.** OpenXR and OpenVR have **no graphics binding for D3D8
+or D3D9**. The bridge is therefore always two-sided: capture on the game's device (on D3D8, a
+`CopyRects` of the back buffer into a system-memory image surface, then `LockRect` and decode), and
+present on a **second, VR-owned D3D11 device** created purely to hold the swapchain or overlay
+texture. Three things reliably go wrong at that seam:
+
+- **A per-frame "here are raw pixels" overlay call can make the compositor tear the texture down and
+  recreate it every frame** — which shows up as flicker, not as an error. Own **persistent,
+  double-buffered textures on the HMD's own adapter** and hand the compositor a texture handle
+  instead, uploading only when the capture's sequence number actually advances.
+- **The back buffer is not necessarily the picture.** A windowed game may request a desktop-sized
+  back buffer and render its viewport into one corner of it, so a faithful capture becomes a small
+  image floating in a large black frame. Clamp the requested back-buffer size to the window's client
+  area at device creation **and at every reset** — the reset path is the one that gets forgotten.
+- **The readback is the entire cost, and the obvious optimisation may not work.** On one measured
+  D3D8 title the GPU→CPU copy was ~2.7 ms average against roughly 0.6 ms for everything else in the
+  path combined `[measured 2026-08-28, dev hardware, n=1 machine]`. Double-buffering the readback —
+  copy into surface A while locking surface B from the previous interval — produced **no win**,
+  because that driver stalls *inside the blit* rather than at the lock. Pipelining moves a stall; it
+  only helps if the stall is where you think it is. Rate-cap the capture (one readback per ~11 ms is
+  already 90 Hz) before optimising it, and treat a GPU-only shared-surface path as the real lever if
+  the cost has to be removed rather than bounded.
+
+**The ceiling, which is structural and not a matter of effort.** A finished frame is one image
+rendered from one camera. Both eyes get the same pixels, so there is **no stereo depth**; and
+because nothing about the headset ever enters the simulation, there is **no 6DoF and no
+motion-controlled aim** — you can rotate the view the game renders, but you cannot make the game
+render *from* the headset's position. Every project that starts here eventually needs a second
+milestone that reaches the engine's own view and projection. Say so in the first milestone's own
+notes, or the demo's success quietly sets the wrong expectation for what remains.
+
+Worked example, hardware-verified in a Quest 3 via SteamVR: this account's
+[XIII (2003) project](https://github.com/TefMeister/XIII2003-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
+§7–§8, which also carries the flicker, framing and profiling detail above.
+
+## An old main loop may stop rendering the moment it loses focus
+
+A single-threaded engine of the D3D8 era commonly polls `GetForegroundWindow()` once per loop
+iteration and, if another process owns the foreground, **skips its tick entirely** and degenerates
+into a short sleep — usually muting audio on the same branch. On a monitor this is a courtesy. Under
+a headset it is fatal: the moment the user clicks anything else, presentation freezes within about a
+second and the headset shows a dead panel. There is often **no ini setting for it**, because it is
+not a setting — it is native code in the main loop.
+
+The fix is to **lie to that one poll, in the narrowest possible scope**: IAT-hook
+`user32!GetForegroundWindow` **in the executable's import table only**, returning the game's own
+device window while a foreign window holds focus. Scoping it to the EXE matters — the window and
+input drivers usually live in separate modules and should keep an honest view of focus, so mouse
+capture and `WM_KILLFOCUS` behave normally. Gate it behind a config key and install it only when a
+VR host is actually running.
+
+Two consequences worth writing down rather than rediscovering:
+
+- **Audio usually rides the same branch as the pause**, so keeping the tick alive keeps the sound
+  alive too. For VR that is what you want; say so, because it reads as a bug otherwise.
+- **Ticking is not receiving.** The engine now runs while unfocused, but synthetic keyboard input
+  still follows the foreground window, so an automation session must hold foreground anyway. These
+  are two different problems, and a single "it works unfocused now" claim silently conflates them.
+
+While you are in that area: an injected VR host owns threads the OS will terminate abruptly at
+process exit. On at least one title that left an unkillable process wedged in the display driver,
+**holding a single-instance lock until reboot** — after which every launch attempt exited instantly
+with code 0 and looked exactly like "the game will not start". Stopping the host threads from a hook
+on the process-exit path fixed it. A silent instant exit is worth checking for a surviving instance
+before it is investigated as a launch bug.
+
+## Identify a resource by how it is used, not by its creation descriptor
+
+When hunting for the buffer that carries the world transform, the tempting filter is the one
+available earliest: hook resource creation and match on the descriptor — this size, this usage,
+these bind flags. **That filter cannot work, and it fails in a way that looks like success.**
+
+A real engine allocates many buffers with identical descriptors. One measured D3D11 title has a
+1920-byte per-object world-MVP pool **and** an unrelated 1920-byte per-frame global buffer, told
+apart only by which slot they are bound at and on which context type. Two separate defects in that
+project — a wide filter flooding the shadow with decoys, and a later buffer-identity mix-up — trace
+back to that same root cause. The property that actually identifies the buffer you want is **how it
+is used**: bound at a specific slot, for a draw whose shader is known to carry the rows you care
+about. That is only observable at the point of use, so register identities **at the draw**, and use
+creation-time hooks only to record facts about a resource, never to decide it is the target.
+
+Two corollaries, both learned expensively:
+
+- **Check whether your read mechanism is even legal for that resource before debugging why it never
+  fires.** A `D3D11_USAGE_DEFAULT` buffer with `CPUAccessFlags = 0` **cannot be `Map`ped at all**, by
+  the API's own rules — so "no `Map` hook ever saw a write" was never an instrumentation gap or a
+  timing problem, which is what two full rounds of work had assumed. The real CPU write path for such
+  a buffer is `UpdateSubresource`, and shadowing that (handling partial-region writes via the
+  destination box) is what worked. One reading of the real buffers' creation descriptors would have
+  ruled the whole approach out on day one.
+- **A mechanism that runs perfectly can still be reading the wrong thing.** The persistent-map
+  capture in that project worked flawlessly, with zero failures across live sessions — on a decoy
+  pool. "It executes cleanly" and "it supplies correct data" are separate claims needing separate
+  evidence; see also
+  [silent no-ops](#silent-no-ops-verification-that-cannot-see-the-failure).
+
+Evidence:
+[the-evil-within-vr](https://github.com/TefMeister/the-evil-within-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
+§7 and §11.
+
+## Deferred-context renderers: finding the world, and patching it once per eye
+
+On a D3D11 engine that records command lists on worker threads and replays them on the immediate
+context, the per-draw camera transform is not where a naive frame trace looks for it. Three findings
+that generalise to any command-list renderer:
+
+- **To find where the world is actually drawn, disable a stage and see what disappears.** Skipping
+  `ExecuteCommandList` on one title blacked out all scenery and character bodies while hair, lights
+  and HUD survived — locating the bulk of the world in the deferred path in a single run, and
+  incidentally identifying everything drawn directly on the immediate context. A destructive
+  experiment behind an environment-variable gate answers a structural question faster than any amount
+  of read-only tracing.
+- **Patch at record time, not by replaying the list twice.** The per-eye work belongs at the draw the
+  worker thread is recording: read the shadowed matrix rows, left-multiply by the constant per-eye
+  `K_eye`, write the result into **your own** per-thread scratch buffer, rebind the slot, and let the
+  original draw be recorded against it. Re-executing a finished command list per eye sounds cheaper
+  and is considerably harder to make correct.
+- **Do not assume one writer per buffer.** In live gameplay, 448,201 of 560,109 shadowed writes on
+  that title were **cross-thread** — worker threads hand these buffers to each other across frames.
+  A per-slot seqlock that *detects* the case and fail-safe-skips is the honest design; assuming a
+  single writer is a claim about someone else's thread scheduler, and it holds on your machine right
+  up until it does not. `[measured 2026-08-21; never observed genuinely concurrent, which is a
+  weaker statement than safe]`
+
+**One hazard specific to per-draw MVP patching:** a vertex shader that declares **no `SV_Position` in
+its output signature at all** is not broken and is not a missed hook — its clip-space transform
+happens downstream in a **domain shader**, and no amount of patching VS-bound constant buffers will
+move that geometry. On a tessellated engine this is a real, bounded category (detailed skinned
+character meshes are the usual occupants). Detect it, name it, and let those draws fail safe rather
+than half-patching them: in a stereo build an unpatched draw does not render *mono*, it renders at
+the **wrong eye's orientation**, which is far more disorienting than a missing object.
+
+## The setting you want to change may be data, not code
+
+Before patching an engine to change a startup behaviour, find out where the engine **reads that
+behaviour from**. Games of the D3D8/D3D9 era routinely keep renderer and video-mode selection in a
+registry key or an ini the engine parses at startup, and a value the engine chooses *itself* is worth
+far more than the same value forced later from a hook — every downstream branch then runs
+consistently with it.
+
+A worked case: ten live tests went into forcing a fullscreen-only title into windowed mode through
+its device-creation call. The engine turned out to read a video-mode index out of
+`HKEY_CURRENT_USER` at startup and hand it straight to its own mode-set, with a branch that tests the
+mode's exclusive-fullscreen flag. One DWORD does what the hook was fighting for. Two details worth
+carrying:
+
+- **The "value missing → write a default" branch is a free, non-destructive reset.** If the code
+  creates the key when the read fails, deleting the key restores the game's own defaults with no file
+  edits and nothing to back up.
+- **Do not guess the index — ask the engine.** The mode table comes from the driver's runtime
+  enumeration and varies by adapter, so a convention read from documentation is a hypothesis, not a
+  fact. From an already-injected proxy you can call the engine's **own** mode-info function in a loop
+  and log width/height/depth/flags for every index. One launch yields the whole table; guessing
+  yields one bit per launch.
+
+Related trap on the file side: **the ini the game writes is not always the ini you should edit** —
+some titles delete their user config on exit and regenerate it at launch from a template, so edits to
+the live file always vanish. Worked example on the
+[Unreal 1–3 family page](../engines/unreal-1-3.md#input-is-alias-based-and-useful-aliases-often-ship-unbound).
+
+Evidence:
+[manhunt-2003-vr](https://github.com/TefMeister/manhunt-2003-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
+§4a.
+
+## Make one launch answer many questions
+
+On a game that must be launched, played into a scene, and observed, **a launch is the scarcest
+resource in the project** — far scarcer than compile time or reasoning time. The habit that follows
+is to stop testing one hypothesis per run.
+
+- **Sweep the hypothesis space in a single run.** A windowed-mode device creation kept returning
+  `INVALIDCALL` through three separate single-field fixes across three sessions. A seven-variant
+  probe — every combination of the candidate presentation parameters, attempted in one launch against
+  a throwaway hidden window before touching the game's real device — found the actual culprit
+  immediately. Probing against a private window also means a wrong variant costs nothing.
+- **Enumerate rather than sample.** Where the engine has a function that lists something (video
+  modes, shaders, animation banks, console commands), call it in a loop from the hook and log the
+  whole table, instead of testing the one entry you currently suspect.
+- **Dump what an offline pass will need while you are already in there.** One project bounded a
+  shader-coverage gap to ten distinct layouts from a reflection log, then could not finish the job
+  because the log recorded only a base offset and no bytecode had ever been saved — a second launch
+  for data the first could have carried for free.
+
+A green light from a validation API does not substitute for any of this. `CheckDeviceType` reporting
+a format/windowed pairing as valid says nothing about the *other* presentation constraints on the
+same call, and it will happily bless the exact call that then fails.
+
+## Remove your own code before accepting the blame — then fix the producer
+
+Two rules about crashes in a game you are injecting into, both of which save days.
+
+**A crash in a modded game is not evidence that the mod caused it.** Old titles ship with real,
+reproducible defects of their own, and a stripped copy-protection layer is a particularly rich
+source: protection stubs that once returned specific fake values are gone, those call sites now reach
+the real Win32 APIs, and the game **punishes itself** on the failure path — stuck doors, corrupted
+saves, erratic AI, hard crashes. The cheap, decisive test is not analysis, it is **absence**: rename
+the proxy DLL away, reproduce the crash with your code physically not in the process, and compare the
+faulting address. One such A/B produced the same fault address on the same trigger with no proxy log
+written for that run — three-way agreement, and the mod was cleared in a single session instead of
+being argued about for several.
+
+**When a null pointer has many consumers, fix the producer.** Byte-patching the first crashing read on
+that title worked — and the crash moved to the next consumer of the same null, then the next. Patching
+consumers is unbounded, and each patch is a new invented behaviour; the producer is one site. The
+related, cheaper repair when a check has been sabotaged is to **force the branch the game itself takes
+when the check passes**, which restores the program's own intended path rather than inventing a new
+one, and is usually a single byte.
+
+Corollary on instrumentation: **log the pre-change value before every fix.** Two of that project's
+"plausible mechanism" theories were killed in one run each by discovering that the globals they blamed
+already held correct values. Without that log a wrong theory never gets falsified — it becomes
+folklore in the notes.
+
+Evidence:
+[manhunt-2003-vr](https://github.com/TefMeister/manhunt-2003-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
+§11–§12.
+
+## Prove the value you are debugging is the one the feature reads
+
+The most expensive debugging sessions in this account's history were not wrong about the maths. They
+were meticulously correct about a value nothing was reading.
+
+- **Engines carry lookalike systems, and tuning the wrong one throws no error.** One weapon's VR
+  reload had *three* separate position systems; the spent-shell extraction offsets were debugged to
+  four decimal places and had no effect whatever on the round-insertion feature under test. Worse,
+  some per-item tables have **missing entries that silently fall back to a shared default** which is
+  only correct for the other items. Before deep-debugging a value, prove — by changing it grossly and
+  watching for *any* effect — that the feature you are testing reads it at all.
+- **An object model usually has several parallel hierarchies, and absence from one proves nothing.**
+  Something attached to a character may be a named joint on the skeleton, a child in the scene
+  hierarchy, or a component on the object you are already holding — three different queries, and
+  "zero children" is a statement about exactly one of them. Enumerate all three before concluding
+  something is not there.
+- **Two callbacks that both run "before rendering" can still run in the wrong order.** Writing a value
+  once per frame is only half a fix if something later in the same frame overwrites it — an IK solve,
+  a derived aim vector, a re-application of the engine's own state. Do not reason about it: **sample
+  the same value at an early hook and a late hook in the same frame and compare.** If they disagree,
+  the ordering bug is now measured. If they agree and the effect is still wrong, it is not a timing
+  problem on that value, and the next question is whether it is the right value at all.
+
+Also worth adopting wholesale, because it costs nothing: **one bracketed tag per diagnostic script**
+in every log line, so a log carrying tens of thousands of lines from every loaded script greps down to
+one script's story; and **wrap every reflection call in a `pcall` equivalent**, because a native call
+into an introspection surface the engine never intended will fail unpredictably, and a caught, logged
+failure beats a script that dies on line one leaving a missing log line as its only symptom.
+
+Evidence:
+[visceral-re2-vr](https://github.com/TefMeister/visceral-re2-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
+§4, §5 and §9.
+
+## A flat game's "scope" is a fullscreen FOV zoom, and VR cannot use it
+
+Worth knowing before scoping any work on magnified optics — telescopic sights, binoculars, camera
+viewfinders. Flat games almost never render a second view for these. The overwhelmingly common
+implementation is: **narrow the main camera's FOV** (one measured case ramps ~63° down to ~24.4°,
+about 2.6×) and **draw a mask-and-reticle GUI element over the whole frame**. There is no second
+camera, no offscreen render target, and nothing to reuse.
+
+In a headset both halves fail. A fullscreen FOV zoom applied to a stereo view is wrong and actively
+sickening — the world's angular scale stops matching the head. And a generic VR layer that
+world-positions GUI elements along the aim ray turns the fullscreen mask into a giant floating plane
+in front of the player, which is the familiar "huge flat screen with a crosshair" symptom.
+
+So a VR scope is not a port of the flat feature; it is a **new feature that must produce the magnified
+image itself** — suppress the FOV ramp, hide the flat mask, render a magnified view into your own
+texture, and composite that texture onto a lens quad mounted at the weapon's scope joint,
+bore-sighted to whatever ray the game itself already uses for hit detection. Budget it as such.
+
+Two probe techniques that came out of establishing the above, both reusable:
+
+- **Recon on the flat screen first when the VR layer is HMD-gated.** With the headset off, the
+  framework's VR handling stands down and the engine's *native* mechanism is visible cleanly, without
+  the VR layer's compositing on top of it.
+- **For a state that needs both hands on the controls, arm the probe, do not click it.** Have the
+  script trigger its own dump on the state transition it is watching for (an FOV threshold crossing, a
+  GUI element's draw recency) or on a timer — a diagnostic gated behind a UI button you cannot reach
+  while aiming is a diagnostic that never runs.
+
+Evidence:
+[re-village-scope-vr](https://github.com/TefMeister/re-village-scope-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
+§2 and §5.
+
 ## Sources
 
 - **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, the log-before-the-call habit, and the exclusive-mode DirectInput wall that `SendInput` cannot cross; generalised out of [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research) §9a/§9b
