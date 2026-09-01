@@ -611,3 +611,34 @@ reading. The corrections were the transferable content, not the original finding
 would have surfaced from a delta scan of changed files: three were sitting in unchanged dossiers that
 had simply never been read here. That is the case for clearing a coverage backlog even when every
 repo reports no commits.
+
+**Addendum, same sweep — a seventh inbox file arrived mid-drain, and the drain rule caught it.** While
+this sweep's commit was being prepared, a `/gr` session pushed
+`inbox/2026-09-01-gr-clip-space-stereo-footer.md` at **18:56**, after this drain had begun. Because
+the six drained files were deleted **by explicit name** rather than by glob, the new drop survived
+untouched — the first observed instance of the concurrent-drop window the
+`CONVENTIONS.md` rule was written for, and it behaved exactly as designed. It was then folded in
+during the same session rather than left for the next sweep, since it bore directly on work this
+sweep had just published.
+
+**What it added — a new section, [the clip-space stereo
+footer](./techniques/#the-clip-space-stereo-footer-geometry-stereo-without-ever-finding-the-camera).**
+NVIDIA's own documentation for 3D Vision Automatic describes the mechanism behind the entire
+geo-11 / HelixMod / 3Dmigoto ecosystem this library already catalogued as drivers-you-point-at-a-game:
+a footer appended to every vertex shader, `ClipPos.x += Separation * (ClipPos.w - Convergence)`, with
+each draw issued twice. **It yields real geometry stereo while knowing nothing about the camera,
+view matrix, projection or handedness** — a second route to two eyes alongside this library's
+camera-hunting material, implementable by our own proxies with no NVIDIA driver or GPU. Its
+documented costs (per-game draw-call exclusion, broken unprojection in deferred/post-processed
+renderers) are recorded with it, as is a cross-link both ways with `docs/generic-drivers/`.
+
+**⚠️ And it corrected a claim this sweep had published an hour earlier.** The new
+*third-party stereo fix* section had read Alan Wake's `Ctrl+F3`/`Ctrl+F4` separation hotkeys as
+evidence of "a per-eye offset mechanism already wired up". **Those are the *driver's* hotkeys in 3D
+Vision Automatic mode**, where the driver splits the draws and owns the parameters — so they show 3D
+Vision working *on* the game, not a native per-eye path in it. Corrected in both
+`docs/techniques/README.md` and `docs/engines/remedy-alan-wake.md`, with the static check that
+settles it (which driver mode the binary requests via `NvAPI_Stereo_SetDriverMode`). **Alice's signal
+survives and Alan Wake's weakens**, because Alice's rests on the fix author's statement about the
+*game*, not on driver-side controls. Recorded rather than quietly edited, since the generalisation
+was published before the correction arrived.

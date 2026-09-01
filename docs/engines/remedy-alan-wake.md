@@ -51,12 +51,17 @@ construction — this family has one project on it.*
   keyboard equivalent) and `-developermenu` (episode/difficulty/ammo; **not** confirmed to include
   camera or rendering tools). A zero-injection way to observe camera behaviour before hooking
   anything — the same category of asset as a dormant debug menu elsewhere in this account.
-- **Native stereoscopic 3D is reported present, with live separation hotkeys.** `[reported
-  2026-08-25]` Later builds are described as close to "3D Vision ready out of the box", with in-game
-  separation adjustment on `Ctrl+F3` / `Ctrl+F4`. If that holds on the installed build it implies the
-  **per-eye offset mechanism is already wired up and reachable**, which is the expensive half of the
-  problem. Unconfirmed live. Method:
-  [a third-party stereo fix is free intelligence about the engine](../techniques/#a-third-party-stereo-fix-is-free-intelligence-about-the-engine--read-it-dont-install-it).
+- **⚠️ The "native 3D Vision support" signal is weaker than it first reads.** `[reported 2026-08-25]`
+  Later builds are described as close to "3D Vision ready out of the box", with separation adjustable
+  in-game on `Ctrl+F3` / `Ctrl+F4`. **Corrected 2026-09-01:** those are the **driver's** hotkeys in
+  3D Vision *Automatic* mode, where the driver appends a clip-space footer to each vertex shader and
+  splits every draw itself. So this is evidence that 3D Vision worked *on* Alan Wake — **not** that
+  the engine contains a native per-eye path, which is what an earlier reading of this bullet claimed.
+  The static check that separates the two is which driver mode the binary requests
+  (`NvAPI_Stereo_SetDriverMode`); see
+  [the clip-space stereo footer](../techniques/#the-clip-space-stereo-footer-geometry-stereo-without-ever-finding-the-camera).
+  Still useful, and arguably more so: the footer technique is implementable by our own proxy without
+  NVIDIA anything.
 - **No DRM, and the GFWL history is closed.** `[inferred-static 2026-08-25]` The original release
   shipped on Games for Windows Live; the installed Steam build has **zero** `xlive`/GFWL files or
   strings across the exe and all nine module DLLs. Checked specifically rather than assumed.

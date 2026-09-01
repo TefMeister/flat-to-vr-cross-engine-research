@@ -276,6 +276,15 @@ Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every
   `vieworg`, `viewEyeBuffer` and `stereoScreenSeparation`) and of the `stereoRender_*` cvar family
   it later left dormant in id Tech 6. Read online as documentation; **no code taken.**
   <https://github.com/id-Software/DOOM-3-BFG>
+- **NVIDIA** — published developer documentation for **3D Vision Automatic** and the **NVAPI stereo
+  headers**, used here as the first-party description of the clip-space shader-footer mechanism
+  (`ClipPos.x += Separation * (ClipPos.w - Convergence)`), the per-game-profile requirement, the
+  post-processing/deferred-renderer caveat, and the Automatic-versus-Direct driver-mode distinction
+  that tells a driver-stereo title apart from a natively stereo one. Read as documentation; no code
+  taken.
+  [background](https://archive.docs.nvidia.com/gameworks/content/technologies/desktop/nv3dva_background.htm) ·
+  [stereoscopic issues](https://archive.docs.nvidia.com/gameworks/content/technologies/desktop/nv3dva_stereoscopic_issues.htm) ·
+  [nvapi_lite_stereo.h](https://github.com/NVIDIA/nvapi/blob/main/nvapi_lite_stereo.h)
 - **Microsoft** — the Direct3D 11 reference documentation on **Microsoft Learn**, used as the
   first-party statement that `ID3D11DeviceContext::ExecuteCommandList` returns `void` and may decline
   to execute a list on query-validation grounds, and that `RestoreContextState = FALSE` returns the
