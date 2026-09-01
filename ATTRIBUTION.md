@@ -47,6 +47,22 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   no paid or patron-only material.
   - <https://github.com/LukeRoss00/gta5-real-mod> · <https://www.patreon.com/realvr> · [Road to VR (free release)](https://roadtovr.com/luke-ross-vr-mods-free-cyberpunk-2077/)
 
+- **Vice City VR** (github.com/dubrovskiy-yevhen-stakelogic, with a native-Quest sibling maintained
+  by **Blackbird88**) — an unofficial stereoscopic 6DoF **OpenXR** conversion of the 2003 PC release
+  of GTA: Vice City, and the only substantial VR prior art on the **RenderWare** family. Cited here
+  for what its own public description establishes about *method*: it is built on a reverse-engineered
+  source reimplementation of the game plus **librw**, and **replaces the graphics pipeline outright**
+  (Direct3D 12, single-pass stereo, variable-rate-shading foveation, DLAA/FSR 2) rather than hooking
+  the shipped renderer. Only the release is public; the runtime source is private during development.
+  We have read its public description only — no download, no clone, no code. Noted for completeness:
+  the underlying GTA III / Vice City reimplementation repository is subject to a publisher takedown
+  and returns HTTP 451 on GitHub as of 2026-09-01.
+  - <https://github.com/dubrovskiy-yevhen-stakelogic/vice-city-vr> · <https://github.com/Blackbird88/vice-city-vr-quest>
+- **aap** (github.com/aap) — **librw** (**MIT**), an open-source reimplementation of the RenderWare
+  graphics engine and the rendering foundation the project above depends on; actively maintained.
+  Referenced as landscape context on the RenderWare family page; no code used.
+  - <https://github.com/aap/librw>
+
 - **Raicuparta** (github.com/Raicuparta) — **UUVR** (universal Unity VR mod, **GPL-3.0**),
   **Rai Pal** (mod manager for universal mods, **GPL-3.0**), **NomaiVR** (Outer Wilds VR, with
   **artumino**, **MIT**), **TwoForksVR** (Firewatch VR, **MIT**). The reference body of work for
@@ -330,6 +346,29 @@ pattern are our own measurements on a legitimately-owned copy of Resident Evil V
 Evidence at
 [`re-village-scope-vr/modding-notes/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/modding-notes)
 and [`re-village-scope-vr/external-research/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/external-research).
+The same project's [scoped-optics finding](./docs/techniques/README.md#a-flat-games-scope-is-a-fullscreen-fov-zoom-and-vr-cannot-use-it)
+— that a flat sniper scope is a fullscreen FOV zoom plus a GUI mask, with the measured 63° → 24.37°
+ramp — is ours as well.
+
+The [resource-identity](./docs/techniques/README.md#identify-a-resource-by-how-it-is-used-not-by-its-creation-descriptor)
+and [deferred-context](./docs/techniques/README.md#deferred-context-renderers-finding-the-world-and-patching-it-once-per-eye)
+sections and the [id Tech 5 family page](./docs/engines/id-tech-5.md) come from our own live analysis
+of a legitimately-owned copy of The Evil Within (2014), including the decoy-buffer rounds that worked
+perfectly on the wrong data — kept because that is the transferable part. Evidence at
+[`the-evil-within-vr/engine-research/`](https://github.com/TefMeister/the-evil-within-vr/tree/main/engine-research)
+and [`the-evil-within-vr/dev-archive/`](https://github.com/TefMeister/the-evil-within-vr/tree/main/dev-archive).
+
+The [whole-frame capture route](./docs/techniques/README.md#capturing-the-finished-frame-the-whole-frame-route-to-a-headset)
+and the [focus-gated main loop](./docs/techniques/README.md#an-old-main-loop-may-stop-rendering-the-moment-it-loses-focus)
+are our own hardware-verified work on a legitimately-owned copy of XIII (2003), profiling numbers
+included. The
+[registry-driven-setting](./docs/techniques/README.md#the-setting-you-want-to-change-may-be-data-not-code),
+[one-launch](./docs/techniques/README.md#make-one-launch-answer-many-questions) and
+[remove-your-own-code](./docs/techniques/README.md#remove-your-own-code-before-accepting-the-blame--then-fix-the-producer)
+sections, and the RenderWare family page's injection-route notes, come from the Manhunt (2003) work
+credited above.
+The [debug-the-right-value](./docs/techniques/README.md#prove-the-value-you-are-debugging-is-the-one-the-feature-reads)
+section is from the Resident Evil 2 Remake work credited above.
 
 Like everything else we write, these are CC-BY-4.0 — take them and build on them, just say where
 they came from.

@@ -140,6 +140,41 @@ one-line fix, is in
 [techniques → the HMD-anchored body float](../techniques/README.md#vr-body-height-the-hmd-anchored-float).
 Recorded here so a third project on this engine does not walk it a third time.
 
+### Scoped optics are a fullscreen FOV zoom plus a GUI mask — there is nothing to reuse
+
+`[verified-live 2026-08-22, RE Village, n=1]` Aiming down a sniper scope narrows the **primary
+camera's** FOV from about 63° to **24.37°** and draws a mask-and-reticle GUI element
+(`via.Transform` + `via.gui.GUI` + the game's scope component) over the whole frame. There is no
+second camera, no offscreen scope render and no render texture — so a VR scope on this engine has to
+create the magnified image from scratch, and the flat implementation contributes nothing but the
+bore-sight reference. REFramework's own VR code already computes the true aim impact point with an
+async physics raycast (`via.physics.System.castRayAsync`), which is the natural thing to sight
+against. The equipped weapon is **its own GameObject**, not a component of the player, so the lens
+quad's mount joint is found on the weapon. Engine-agnostic form:
+[a flat game's "scope" is a fullscreen FOV zoom](../techniques/README.md#a-flat-games-scope-is-a-fullscreen-fov-zoom-and-vr-cannot-use-it).
+
+### Finding anything: three parallel hierarchies, and same-frame ordering
+
+Working blind through reflection, "where does X live" has **three structurally different answers**,
+each a different call, and absence from one says nothing about the others: a **named joint** on the
+skeleton (`get_Joints`), a **child GameObject** in the transform hierarchy (`get_ChildCount` /
+`get_Child`), or a **component** on the object you are already holding (`get_Components`). Gameplay
+objects carry 20–100 components, and the real driver is usually a generically-named manager rather
+than the class with the feature's name in it. **"Zero children" is not evidence that nothing is
+attached** — native systems routinely parent visual props by joint or by manager, which never appears
+as a transform child.
+
+Two field traps worth knowing before a batch of "no effect" results is believed: a type-mismatched
+write **fails silently** inside a `pcall` guard, so filter by field type before concluding a field is
+inert; and a per-frame IK or correction target may be **legitimately `nil`** outside the exact pose
+context it serves, so re-test under the state the effect needs rather than under "player exists".
+
+**On timing:** `re.on_pre_application_entry` / `re.on_application_entry` hook named engine frame
+phases, and two callbacks that both fire "before rendering" can still fire in the wrong order
+relative to each other. Sample the same value at an early and a late hook in one frame and compare —
+the general form is in
+[prove the value you are debugging is the one the feature reads](../techniques/README.md#prove-the-value-you-are-debugging-is-the-one-the-feature-reads).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Capcom RE Engine" row.
