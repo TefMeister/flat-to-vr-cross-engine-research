@@ -411,9 +411,12 @@ commits at all. The three that did — `doom-2016-vr`, `far-cry-2-vr`, `the-evil
 exactly the `inbox/` files the earlier sweep filed, so there was nothing new to lift by delta.
 
 **Dossiers now covered in full (the bookmark for the next sweep).** Previously covered:
-`psychonauts-vr`, `mad-max-vr`, `enslaved-vr`, `far-cry-2-vr`, `doom-2016-vr`. **This sweep adds
-five:** `manhunt-2003-vr`, `the-evil-within-vr`, `XIII2003-vr`, `visceral-re2-vr`,
-`re-village-scope-vr` — which is every project `STATUS.md` currently marks active. **Still never
+`psychonauts-vr`, `mad-max-vr`, `enslaved-vr`, `far-cry-2-vr`, `doom-2016-vr`, and
+`manhunt-2003-vr` (recorded in `claude-memory`'s changelog on 2026-08-29 but never in this log —
+noting it here so the two records agree). **This sweep adds four:** `the-evil-within-vr`,
+`XIII2003-vr`, `visceral-re2-vr`, `re-village-scope-vr` — and re-read `manhunt-2003-vr` in full,
+which is where most of the new material below came from. That is now every project `STATUS.md`
+marks active. **Still never
 read in full:** `unreal-gold-vr`, `alan-wake-vr`, `alice-madness-returns-vr`,
 `burnout-paradise-vr`, `prince-of-persia-2008-vr`, `arcade-controls-re2-vr` (the last is frozen).
 
@@ -460,9 +463,10 @@ section.
 for that project as *what it proves and what it does not*, since Manhunt has no decompilation and the
 D3D8 `SetTransform` route remains its only one.
 
-**One judgement call worth recording.** The earlier sweep today saw Manhunt's registry video-mode
-finding and wrote "nothing further to lift that is not already generalised". Reading the dossier in
-full changed that: *the setting you want may be data, not code* is engine-agnostic, was nowhere in
+**One judgement call worth recording, and it is the reason this pass was run at all.** Manhunt's
+dossier was already marked covered, and the earlier sweep today saw its registry video-mode finding
+and wrote "nothing further to lift that is not already generalised". Re-reading it in full changed
+that: *the setting you want may be data, not code* is engine-agnostic, was nowhere in
 the library, and is the kind of thing that saves ten live tests. **A delta scan reports what changed;
 it does not tell you whether the unchanged part was ever harvested.** That is what the coverage
 bookmark is for, and it is why this pass was worth running five hours after the last one.
