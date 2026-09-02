@@ -28,6 +28,10 @@ Each is distilled from public projects credited in
 - [A third-party stereo fix is free intelligence about the engine](#a-third-party-stereo-fix-is-free-intelligence-about-the-engine--read-it-dont-install-it)
 - [A proxy DLL must export everything the target actually imports](#a-proxy-dll-must-export-everything-the-target-actually-imports)
 - [The instrument can be the bug](#the-instrument-can-be-the-bug)
+- [Counting callers separates what a binary links from what it uses](#counting-callers-separates-what-a-binary-links-from-what-it-uses)
+- [Both eyes from one recorded frame: resubmitting the command buffers](#both-eyes-from-one-recorded-frame-resubmitting-the-games-own-command-buffers)
+- [D3D9 to a modern VR compositor: the shared-handle bridge](#d3d9-to-a-modern-vr-compositor-the-shared-handle-bridge-and-its-two-traps)
+- [Never gate a state change on equality with a lerp target](#never-gate-a-state-change-on-exact-equality-with-a-value-that-only-lerps-toward-its-target)
 
 ---
 
@@ -152,6 +156,61 @@ of it — but it is combinable, and it means stereo need not be blocked on the c
   caveat on any modern deferred renderer.
 - **Convergence is a comfort parameter with no on-screen representation**, so it needs tuning per
   title, by eye, in a headset.
+
+### ⭐ Taking over the stereo parameters texture — the cost above, turned into a lever
+
+`[verified-static 2026-09-01 — read directly from NVIDIA's published 3D Vision developer
+documentation by this sweep]` Surfaced by
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr), which found the
+texture compiled into a shipped game's shaders and then found that its layout is documented.
+
+The cost list above ends on a resigned note: in Automatic mode the driver publishes live separation
+and convergence into "a small texture" that the application's own shaders sample to undo the clip-space
+shift, and a mod would have to patch those shaders. **That reading undersells it badly.** The texture
+is NVIDIA's `StereoParmsTexture`, it is **created by the application and merely filled by the driver's
+`ParamTextureManager`**, and its layout is published:
+
+| channel of `pixel(0,0)` | contents (NVIDIA's own wording) |
+| --- | --- |
+| `.r` | *"Eye-specific separation"* |
+| `.g` | *"Covergence"* — NVIDIA's own spelling, worth knowing when grepping |
+| `.b` | *"Unit Vector identifying the current eye"* — **left eye = −1, right eye = +1** |
+
+Two mechanical details come with it: `UpdateStereoTexture` is documented as called **once per frame,
+at the beginning of the frame, "even while the device is lost"**, and the texture is
+**app-provided** — the application creates it, the manager only writes into it. The published page
+names `StereoTexWidth` / `StereoTexHeight` / `StereoTexFormat` as the constants controlling size and
+format **but does not print their values**, so those still have to come from the header or from
+observing the game's own `CreateTexture` call.
+
+**Why this matters far beyond NVIDIA's ecosystem.** A `.b` channel that *tells a shader which eye it
+is drawing* is a per-eye control channel sitting in an ordinary texture resource — and a proxy already
+owns `SetTexture`. So on any title whose shaders sample this texture:
+
+> **Bind your own texture with your own separation, convergence and eye sign, and every shader that
+> samples it behaves per-eye — with no NVIDIA driver, no 3D Vision, no NVIDIA GPU, and not one shader
+> patched.**
+
+That is the division of labour NVIDIA designed, with **the mod in the driver's role**. Combined with a
+located view-projection register it fully specifies a stereo implementation without a single launch:
+render twice; per eye write that eye's view-projection; per eye bind a stereo texture whose `.b`
+matches that eye's sign with matching `.r`/`.g`; leave every shipped shader exactly as it is.
+
+**⚠️ One honest tension, recorded rather than smoothed over.** A `.b` channel that *informs* a shader
+which eye it is in is the signature of the **Automatic** correction pattern — an application rendering
+in Direct mode already knows which eye it is drawing and needs no texture to tell it. Yet Epic's own
+integration of this into UE3 is titled for **Direct** mode (see the
+[Unreal 1–3 engine page](../engines/unreal-1-3.md)). Both readings are live and the evidence genuinely
+points both ways. **Fortunately the plan above does not depend on which is true**, because in either
+case the texture is what the shaders read and the proxy is what binds it — and
+[counting callers](#counting-callers-separates-what-a-binary-links-from-what-it-uses) settles the mode
+statically on any specific title.
+
+**How to find out whether a game has one, before launching anything:** the companion sampler and the
+`NvStereoEnabled`-style branch constant are compiled into the shipped shader cache and are visible to
+ordinary shader reflection. On one UE3 title the stereo branch constant appears in **65% of every
+pixel shader in the game**. See
+[read the shipped files before you attach anything](#read-the-shipped-files-before-you-attach-anything).
 
 ### ⚠️ The diagnostic that matters for recon: Automatic vs Direct
 
@@ -1146,6 +1205,40 @@ existence tells you about the engine.
 
 Generalised from a `/gr doom-2016-vr` research hand-off, 2026-09-01.
 
+### And check whether the *community* already built it — then check it does not collide with your proxy
+
+`[reported 2026-09-01, n=1 project]` From
+[`psychonauts-vr`](https://github.com/TefMeister/psychonauts-vr). The two habits above ask whether the
+*game* shipped the thing you are about to build. This is the adjacent question, and it caught a
+primitive that had been recorded as unfinished for weeks: **before you finish building it, check
+whether someone else already did.**
+
+The find was a community mod loader for the exact modern release being modded, shipping an in-game Lua
+console, restoration of the game's own native debug menu and level select, restored debug rendering,
+and widescreen support. Three of those map one-to-one onto items this account's own dossier carried as
+*unfinished* or *live test in progress* — including a debug-menu question that had been open for a
+week. Whatever such a tool does is at minimum a **cross-check on your own approach**, and at best the
+answer.
+
+Two things generalise:
+
+- **Search the ecosystem, not just the tool.** The signal that the community's programmatic reach into
+  a game is deeper than you recorded is often not the loader itself but **what is built on it** — a
+  randomiser, or a multi-game-randomiser integration, both of which necessarily read and write live
+  game state and hook game events. If those exist, someone has already solved state access.
+- **Look off GitHub.** This one is hosted on GitLab. A GitHub-only search would have concluded the
+  game had no mod loader.
+
+**⚠️ And then assess the collision, because a loader is an injector too.** A mod loader that patches a
+game is doing the same kind of thing your proxy does, and the two can want the same slot — the same
+proxied system DLL filename, the same import to hijack, the same hook site. Establish **which
+mechanism it uses before installing it**, because a tool that helps in principle can silently break
+the injection route your whole project depends on. Not installing it yet is a legitimate answer, and a
+cheaper one than debugging the interaction later. Compare
+[the instrument can be the bug](#the-instrument-can-be-the-bug) — that is this hazard arriving from
+inside your own toolchain.
+
+
 ## Tool defaults that fabricate false negatives
 
 A recurring and expensive failure shape: **a default in a tool you are not thinking about silently
@@ -1651,6 +1744,32 @@ Generalised from [`alice-madness-returns-vr`](https://github.com/TefMeister/alic
 [`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr) and
 [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr).
 
+### Two additions from the 2026-09-01 sweep
+
+**4. The announcement is not the intelligence — the fix's own files are.** A fix's blog post or
+release page is written for players: hotkeys, autoconvergence, depth cycling, a list of what now looks
+right. Checked directly on one such post, it **named no constant-buffer slot, no register and no
+shader hash**. The register-level detail, where it exists publicly at all, is in the fix package's own
+`.ini` and shader-assembly files in the community archive. Read those *online, in a browser*, and read
+them for **facts about the game you own** — *"the shared constant buffer's float4 slot N is the
+view-projection"* is a fact about that game, and it cross-checks against your own reflection dump in
+minutes. Nothing may be copied; the implementation must be your own. This is the difference between
+learning where a game keeps its matrices and taking someone's fix, and it is a real difference.
+
+This matters most exactly where reflection runs out. When a shared per-frame buffer's type record
+shows a raw `float4[N]` array with **no recoverable member names** — the engine fills it from C++, so
+there is nothing to name — finding the view matrix means finding it *by value*, which costs a live
+run, a capture and a pile of inference. A published fix may have written the answer down years ago.
+
+**5. Check that the prior art you recorded is still the current prior art.** One project's dossier
+carried a 2015 fix as its stereo precedent; the actual current state was a **2024 revision by a
+different author, built on the modern geo-11 stack, targeting the last shipped game version**, with a
+completely different and much longer list of fixed passes. Two things change when you notice: the
+feasibility signal is far stronger than a nine-year-old artifact suggests, and **the newer fix's
+per-pass list is a ready-made inventory of exactly which passes break under stereo in that renderer**.
+Prior art has a date; re-check it before quoting it.
+
+
 ## A proxy DLL must export everything the target actually imports
 
 The proxy-DLL foothold — drop a same-named `d3d9.dll` / `dinput8.dll` / `winmm.dll` beside the exe,
@@ -1729,6 +1848,208 @@ Three transferable habits:
   a deleted mystery for them to rediscover.
 
 Generalised from [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr).
+
+## Counting callers separates what a binary *links* from what it *uses*
+
+`[verified-static 2026-09-01, n=1 game — method reproduced here against a first-party ID table]`
+Generalised out of [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr), whose §6 was decided
+by it without the game ever being launched.
+
+A recurring recon question has the shape *"the binary references API X — does it actually **use** it?"*
+It matters because the two answers point at opposite projects. Alan Wake's renderer references NVAPI's
+stereo functions; if it drives them it has a self-rendered two-eye path and a VR mod inherits half its
+work, and if it merely links them it is a **correction layer over a driver that no longer ships** and
+the camera must be found the ordinary way. Same symbols, opposite conclusions.
+
+**The trap is that "the symbol is present" answers nothing.** Unused dispatch stubs get linked in.
+Import tables list what the loader must resolve, not what the code path reaches. A string search or an
+import dump will report a stereo-capable binary either way.
+
+### The method
+
+1. **Find each wrapper's call site, not its name.** Many C APIs — NVAPI is the clean example — resolve
+   their entry points through a single `QueryInterface`-style dispatcher keyed by a **published
+   numeric function ID**. That makes every wrapper findable as an immediate push of its ID, with no
+   symbols and no exports required.
+2. **Count the direct callers of each wrapper separately.**
+3. **Read the contrast, not the count.** A wrapper with zero callers proves nothing on its own. It
+   becomes evidence when **sibling wrappers in the same binary do have callers** — that is what
+   distinguishes "linked but dead" from "the whole family is dead stubs". In Alan Wake four of six
+   stereo wrappers had callers and the decisive one had none, and the one with none had no absolute
+   reference anywhere in the module and was not exported, so no other module could reach it either.
+4. **State what the scan cannot see.** A caller count over `E8` rel32 calls and absolute immediates
+   misses a call made through a runtime-computed pointer. That residual risk shrinks when the sibling
+   wrappers establish a direct-call convention in the same binary, and a live breakpoint closes it.
+
+**⚠️ Not every zero caller count is meaningful — check whether the API expects to be called at all.**
+On the NVAPI stereo family specifically, `NvAPI_Stereo_Enable` is a **persistent, driver-wide user
+setting**, not a per-session call — a well-behaved game leaves it alone entirely, so its absence is
+not evidence of anything and should not be added to the "unused" tally that makes the decisive zero
+meaningful. The general form: before reading a zero as a finding, confirm the function is the kind of
+thing this class of well-written caller would be expected to call in the first place.
+
+### ⚠️ The claim-hygiene lesson, which is the transferable half
+
+The structural result — *seven genuine dispatch IDs, one with zero callers while four have callers* —
+was verified on the machine. The **conclusion** rested on a second claim of a completely different
+kind: that the ID with zero callers *is* the mode-setting function. **If the ID→name mapping is wrong,
+the conclusion inverts.** The project caught this and re-tagged the two halves separately rather than
+letting the verified half lend its confidence to the unverified one.
+
+**That is the pattern to copy: when a static result depends on a lookup table you did not verify, tag
+the structure and the naming at their true separate confidences.** Deriving a strong conclusion and
+then discovering its foundation is `[reported]` is a much worse day than splitting them upfront.
+
+**And check whether the table is public before assuming it is not.** In this case the local driver's
+own id→name table was stripped, so the mapping could not be confirmed against the shipped DLLs — but
+**NVIDIA publishes the complete mapping** in `nvapi_interface.h` in its public NVAPI repository. This
+sweep read it and confirmed all six IDs the project relied on, so that mapping is now
+`[verified-static 2026-09-01]` against a first-party source and the project's conclusion stands. The
+general point: *"the strings are stripped from the binary"* is a statement about the binary, not about
+the world.
+
+---
+
+## Both eyes from one recorded frame: resubmitting the game's own command buffers
+
+`[measured 2026-09-01, n=1 game]` Generalised out of
+[`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr) (Vulkan), and applicable to any explicit
+API — Vulkan or D3D12 — where the application records command buffers and submits them.
+
+The [stereo submission strategies](#stereo-submission-strategies) section frames the choice as native
+vs sequential vs AFR. On an explicit API there is a fourth option that costs far less than it sounds:
+**record nothing, and submit the game's frame twice.**
+
+Submit the game's own recorded buffers with the left view in the uniform, let them complete, rewrite
+the uniform, submit **the same buffers** again for the right eye. No command mirroring, no shader
+work, and — unlike AFR — **no temporal mismatch**, because both eyes come from one recorded frame of
+one simulation tick.
+
+**Whether it is legal is a flag you can read.** A command buffer recorded with `ONE_TIME_SUBMIT` may
+not be resubmitted. DOOM sets it on **none** of its eight per-frame command buffers and imports
+neither `vkResetCommandBuffer` nor `vkResetCommandPool`, so its buffers are legally resubmittable.
+Check this before designing anything else — it is a cheap read from a capture and it decides the whole
+approach. Note the serialisation requirement: without `SIMULTANEOUS_USE` the first submission must
+complete before the second begins, so this is sequential stereo, not parallel.
+
+### 🚨 The trap that comes with it: a uniform buffer is usually a linear allocator
+
+The approach needs the per-eye camera to be **writable between the two submits**, which means knowing
+where it is. The obvious move — scan the mapped uniform memory once, record the addresses of every
+camera copy, then patch those addresses each frame — **does not survive contact with a real renderer.**
+
+DOOM's dynamic offsets climb **monotonically** through the frame and across frames, at roughly 137 KB
+per frame: the uniform buffer is a **linear allocator**, so a given draw's camera slice sits at a
+*different address every frame*. Measured consequence: a scan located 180 camera copies, and on the
+following frames a verify-before-write guard passed **5 of 180, then 0 of 180**.
+
+**Three things follow, and all three are general:**
+
+- **Never cache a uniform-buffer address across frames.** Derive it each frame from the dynamic
+  offsets the draws actually bind — which a hook on the bind call already sees.
+- **Scan the window, not the buffer.** Only the ~137 KB written this frame can matter. Scanning the
+  whole 64 MB allocation is both wasteful and, on write-combined memory, actively dangerous — see
+  [never CPU-scan mapped GPU memory in place](#never-cpu-scan-mapped-gpu-memory-in-place--it-is-write-combined).
+  In this case the full scan stalled the live game for roughly 2.7 seconds, twice.
+- **⚠️ It retroactively invalidates earlier patching experiments.** An older result — "patching the
+  camera across 72 blocks changed the image by only 1–2%, therefore the GPU-side camera is
+  downstream" — was almost certainly **patching stale slots the GPU no longer read**. The conclusion
+  drawn from it went back to `[hypothesis]`, and a later negative test at the submit path became
+  **untested rather than disproved**, because with 5-then-0 successful writes it could not have
+  produced a positive. This is the
+  [silent no-op](#silent-no-ops-verification-that-cannot-see-the-failure) pattern with a moving
+  target: *before believing a negative from a memory patch, prove the write landed where the GPU was
+  reading **on that frame**.*
+
+---
+
+## D3D9 to a modern VR compositor: the shared-handle bridge, and its two traps
+
+`[reported 2026-09-01, n=2 projects]` Researched by
+[`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr) and applied by
+[`enslaved-vr`](https://github.com/TefMeister/enslaved-vr). Not built or run by this account.
+
+Every OpenXR/OpenVR compositor wants a D3D11+ (or Vulkan/GL) texture. A large share of the games worth
+converting are D3D9. The bridge is a documented Windows interop path with **no CPU round-trip**:
+create the texture on the **D3D11** side with the shared misc flag, take its `HANDLE` from
+`IDXGIResource::GetSharedHandle`, and open that handle from **D3D9Ex** via
+`IDirect3DDevice9Ex::CreateTexture(..., pSharedHandle)`. The game renders into the D3D9 side; the
+compositor consumes the D3D11 side.
+
+**The load-bearing word is *Ex*, and many D3D9 games never create such a device.** Three static checks
+that fail in different ways, so their agreement means something — Enslaved failed all three:
+
+1. the import table names `Direct3DCreate9` only, in the normal **and** the delay-import directory;
+2. the string `Direct3DCreate9Ex` does not occur in the executable at all, which rules out a runtime
+   `GetProcAddress`;
+3. the `IDirect3D9Ex` / `IDirect3DDevice9Ex` / `IDirect3DSwapChain9Ex` IIDs occur **zero** times,
+   which rules out a `QueryInterface` upgrade on a legacy-created device.
+
+**The cheap route that remains — upgrade the device inside your own proxy.** If you already ship a
+`d3d9.dll` proxy, it can call `Direct3DCreate9Ex` itself and hand the game the Ex object **through the
+legacy interface**: `IDirect3D9Ex` derives from `IDirect3D9` and `IDirect3DDevice9Ex` from
+`IDirect3DDevice9`, so a game compiled against the base vtable never needs to know. Interface
+inheritance does the work; no wrapper objects, no vtable forwarding.
+
+**🪤 Two traps, and both decide the design rather than tune it:**
+
+- **`D3DPOOL_MANAGED` does not exist on a D3D9Ex device.** Any `CreateTexture` /
+  `CreateVertexBuffer` / `CreateIndexBuffer` asking for it **fails**. So the silent upgrade above is
+  only viable if the game's renderer never asks for MANAGED — and *that is not answerable
+  statically*. It is the difference between a one-line proxy change and a resource-remapping project,
+  so establish it first, with a logging proxy, before committing to the approach.
+- **There is no D3D9 keyed mutex.** `D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX` has no
+  `IDirect3D9KeyedMutex` counterpart, so the synchronisation primitive every D3D11 interop tutorial
+  reaches for is unavailable to a D3D9Ex producer. The established substitute is an
+  `IDirect3DQuery9` event query plus double or triple buffering.
+
+**Relation to the alternative:** the
+[whole-frame capture route](#capturing-the-finished-frame-the-whole-frame-route-to-a-headset) avoids
+all of this by presenting a flat overlay, and pays for it with no stereo and no 6DoF. This bridge is
+what you build when you have outgrown that ceiling.
+
+---
+
+## Never gate a state change on exact equality with a value that only *lerps* toward its target
+
+`[reported 2026-09-01, n=1 — read from published upstream source]` Found by
+[`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) in a shipping VR framework's
+first-person module, diagnosing a roughly one-second camera settle that this account's own releases
+expose to users.
+
+The bug earns a section because it is **invisible to code review and to a debugger's first glance**,
+and because the fixed form is one line away from the broken one. Written as our own minimal
+illustration, the shape is:
+
+```text
+target   = in_vr ? 0.0 : slider_value        // correct: VR wants exactly zero
+smoothed = lerp(smoothed, target, k)         // k on the order of 0.0008 per frame at 60 fps
+...
+if (ready && smoothed == 0.0) { snap(); }    // a branch that will not fire
+```
+
+Everything reads correctly. The VR branch *sets the right target*. But an asymptotic approach in
+floating point does not land on an exact `0.0` within any timescale a play session contains, so the
+snap branch is gated on a condition the code's own update rule will never satisfy. Not "impossible in
+principle" — but impossible in practice, which for a player is the same thing.
+
+**The fix is not an epsilon.** It is the observation that the smoothed float was standing in for a
+state the code already knows directly. In the case that produced this, the same file a few lines
+earlier does the same job correctly by testing the VR state itself rather than inferring it from a
+smoothed value. So:
+
+> **Test the state; do not infer it from a signal that is merely converging on what the state
+> implies.**
+
+**⛔ And note the workaround that does not work**, because it is the first thing anyone tries: setting
+the user-facing smoothing slider to zero changes nothing, since in VR the target is forced to zero
+regardless of the slider and it is the *lerp*, not the slider, that is on the path. A setting that
+appears related and provably is not is a good way to lose an evening — see
+[prove the value you are debugging is the one the feature reads](#prove-the-value-you-are-debugging-is-the-one-the-feature-reads).
+
+This is a specific instance of a guard already implied by
+[a signal must be able to separate the states](#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one):
+**a threshold or equality test is only as good as the signal's ability to actually reach it.**
 
 ## Sources
 

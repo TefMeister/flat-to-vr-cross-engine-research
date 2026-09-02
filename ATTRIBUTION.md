@@ -302,6 +302,45 @@ Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every
   `PreViewTranslation`) and their required agreement with the RHI's register enum. Read as
   documentation from a legitimately-owned installation; no engine source is redistributed here.
 
+- **NVIDIA**, additionally — the published **`nvstereo.h` / `StereoParmsTexture` documentation**,
+  used here as the first-party statement of the stereo-parameters texture's channel layout
+  (per-eye separation, convergence, and the ±1 unit vector identifying the current eye), the
+  `ParamTextureManager::UpdateStereoTexture` once-per-frame-at-frame-start contract, and the fact
+  that the texture is application-provided; and **`nvapi_interface.h`** in NVIDIA's public NVAPI
+  repository, used as the first-party function-name-to-dispatch-ID mapping that confirms which NVAPI
+  stereo entry point a binary is (or is not) calling. Read as documentation; no code taken.
+  [using nvstereo.h](https://archive.docs.nvidia.com/gameworks/content/technologies/desktop/nv3dva_using_nvstereoh.htm) ·
+  [nvapi_interface.h](https://github.com/NVIDIA/nvapi/blob/main/nvapi_interface.h)
+- **Epic Games**, additionally — Epic's own **UDK documentation** for *"Unreal Engine 3 and NVIDIA 3D
+  Vision Direct"* (the `AllowNvidiaStereo3d` ini key, the fullscreen-only and not-in-editor
+  restrictions) and for the **UE2 Runtime**, whose `RuntimeHeaders` page records that the engine's
+  C++ native headers were NDA-gated and that licensees used them to build *"360 degree rendering
+  drivers for VR systems"* — cited here as first-party corroboration that the pluggable render-device
+  interface is the sanctioned extension point on that generation. Both pages return HTTP 403 to
+  automated fetch and are cited from their titles and from well-attested search-indexed content;
+  treated as `[reported]` accordingly.
+  <https://docs.unrealengine.com/udk/Three/ThreeDVision.html> ·
+  <https://docs.unrealengine.com/udk/Two/RuntimeHeaders.html>
+- **DHR** and **Rubini**, with the wider **3D-fix archive community** — the published stereoscopic-3D
+  fixes for Mad Max (DHR's 2015 3Dmigoto fix; Rubini's 2024 geo-11 revision built on it, targeting the
+  final shipped game version). Used here only as **reports on engine behaviour** — which passes break
+  under stereo in that renderer, and the fact that a fix's own files, not its announcement, are where
+  register-level detail lives. **Read online only, never installed or copied.**
+- **The `broadside` project wiki** — the public write-up of the AnvilNext `.forge` container format,
+  used here for the `scimitar` header identifier and the header/resource-index/resource-data
+  structure, and for its explicit statement that public analysis stops at the resource boundary.
+- **Turfster** — **Elika**, the Prince of Persia (2008) `.forge` extractor/replacer, and the more
+  generic `.forge` tooling; and the maintainers of **AnvilToolkit** for later titles in the family.
+  Cited for their published capability lists, which is what establishes that public tooling reaches
+  assets but not behaviour graphs. Read online; not used to extract anything for this library.
+- **Jill (`scrunguscrungus`)** — **Astralathe**, an all-in-one mod loader, debugging tool, API extender
+  and patcher for the modern Psychonauts release (in beta, hosted on GitLab), together with the
+  ecosystem built on it (PsychoRando; the Psychonauts Archipelago integration). Cited here as the
+  worked example of *check whether the community already built it — and whether it collides with your
+  proxy*. Not installed by this account at the time of writing.
+- **RayCarrot** — **PsychonautsStudio** (**MIT**), a file-format tool covering all versions of the
+  game including console builds, with serialization logging. Cited as public tooling context.
+
 ### Our own first-party research
 
 The [read the shipped files](./docs/techniques/README.md#read-the-shipped-files-before-you-attach-anything),
