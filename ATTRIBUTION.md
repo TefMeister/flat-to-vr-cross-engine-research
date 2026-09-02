@@ -233,6 +233,10 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
 
 Each under its own license:
 
+- **LZO** (Markus F.X.J. Oberhumer) — **GPL-2.0**, the compression library whose published decoder
+  algorithm and constants (`lzo2a_d.ch`, `config2a.h`) were read online and independently
+  transcribed to verify an LZO2A-compressed game archive byte-for-byte; no code copied into this
+  library or into any project repo. <http://www.oberhumer.com/opensource/lzo/>
 - **MinHook** (TsudaKageyu) — <https://github.com/TsudaKageyu/minhook>
 - **safetyhook** (cursey) — <https://github.com/cursey/safetyhook>
 - **Dear ImGui** (ocornut) — <https://github.com/ocornut/imgui>
@@ -482,6 +486,36 @@ is from the XIII (2003) work credited above; the
 and unbound-key findings are from the Psychonauts work credited above; and the stage-qualified
 register correction and the per-licensee NVIDIA-branch finding on the UE1–3 page are from the Enslaved
 work credited above, each with full evidence in that project's `modding-notes/` and `engine-research/`.
+
+The [shader-compile-time table](./docs/techniques/README.md#when-a-game-compiles-its-shaders-decides-how-you-read-its-constant-map)
+generalises across `enslaved-vr`, `alice-madness-returns-vr`, `mad-max-vr` and `alan-wake-vr`'s own
+first-party research, all credited above; its runtime-compilation row draws on public Steam Community
+troubleshooting threads that document Alan Wake's "could not process hlsl shader" launch failure,
+read as evidence of runtime shader compilation only, no code or files taken.
+
+The [OpenXR per-view pose section](./docs/techniques/README.md#openxr-carries-a-pose-per-view-where-openvr-collapses-to-one)
+credits **LukeRoss00**, who filed [OpenVR issue #1253](https://github.com/ValveSoftware/openvr/issues/1253)
+(still open, no Valve response as of 2026-09-02) describing exactly the per-eye-pose defect a
+same-frame AER submission runs into; and **the Khronos Group**, whose published
+[OpenXR SDK](https://github.com/KhronosGroup/OpenXR-SDK) header (`openxr.h`) was read online to
+verify that `XrCompositionLayerProjection` carries an array of per-view poses, closing the question
+as a specification fact rather than an inference. Generalised out of `far-cry-2-vr` and `XIII2003-vr`'s
+own first-party research, both credited above.
+
+The [encrypted-`.text` entropy signature](./docs/techniques/README.md#packedself-protecting-binaries)
+and its [Automatic-vs-Direct caveat](./docs/techniques/README.md#-the-diagnostic-that-matters-for-recon-automatic-vs-direct)
+are our own first-party static work on a legitimately-owned copy of Alice: Madness Returns (2011),
+credited above. The
+[compressor/type-hash section](./docs/techniques/README.md#the-executable-can-name-its-own-compressed-formats-and-type-hashes)
+and its positive-control addition to the [controls
+rules](./docs/techniques/README.md#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one)
+are our own first-party static work on a legitimately-owned copy of Prince of Persia (2008), credited
+above under **LZO**; full evidence in
+[`prince-of-persia-2008-vr/dev-archive/`](https://github.com/TefMeister/prince-of-persia-2008-vr/tree/main/dev-archive)
+(`tools/forge/FORMAT.md`). The [GitLab REST API
+method](./docs/techniques/README.md#tool-defaults-that-fabricate-false-negatives) came from the
+`psychonauts-vr` project's own research toolbox, applied by a `/gr` sweep to read Astralathe's
+GitLab-hosted source.
 
 Like everything else we write, these are CC-BY-4.0 — take them and build on them, just say where
 they came from.
