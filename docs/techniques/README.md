@@ -159,8 +159,9 @@ of it — but it is combinable, and it means stereo need not be blocked on the c
 
 ### ⭐ Taking over the stereo parameters texture — the cost above, turned into a lever
 
-`[verified-static 2026-09-01 — read directly from NVIDIA's published 3D Vision developer
-documentation by this sweep]` Surfaced by
+`[reported 2026-09-01]` — read directly from NVIDIA's **own published** 3D Vision developer
+documentation by this sweep, which is as strong as `reported` gets: first-party, not hearsay.
+Surfaced by
 [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr), which found the
 texture compiled into a shipped game's shaders and then found that its layout is documented.
 
@@ -1861,7 +1862,8 @@ Generalised from [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr).
 
 ## Counting callers separates what a binary *links* from what it *uses*
 
-`[verified-static 2026-09-01, n=1 game — method reproduced here against a first-party ID table]`
+`[inferred-static 2026-09-01, n=1 game]` — read out of the binary, never seen running; the
+method was reproduced here against a first-party ID table.
 Generalised out of [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr), whose §6 was decided
 by it without the game ever being launched.
 
@@ -1914,7 +1916,8 @@ then discovering its foundation is `[reported]` is a much worse day than splitti
 own id→name table was stripped, so the mapping could not be confirmed against the shipped DLLs — but
 **NVIDIA publishes the complete mapping** in `nvapi_interface.h` in its public NVAPI repository. This
 sweep read it and confirmed all six IDs the project relied on, so that mapping is now
-`[verified-static 2026-09-01]` against a first-party source and the project's conclusion stands. The
+`[reported 2026-09-01]` — confirmed against NVIDIA's own published header, a first-party source —
+and the project's conclusion stands. The
 general point: *"the strings are stripped from the binary"* is a statement about the binary, not about
 the world.
 
