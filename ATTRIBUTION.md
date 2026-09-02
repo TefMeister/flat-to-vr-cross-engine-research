@@ -304,12 +304,16 @@ Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every
 
 - **NVIDIA**, additionally — the published **`nvstereo.h` / `StereoParmsTexture` documentation**,
   used here as the first-party statement of the stereo-parameters texture's channel layout
-  (per-eye separation, convergence, and the ±1 unit vector identifying the current eye), the
-  `ParamTextureManager::UpdateStereoTexture` once-per-frame-at-frame-start contract, and the fact
-  that the texture is application-provided; and **`nvapi_interface.h`** in NVIDIA's public NVAPI
-  repository, used as the first-party function-name-to-dispatch-ID mapping that confirms which NVAPI
-  stereo entry point a binary is (or is not) calling. Read as documentation; no code taken.
+  (per-eye separation, convergence, and the ±1 unit vector identifying the current eye), that
+  `ParamTextureManager` is an application-side SDK helper (not a driver component) calling ordinary
+  NVAPI queries, and the exact resource shape (`StereoTexWidth`×`StereoTexHeight` = 8×1,
+  `D3DFMT_A32B32G32R32F` / `DXGI_FORMAT_R32G32B32A32_FLOAT`, `NVSTEREO_IMAGE_SIGNATURE` =
+  `0x4433564E`) read from the header as vendored unmodified in **3Dmigoto** (bo3b et al., credited
+  above as a tool); and **`nvapi_interface.h`** in NVIDIA's public NVAPI repository, used as the
+  first-party function-name-to-dispatch-ID mapping that confirms which NVAPI stereo entry point a
+  binary is (or is not) calling. Read as documentation; no code taken.
   [using nvstereo.h](https://archive.docs.nvidia.com/gameworks/content/technologies/desktop/nv3dva_using_nvstereoh.htm) ·
+  [nvstereo.h via 3Dmigoto](https://github.com/bo3b/3Dmigoto/blob/master/nvstereo.h) ·
   [nvapi_interface.h](https://github.com/NVIDIA/nvapi/blob/main/nvapi_interface.h)
 - **Epic Games**, additionally — Epic's own **UDK documentation** for *"Unreal Engine 3 and NVIDIA 3D
   Vision Direct"* (the `AllowNvidiaStereo3d` ini key, the fullscreen-only and not-in-editor
