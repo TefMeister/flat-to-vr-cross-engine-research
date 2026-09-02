@@ -33,10 +33,31 @@ orientation row. Curated by the cross-project research sweep.*
   the engine developed internally for Assassin's Creed". **Practical consequence:** AC1's modding
   scene is legitimate adjacent prior art for engine and format questions — while still verifying
   against the target binary, since two years and a studio change separate the builds.
-- **`.forge` is the family's archive format, and extraction tooling already exists.** `[reported
-  2026-08-25]` Large packed archives (up to ~1.2 GB each). A game-specific extractor ("Elika") and a
-  more generic `.forge` extractor/replacer are both public. Not needed for camera work, but it means
-  asset-level work would not start from zero.
+- **`.forge` is the family's archive format, and public knowledge of it stops at assets — all of it.**
+  `[reported 2026-09-01, updating the 2026-08-25 entry]` Large packed archives (up to ~1.2 GB each).
+  Two useful things and one hard ceiling:
+  - **⭐ The file header begins with the literal ASCII identifier `scimitar`.** That is a free,
+    zero-risk engine-identity confirmation off the front of any archive in the family — no launch, no
+    disassembly, no tooling. Independent corroboration of the codebase lineage recorded above, and the
+    cheapest identity check this page has.
+  - **The container is documented** — header, then a resource index carrying pointers, sizes and a
+    descriptions chunk with timestamps, filenames and linked-list indices, then resource data. The
+    public write-up ends its analysis exactly at the resource boundary.
+  - **🚧 And then it stops.** No compression scheme, no type IDs, no resource-type table, no datablock
+    schema. Public extraction tools go one level further but interpret only **assets**: datafiles,
+    datablocks, textures, most meshes, localisation. **Nobody public has read a camera graph, a
+    character graph, or any state machine out of this format** — in this engine generation or a later
+    one. The larger sibling-series scene is the same shape at larger scale: geometry assembly, not
+    behaviour. Nor does the newer toolkit for later titles in the family transfer down to this
+    generation's builds.
+
+  **The transferable lesson, and it is the useful half:** *"the format is undocumented" bounds what you
+  can read, not what you can find.* Locating a known value inside an opaque archive does not require
+  the schema — a byte search for a value you already hold is schema-free, and turns a
+  format-reverse-engineering project into a search. Establish what you actually need from the archive
+  before deciding the format is the blocker; asset-level work never starts from zero here, and
+  behaviour-level work does not need to start with the schema. See
+  [search by VALUE, not by address](../techniques/#search-by-value-not-by-address-where-the-game-will-tell-you-the-answer).
 - **Direct3D 9, and specifically *not* D3D9Ex.** `[inferred-static 2026-08-25]` Static imports of
   `d3d9.dll` and `d3dx9_39.dll`; `Direct3DCreate9Ex` is **absent**. Worth carrying forward, because
   Ex versus non-Ex changes windowed flip-model and GPU-thread-priority behaviour that injection and

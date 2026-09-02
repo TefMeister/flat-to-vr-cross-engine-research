@@ -642,3 +642,91 @@ settles it (which driver mode the binary requests via `NvAPI_Stereo_SetDriverMod
 survives and Alan Wake's weakens**, because Alice's rests on the fix author's statement about the
 *game*, not on driver-side controls. Recorded rather than quietly edited, since the generalisation
 was published before the correction arrived.
+
+### 2026-09-02 — full sweep (web delta from the third 2026-09-01 sweep; in-house delta ~4.5h)
+
+**Web: two direct source checks, both aimed at closing an existing tag rather than open-ended
+browsing.** UEVR/REFramework were not re-checked — the prior entry already recorded them stable on a
+same-day delta and nothing in this window's harvest touched them. Two targeted fetches instead:
+NVIDIA's `nvapi_interface.h` (confirmed all six NVAPI stereo/init function IDs the Alan Wake project
+needed named, including `NvAPI_Stereo_SetDriverMode` = `0x5E8F0BEC`) and NVIDIA's `nvstereo.h`
+documentation page (confirmed the `StereoParmsTexture` channel layout already recorded by the Alice
+project's own research — no new information there, but now independently verified rather than
+single-sourced). A search-based check of Epic's UDK "3D Vision Direct" page corroborated the ini key
+and fullscreen-only restriction the same way the project's own inbox drop had it (page itself still
+403s to fetch).
+
+**Project-repo harvest (delta since 19:25 on 2026-09-01; all 16 game repos pulled).** Twelve had real
+research commits — the heaviest single-day in-house delta this log has recorded. Fourteen dossiers
+were touched by the modding lane folding in the previous sweep's own inbox drops (a visible feedback
+loop: this account's sweeps are now a measurable fraction of what the modding lane has to process).
+Read in full: `alan-wake-vr` (NVAPI caller-count method + its own claim-hygiene correction),
+`alice-madness-returns-vr` (CTAB register split, `NvStereoFixTexture` layout), `doom-2016-vr`
+(framespy measurement, linear-allocator uniform buffer, the resubmission-is-legal finding, and a
+retracted patching conclusion), `enslaved-vr` (D3D9-not-Ex, the shared-handle bridge and its two
+traps), `XIII2003-vr` (UE2 doc/NDA split), `psychonauts-vr` (Astralathe), `prince-of-persia-2008-vr`
+(`.forge` container vs. datablock-schema split), `mad-max-vr` (2024 geo-11 fix supersedes 2015 prior
+art), `manhunt-2003-vr` (RenderWare VR prior art), `visceral-re2-vr` (the FirstPerson lerp-vs-equality
+bug, read from REFramework's own published source), `burnout-paradise-vr` and `far-cry-2-vr` (both
+routine check-ins, no new engine content).
+
+**Generalised up this sweep — four new sections in
+[`docs/techniques/README.md`](./techniques/README.md), plus two in-place extensions:**
+
+- [Counting callers separates what a binary links from what it uses](./techniques/README.md#counting-callers-separates-what-a-binary-links-from-what-it-uses)
+  (Alan Wake, `n=1` game + `n=1` reproduced-here method) — the NVAPI-ID caller-counting technique that
+  decided a whole section of that dossier without a launch, plus the claim-hygiene lesson: the project
+  correctly split "structure verified" from "naming unverified" rather than letting one lend
+  confidence to the other, and this sweep closed the naming gap from NVIDIA's own published table. A
+  `/gr` session independently generalised the same finding into that project's own dossier on the same
+  day (worth recording: two sessions reached the same generalisation from the same raw finding within
+  hours, and this sweep's inbox drop into `alan-wake-vr` answering the open `/pd` request arrived
+  minutes after `/gr` had already answered it — redundant but harmless, left for `/gr`'s next drain to
+  recognise and delete rather than touched further).
+- [Both eyes from one recorded frame: resubmitting the game's own command buffers](./techniques/README.md#both-eyes-from-one-recorded-frame-resubmitting-the-games-own-command-buffers)
+  (DOOM, `n=1`) — legal command-buffer resubmission as a fourth stereo-submission strategy on explicit
+  APIs, with the linear-allocator trap that invalidated an older patching conclusion.
+- [D3D9 to a modern VR compositor: the shared-handle bridge](./techniques/README.md#d3d9-to-a-modern-vr-compositor-the-shared-handle-bridge-and-its-two-traps)
+  (Far Cry 2 → Enslaved, `n=2` projects) — the documented D3D9Ex/D3D11 shared-texture interop path,
+  the three-way static check for whether a game has a D3D9Ex device at all, and the `D3DPOOL_MANAGED`
+  / no-keyed-mutex traps that decide the design.
+- [Never gate a state change on exact equality with a lerp target](./techniques/README.md#never-gate-a-state-change-on-exact-equality-with-a-value-that-only-lerps-toward-its-target)
+  (Visceral RE2, `n=1`, from published upstream source) — the general form of "test the state, don't
+  infer it from a value merely converging on it," plus the tempting workaround that provably does
+  nothing.
+- **Stereo-parameters-texture lever**, folded into the existing dormant-native-stereo section — Alice's
+  find that `NvStereoFixTexture` is NVIDIA's documented, application-provided `StereoParmsTexture`
+  turns the section's "the app must patch its shaders" caveat into a lever a proxy can drive directly,
+  with the Direct-vs-Automatic tension stated honestly rather than resolved past the evidence.
+- **Two additions to "a third-party stereo fix is free intelligence"** (Mad Max, Prince of Persia) —
+  read the fix's own files, not its announcement, for register-level detail; and check that recorded
+  prior art still names the *current* fix, not a nine-year-old one a newer author has since superseded.
+- **One addition to "check whether the game shipped it"** (Psychonauts) — check whether the *community*
+  already built it, and specifically whether a discovered tool collides with your own proxy before
+  installing it.
+
+**Engine page. [`unreal-1-3.md`](./engines/unreal-1-3.md) had its heaviest single-sweep growth since
+seeding:** the UE3/D3D9 register map is now `n=2` from two different evidence types (Enslaved's
+shipped `.usf` source vs. Alice's compiled shader reflection) with the vertex/pixel register-space
+split recorded as a trap that nearly produced the wrong reading; a new section records that UE3
+shipped an **official Epic/NVIDIA 3D Vision Direct integration** behind one ini key, stated alongside
+— not resolved against — the competing Automatic-pattern evidence found in the same engine generation's
+shaders; and a new UE2 section separates "the documentation is public" from "the headers were always
+NDA-gated," with Epic's own page corroborating that the render-device layer this family's projects
+already converge on is the historically sanctioned VR-driver seam. [`scimitar-anvil.md`](./engines/scimitar-anvil.md)'s
+`.forge` bullet was rewritten to state plainly that public knowledge of the format stops at assets —
+no compression scheme, type IDs, or datablock schema exists publicly for this engine generation at all
+— while recording the `scimitar` header identifier as a free engine-identity check and cross-linking
+to the search-by-value technique that makes the schema gap not matter for the current critical path.
+
+**Attribution.** NVIDIA (the two published headers), Epic (the UDK 3D Vision and UE2 RuntimeHeaders
+pages), DHR/Rubini and the 3D-fix archive community, the `broadside` wiki, Turfster/AnvilToolkit, and
+Astralathe's/PsychonautsStudio's authors were added, credited by name for the specific claims drawn
+from their work.
+
+**Inboxes: drained two from my own** (both duplicates/refinements of the same NVAPI-verification
+finding, arriving in the concurrent-drop window this log has now observed twice — both survived intact
+because deletion was by explicit name), **filled one** — `alan-wake-vr/external-research/inbox/` got
+this sweep's independent NVAPI-table confirmation, which turned out to race a `/gr` session that
+answered the identical `/pd` request first; recorded above rather than corrected, since both answers
+agree and no false claim resulted.
