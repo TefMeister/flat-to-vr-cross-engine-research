@@ -724,9 +724,15 @@ pages), DHR/Rubini and the 3D-fix archive community, the `broadside` wiki, Turfs
 Astralathe's/PsychonautsStudio's authors were added, credited by name for the specific claims drawn
 from their work.
 
-**Inboxes: drained two from my own** (both duplicates/refinements of the same NVAPI-verification
-finding, arriving in the concurrent-drop window this log has now observed twice — both survived intact
-because deletion was by explicit name), **filled one** — `alan-wake-vr/external-research/inbox/` got
+**Inboxes: drained three from my own, across two waves** — the first two (both duplicates/refinements
+of the same NVAPI-verification finding) arrived in the concurrent-drop window this log has now
+observed twice, and a third landed *after* the first drain and after this sweep's own commit had
+already been rebased onto it: `nvstereo.h`'s texture is app-written, not driver-written — a genuine
+correction to this sweep's own just-published wording, since the earlier NVIDIA doc page's
+"app-provided" language had been (mis)read here as "driver-filled" — plus its exact 8×1
+`A32B32G32R32F` shape and `NVSTEREO_IMAGE_SIGNATURE`, now folded into the stereo-parameters-texture
+section with the correction stated rather than silently fixed. All three survived intact because
+deletion was by explicit name each time. **Filled one** — `alan-wake-vr/external-research/inbox/` got
 this sweep's independent NVAPI-table confirmation, which turned out to race a `/gr` session that
 answered the identical `/pd` request first; recorded above rather than corrected, since both answers
 agree and no false claim resulted.

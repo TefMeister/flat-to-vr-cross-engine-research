@@ -166,9 +166,13 @@ texture compiled into a shipped game's shaders and then found that its layout is
 
 The cost list above ends on a resigned note: in Automatic mode the driver publishes live separation
 and convergence into "a small texture" that the application's own shaders sample to undo the clip-space
-shift, and a mod would have to patch those shaders. **That reading undersells it badly.** The texture
-is NVIDIA's `StereoParmsTexture`, it is **created by the application and merely filled by the driver's
-`ParamTextureManager`**, and its layout is published:
+shift, and a mod would have to patch those shaders. **That reading undersells it badly, in two ways.**
+The texture is NVIDIA's `StereoParmsTexture`, its layout is published, and — corrected 2026-09-02 from
+an earlier draft of this section — **the application writes it itself; the driver never touches it.**
+`ParamTextureManager` is a helper class shipped *in the `nvstereo.h` SDK header the application links*,
+not a driver component: it calls ordinary NVAPI queries (`Stereo_GetSeparation` /
+`Stereo_GetConvergence`) and writes the result with ordinary D3D resource calls. The driver's only
+role is reading a signature back out of the finished texture to recognise it.
 
 | channel of `pixel(0,0)` | contents (NVIDIA's own wording) |
 | --- | --- |
@@ -176,12 +180,18 @@ is NVIDIA's `StereoParmsTexture`, it is **created by the application and merely 
 | `.g` | *"Covergence"* — NVIDIA's own spelling, worth knowing when grepping |
 | `.b` | *"Unit Vector identifying the current eye"* — **left eye = −1, right eye = +1** |
 
-Two mechanical details come with it: `UpdateStereoTexture` is documented as called **once per frame,
-at the beginning of the frame, "even while the device is lost"**, and the texture is
-**app-provided** — the application creates it, the manager only writes into it. The published page
-names `StereoTexWidth` / `StereoTexHeight` / `StereoTexFormat` as the constants controlling size and
-format **but does not print their values**, so those still have to come from the header or from
-observing the game's own `CreateTexture` call.
+`[reported 2026-09-02, from NVIDIA's `nvstereo.h` as vendored unmodified in the open-source 3Dmigoto
+project]` its **shape is fixed and known, not guessed at**: `StereoTexWidth × StereoTexHeight` is
+**8 × 1**, `StereoTexFormat` is `D3DFMT_A32B32G32R32F` (D3D9) / `DXGI_FORMAT_R32G32B32A32_FLOAT`
+(D3D10/11), and the texture carries an identifying marker,
+`NVSTEREO_IMAGE_SIGNATURE` = `0x4433564E` ("NV3D"), written into it by the app itself.
+`UpdateStereoTexture` is documented as called **once per frame, at the beginning of the frame, "even
+while the device is lost."**
+
+**Because the app writes this resource from values it queries itself, taking it over needs no race
+against a driver thread** — hooking the app's own NVAPI calls or its texture-update/bind calls is
+sufficient, and the exact byte layout can be predicted before a single capture: an 8×1 four-float
+render target with a known signature is a resource-creation task, not a reverse-engineering one.
 
 **Why this matters far beyond NVIDIA's ecosystem.** A `.b` channel that *tells a shader which eye it
 is drawing* is a per-eye control channel sitting in an ordinary texture resource — and a proxy already
