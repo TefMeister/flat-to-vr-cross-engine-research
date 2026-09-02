@@ -344,6 +344,12 @@ UI** by user-tunable factors, and **suppress the head-tracked camera override wh
 showing** (so menus don't move with your head). Dialog/letterbox overlays often need special
 handling and are a frequent source of one-eye-only or letterboxed UI artifacts.
 
+**During a flat side-by-side stereo proof, leave the 2D layer full-window mono on purpose.** The mouse
+maps to the whole window, so a menu squashed into one half or duplicated into both is unclickable, and
+you lose the console you need to drive the test. Restore the full-window viewport before any 2D draw;
+a HUD that appears in one half only is the restore logic missing a path, not a stereo bug. Moving the
+HUD into the world is a later milestone. (Unreal Gold, M2 design decision, `[compile-verified 2026-09-02]`.)
+
 ---
 
 ## Driving a live game from a hook
@@ -729,6 +735,23 @@ recalibrating the player.
 Generalised from [`visceral-re2-vr/modding-notes/`](https://github.com/TefMeister/visceral-re2-vr/tree/main/modding-notes)
 (`2026-08-30-aim-pose-and-foot-grounding-solved.md`).
 
+### Measuring eye height for a first-person conversion: camera-minus-player is a *camera* height
+
+`[measured 2026-09-02, Psychonauts]` A third-person game's camera position minus its player position is
+the height of the **third-person camera**, not of the character's eyes — in the worked case it was
+about 328 units by one camera reading and about 149 by another, and neither is an eye height. Recording
+either as one would have baked a wrong constant into the first-person work at exactly the point where
+the default was already flagged as a guess. Two rules:
+
+- **Take eye height from the skeleton, not the camera:** the head bone's world position minus the
+  player's root position, both in the engine's own units, with no camera in the path and no unit-scale
+  conversion. Most engines expose a bone-world-position call; find it before measuring anything.
+- **Check the ground is level where you measure.** The player's up-axis value drifted by tens of units
+  across a short walk in what looked like a flat car park, so a single sample there would have been
+  wrong twice over.
+
+From notes 71–72 in [`psychonauts-vr/modding-notes/`](https://github.com/TefMeister/psychonauts-vr/tree/main/modding-notes).
+
 ## Silent no-ops: verification that cannot see the failure
 
 Four independent cases, two of them in major public tools, one our own and one documented outright
@@ -867,6 +890,14 @@ The control is the entire point. Cameras drift on their own — idle sway, weapo
 breathing animations — so without one, "something changed" reads as success and you will believe a
 dead backend works. With one, a backend only counts if it beats the floor by a clear margin.
 
+**And before any of that, read the game's bindings.** `[disproved 2026-09-02]` A keystroke delivered
+perfectly to a key the game does not bind is indistinguishable, from outside, from a keystroke that
+never arrived. Psychonauts moves on the arrow keys; two seconds of flawlessly injected `W` proved
+nothing and was very nearly recorded as an input blocker (worked example under
+[controls, rule 1](#1-before-recording-a-negative-as-fact-confirm-the-test-could-have-gone-positive)).
+Send a key the game is known to act on, and when the repo already has a helper that once moved the
+player, use it before writing a new one.
+
 ### Known input routes, by engine family
 
 Compiled from our own live tests; incomplete on purpose, extend it as you measure.
@@ -875,7 +906,7 @@ Compiled from our own live tests; incomplete on purpose, extend it as you measur
 | --- | --- | --- | --- |
 | Unreal Engine 2 era | **No** — exclusive DirectInput for the mouse | keyboard works | Mouse and keyboard take different routes; test them separately |
 | Capcom RE Engine | **No** | **Yes** (`WM_KEYDOWN`/`WM_KEYUP`) | `[verified-live 2026-08-24]` |
-| Double Fine bespoke (Psychonauts) | mouse: **no** | keyboard reaches gameplay, **not** menus | Title/credits screens need a real gamepad |
+| Double Fine bespoke (Psychonauts) | mouse: **no** | keyboard reaches gameplay, **not** menus | Title/credits screens need a real gamepad · movement is on the **arrow keys** (DIK scancodes, extended flag), not WASD — an unbound `W` produced a false negative on 2026-09-02, re-verified `[verified-live 2026-09-02, n=2 directions]` |
 | id Tech 6 (DOOM 2016) | **Yes — both movement and look** | untested | `[verified-live 2026-08-31, movement n=2, look n=3 incl. a reversal]` · **DirectInput 8 non-exclusive**, so `SendInput` reaches it · needs the game **foregrounded** · links **XInput 1.4** directly |
 
 **The discriminator is not the API family — it is exclusivity.** UE2-era XIII and id Tech 6 both use
@@ -973,6 +1004,22 @@ The three failures, because the shapes are recognisable:
   player was **jammed against a wall** — and the *known-good* backend tested four seconds earlier
   had managed only 1.2 m for exactly that reason. The positive control was sitting in the log and
   was not read as the warning it was.
+
+**A fourth shape, from a second project** `[disproved 2026-09-02, Psychonauts]` — **a perfectly
+delivered stimulus the system was never bound to respond to.** Three keyboard/mouse injections
+produced no movement and no view rotation, with the window confirmed foreground and the frame counter
+confirmed live, and the negative was written up with two candidate causes — one of them the project's
+*own* earlier bug-fix, complete with a plausible mechanism. The keystroke had been delivered flawlessly
+to a key the game does not bind (movement is on the arrow keys, not `W`), and the arrow that was tried
+used a different scancode encoding from the one the repo's proven helper uses. The positive control — a
+helper that had demonstrably walked the player days earlier — was in the same repository and was not
+consulted. Two lessons compound. **Look for the positive control you already own before theorising**:
+had nobody checked, a future session would have hunted a defect in working, load-bearing code. And
+**three parameter sets of one API are not three routes** — `SendInput` scancode, `SendInput` extended
+scancode and `SendInput` mouse were never independent, and mistaking them for a spread of routes is
+what made the null look like a wall. Notes 71 and 72 in
+[`psychonauts-vr/modding-notes/`](https://github.com/TefMeister/psychonauts-vr/tree/main/modding-notes),
+the second superseding the first.
 
 ### 2. Before recording a POSITIVE as an *attribution*, confirm the mechanism alone does nothing
 
@@ -2064,10 +2111,71 @@ This is a specific instance of a guard already implied by
 [a signal must be able to separate the states](#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one):
 **a threshold or equality test is only as good as the signal's ability to actually reach it.**
 
+## Prove the test can fail: mutation-check a numerical verification before trusting it
+
+`[verified-numerically 2026-09-02, n=1 project]` A stereo-maths change — per-eye viewports and per-eye
+constants for a from-scratch render device — was verified **without launching the game** by compiling
+the very header the DLL compiles into a standalone test, pushing its constants through the exact
+arithmetic the GPU performs (vertex shader → perspective divide → viewport transform, in `float`), and
+comparing the resulting pixel against ground truth built **independently**: the engine's own published
+projection formula evaluated in `double` for a camera translated to each eye, plus the side-by-side
+layout stated geometrically. Five frame shapes including a letterboxed one, several eye separations
+including zero, both layouts, both eye-swap states, hundreds of random points each; plus invariants —
+mono constants bitwise equal to the pre-change build, viewports two exact non-overlapping halves,
+parallax **sign** and **magnitude**, zero separation giving identical eyes. Tens of thousands of checks,
+none failing.
+
+**That pass is a negative result — "no bug found" — and [rule 1 of the controls
+section](#1-before-recording-a-negative-as-fact-confirm-the-test-could-have-gone-positive) applies to
+it exactly as it does to a live probe: prove the test could have gone positive.** The way to do that is
+to break the code on purpose and watch the test notice. Three mutations of a scratch copy of the header
+were run through the unchanged test: eye-shift sign flipped, the cropped layout using the full frame
+width, and the sub-rectangle origin dropped from the stereo offset. Each failed, and each failed in a
+**different number of checks** — the third in exactly the letterboxed case, which is what told the
+author that path was the one it exercised. A mutation run does two jobs: it proves the test has teeth,
+and its failure *counts* localise which check guards which bug.
+
+Three habits that made this cheap enough to do routinely:
+
+- **Keep the maths in a header with no SDK or graphics-API types**, so a plain console test can compile
+  the identical code the DLL ships. A test of a reimplementation tests the reimplementation.
+- **Derive the ground truth in a different formulation and a different precision** from the code under
+  test. The engine's own pixel formula in `double` and the shader pipeline in `float` cannot share a
+  bug — the one outcome the test cannot catch is a derivation error common to both, and the project
+  wrote that down as the single live outcome that would indict the maths.
+- **Write the launch-outcome table before the launch.** With the arithmetic already proven, every
+  possible wrong picture on the first run maps to a *code* bug — a constant not reaching the shader, a
+  viewport not restored, a second constant buffer not bound — and the table says which. The maths is
+  off the suspect list before anyone puts a headset on.
+
+A design note worth carrying with it: **for a proof of stereo, do not model convergence.** Parallel eye
+cameras with identical projections put zero disparity at infinity, which is what a headset compositor
+expects (per-eye poses are translations; the asymmetric frusta come from the runtime's eye tangents
+later). On a flat 3D display that puts everything "in front of the screen" — fine for a proof, not a
+display tuning, and worth saying so nobody tunes it.
+
+Generalised from [`unreal-gold-vr/modding-notes/`](https://github.com/TefMeister/unreal-gold-vr/tree/main/modding-notes)
+(`2026-09-02-m2-stereo-proof-built-verified-deployed.md`); the test output and mutation record are in
+that repo's `dev-archive/recon/`.
+
+## When byte-identity is the evidence, the tree is read-only
+
+`[verified-numerically 2026-09-02, n=1 binary]` A source tree rescued from a deleted repository was
+proven to be the deployed build by rebuilding it locally and comparing the result **byte for byte**
+against the DLL installed in the game — an exact comparison of the whole population, not a sample. That
+single fact is the entire reason the rescued source is trustworthy, and it is destroyed by **any** edit
+inside the tree, including well-meant housekeeping. Within hours a hygiene checker flagged a frozen
+status document inside that tree for carrying an untagged claim, and the correct fix was to **change the
+scanner to skip vendored and rescued trees**, not to add the tag. Work on such a source by **branching
+from it**, never by editing it in place; if a tool ever complains about a file inside it, fix the tool.
+Generalised from [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research)
+(dossier, 2026-09-02).
+
 ## Sources
 
-- **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, the log-before-the-call habit, and the exclusive-mode DirectInput wall that `SendInput` cannot cross; generalised out of [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research) §9a/§9b
-- **Psychonauts VR** (this account) — the void-behind-the-player characterisation and measurement method, the camera-matrix identification arithmetic, and the double-rotation trap; generalised out of [`psychonauts-vr/modding-notes/`](https://github.com/TefMeister/psychonauts-vr/tree/main/modding-notes) and [`psychonauts-vr/dev-archive/`](https://github.com/TefMeister/psychonauts-vr/tree/main/dev-archive)
+- **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, the log-before-the-call habit, and the exclusive-mode DirectInput wall that `SendInput` cannot cross; generalised out of [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research) §9a/§9b; the byte-identity read-only-tree rule from the same dossier (2026-09-02)
+- **Psychonauts VR** (this account) — the void-behind-the-player characterisation and measurement method, the camera-matrix identification arithmetic, the double-rotation trap, the unbound-key false negative and the camera-height-is-not-eye-height rule (notes 71–72); generalised out of [`psychonauts-vr/modding-notes/`](https://github.com/TefMeister/psychonauts-vr/tree/main/modding-notes) and [`psychonauts-vr/dev-archive/`](https://github.com/TefMeister/psychonauts-vr/tree/main/dev-archive)
+- **Unreal Gold VR** (this account) — the mutation-checked numerical verification, the no-convergence and full-window-2D-layer design notes; generalised out of [`unreal-gold-vr/modding-notes/`](https://github.com/TefMeister/unreal-gold-vr/tree/main/modding-notes)
 - **Visceral — RE2 VR** (this account) — the HMD-anchored body float and the pelvis-drop grounding fix; generalised out of [`visceral-re2-vr/modding-notes/`](https://github.com/TefMeister/visceral-re2-vr/tree/main/modding-notes)
 - **RE Village sniper scope** (this account) — the argument-encoding silent-zero case, the hook-to-acquire-a-handle pattern, and the posted-window-message input route; generalised out of [`re-village-scope-vr/modding-notes/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/modding-notes)
 - **DOOM (2016) VR** (this account) — the launch-time gate and the date-match-your-evidence point, the line-endings false negative, the `strings` minimum-length trap, the in-process raw-input route, the call-argument-not-a-global switch shape, and the repeated-launch/ASLR sampling trap; generalised out of [`doom-2016-vr/external-research/`](https://github.com/TefMeister/doom-2016-vr/tree/main/external-research) and [`doom-2016-vr/modding-notes/`](https://github.com/TefMeister/doom-2016-vr/tree/main/modding-notes)

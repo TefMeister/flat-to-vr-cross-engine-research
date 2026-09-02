@@ -68,6 +68,32 @@ constant registers are separate address spaces**; a tool that reports a register
 reporting half a fact. A related display hazard in the same class: tooling that prints *sampler*
 registers with a `c` prefix will show `s1` as `c1`, where it collides with a genuine float4 `c1`.
 
+**🪤 Now `n=2` — the sibling project fell into exactly this trap, and the correction matters for its
+consequence.** `[inferred-static 2026-09-02, n=34,046 tables; the SM2 cache agrees]` Enslaved's first
+reflection read (2026-09-01) reported `ViewProjectionMatrix` at `c0` (3325 tables), `c3` (288) and
+`c10` (22), concluded "about 9% of variants read it from `c3`/`c10`", and widened its proxy to accept
+those registers. It had not recorded the stage. Re-walked with the version token that sits just before
+each `CTAB` block (`0xFFFE` vertex, `0xFFFF` pixel), **every one of the 3325 vertex-shader
+view-projections is at `c0`**; the 310 others are pixel shaders. Two things follow:
+
+- **On the vertex side — the only side a `SetVertexShaderConstantF` hook sees — the view-projection is
+  at `c0` and nowhere else**, so one per-eye offset at vs `c0` covers every vertex position. The
+  widened acceptance was unreachable for the matrix it was written to catch.
+- **What that leaves open is the pixel side.** Those 310 pixel shaders project *something* with the
+  un-offset matrix — screen-space effects, reflections, decals; the table cannot say which — and a
+  vertex-stage hook never touches them. Whether it shows in stereo is a live question; the fix, if
+  needed, is the same hook with the same bit-identity guard on `SetPixelShaderConstantF`. `[hypothesis]`
+
+The pixel-side reserved registers seen so far: Enslaved has `ScreenPositionScaleBias` at ps `c1`,
+`MinZ_MaxZRatio` at ps `c2` and the view-projection at ps `c3` (a minority at ps `c10`); Alice has its
+pixel-side view-projection at ps `c4`. **So unlike the vertex map, the pixel-side slot is not the same
+across titles — record it per game, with the stage.** The rule this family now runs on: **the stage
+travels with the register in every table and every log line.** "`c3` ×4 equal to `c0`" is one
+character from a rule that, on a build carrying NVIDIA's stereo branch, would treat a stereo parameter
+as a view-projection. Full correction in
+[`enslaved-vr/modding-notes/`](https://github.com/TefMeister/enslaved-vr/tree/main/modding-notes)
+(`2026-09-02-viewprojection-c3-c10-are-pixel-shaders-no-nvidia-stereo-branch.md`).
+
 **⚠️ And the reading this corrects is instructive.** A capture had recorded `c0` receiving 47 uploads
 per frame and concluded there was no shared view-projection. UE3's D3D9 RHI **re-applies the reserved
 view registers around bound-shader-state changes**, so those are 47 writes of the same value. See
@@ -83,6 +109,40 @@ it the natural per-eye hook.
 **⚠️ That setter early-outs on an unchanged matrix**, so a naive per-eye write can leave the second
 eye inheriting the first's view and stereo collapses to mono **silently**. Full treatment:
 [a setter that early-outs on an unchanged matrix](../techniques/#stereo-hazard-a-setter-that-early-outs-on-an-unchanged-matrix).
+
+**UE1 / 227k — there is no view matrix, so a per-eye camera is a per-eye translation of view space.**
+`[verified-numerically 2026-09-02, from Unreal Gold; not yet rendered]` UE1 hands the render device
+already-transformed view-space vertices plus a per-frame projection description, never a view matrix.
+Unreal Gold's from-scratch D3D11 render device therefore does stereo with **one extra float in its
+projection constant buffer** — an eye shift added to view-space X before the unchanged mono projection
+— two constant buffers (one per eye), and every world batch issued twice into two non-overlapping
+half-width viewports over one shared depth buffer, so the eyes never depth-test against each other.
+Mono constants stay bit-identical to the pre-stereo build. Convergence is deliberately *not* modelled:
+parallel cameras with identical projections put zero disparity at infinity, which is what a headset
+compositor wants (the asymmetric frusta come later from the runtime's eye tangents), even though on a
+flat 3D display it puts everything in front of the screen. How this was verified without a launch is
+its own technique: [prove the test can fail](../techniques/#prove-the-test-can-fail-mutation-check-a-numerical-verification-before-trusting-it).
+
+**Head-look needs no native code on UE1 or UE2 — the view is produced by a script event.**
+`[reported 2026-09-01, UE1, from OldUnreal's public 227 UnrealScript; the UE2 half is XIII's live hook
+on the same event, below]` On UE1 the player's view is produced by a script-implemented `event` on the
+player pawn that returns the view actor, location and rotation through `out` parameters. The rotation
+property it writes is declared `transient`, so driving it every frame at headset rate replicates
+nothing and persists nothing; FOV is a plain script float; and the head-bob a VR conversion must remove
+is added *inside that event*, in first person only — on this engine killing it is one omitted line. On
+UE2, XIII reaches the same event from a native DLL through its exported name. Same seam, two
+generations, so the family split is:
+
+| Job | Layer | Native code? |
+| --- | --- | --- |
+| HMD **orientation** into the view; killing head-bob | script / player layer (`PlayerCalcView`) | no |
+| Per-eye **offset** and per-eye **projection** | the render device | it is the renderer you are writing anyway |
+| Getting the HMD **pose** *into* script | a native package bound to a script package | yes — the one native piece, and on UE1 a documented community procedure: compile the script package with `ucc make -nobind`, ship a DLL named after the package, and look for `Bound to <Package>.dll` in the log |
+
+Detail and sources in
+[`unreal-gold-vr/external-research/topics/`](https://github.com/TefMeister/unreal-gold-vr/tree/main/external-research/topics)
+(`2026-09-01-playercalcview-is-a-script-event-so-head-look-needs-no-native-code.md`). Whether that
+native-package recipe holds for a 64-bit host is an open assumption there, not a fact.
 
 **Family-wide habit this earns:** UE1–3 titles frequently ship their own `.usf` shader sources or an
 unpacked shader cache. **Look for them before planning a capture** — on this family a register map
@@ -226,6 +286,18 @@ driver-duplicated draws, not of an application that already knows.
    symbols are a correction layer and **not** a lever on the camera. Full method, including the trap
    that a bare zero proves nothing: [counting callers separates what a binary links from what it
    uses](../techniques/#counting-callers-separates-what-a-binary-links-from-what-it-uses).
+
+**And `n=2` now says the integration is per licensee build, not per engine generation.**
+`[inferred-static 2026-09-02, n=2 titles]` Alice (UE3, 2011) carries the stereo branch in 65% of its
+pixel shaders. Enslaved (UE3, same D3D9 generation) has **zero** occurrences of `nvstereo` across all
+three `RefShaderCache` packages including SM4, all three `GlobalShaderCache` binaries, the executable
+and every shipped `.usf`, and `AllowNvidiaStereo3d` in no file — the only NVIDIA change markers in its
+shipped sources are a particle-colour edit. Two consequences for the check: run it as a
+**case-insensitive byte search over the caches**, not a name lookup through a reflection parser — it
+also covers the SM4 (D3D10 `RDEF`) caches a `CTAB` walker cannot read, and it catches the sampler name
+as well as the constant; and treat **an NVIDIA engineer's markers in the source as no evidence of the
+stereo branch** — they edited other things too. A clean negative this cheap belongs in the dossier so
+nobody re-derives it.
 
 **Either answer is useful, and neither leaves you empty-handed.** Direct means an inheritable two-eye
 path behind an ini key. Automatic means the shaders sample a **stereo parameters texture the
