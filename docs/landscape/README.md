@@ -76,6 +76,14 @@ Rumble**, **I Am Your Beast**, **Out of Sight**, and **R.A.I.D.** Separately, a 
 Worth watching purely as a landscape signal: sustained outside investment in licensed VR porting
 makes the "official port" path a more durable alternative to modding for popular titles, not a
 one-off showcase moment.
+Between the two sits **Flat2VR Spark** (announced August 2025): a programme in which modders work on
+*officially licensed* adaptations from the rights holder's source code, in small pods, with the studio
+handling licensing, QA and platform certification and the partners taking credit and revenue
+participation. Its first slate — I Am Your Beast VR, The Signal: Stranded on Sirenis, SPRAWL, Stop Dead,
+FlatOut 4: Total Insanity VR — is where several names in the portfolio above come from. For this
+library it is the clearest statement yet of a third path beside "fan mod" and "studio port": the mod
+author keeps working, but from source rather than from a hook.
+[UploadVR on Spark](https://www.uploadvr.com/flat2vr-spark-announcement/) ·
 [flat2vrstudios.com](https://www.flat2vrstudios.com/) ·
 [x.com/Flat2VR](https://x.com/Flat2VR) · [beacons.ai/flat2vr](https://beacons.ai/flat2vr)
 

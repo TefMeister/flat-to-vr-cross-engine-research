@@ -11,6 +11,7 @@ sibling project's dossier — under [`engines/`](./engines/).
 |--------|--------------------|----------------------|-------|
 | **Unreal Engine 4.8 – 5.x** | D3D11/D3D12 | **UEVR** (turnkey injector) | Drives UE's native stereo via UObject/FName reflection. Best-supported case. |
 | **Unreal Engine 2 / 3** | D3D8 (UE2) / D3D9 (UE3) | None turnkey | Below UEVR's floor. UE3 is UE4's ancestor → UEVR is conceptual reference only. Manual build. |
+| **Unreal Engine 1** (Unreal Gold via OldUnreal 227k) | pluggable render-device DLLs — community D3D9 / OpenGL / D3D11 renderers, native 64-bit | None turnkey; write your own render device | Public UnrealScript plus an SDK render-device contract make the renderer the sanctioned seam. **No view matrix** — the per-eye camera is a view-space translation (numerically verified 2026-09-02, not yet rendered); head-look is a **script event**, so only the pose bridge needs native code. See the [UE1–3 page](./engines/unreal-1-3.md). |
 | **Capcom RE Engine** | D3D11/D3D12 (+Vulkan) | **REFramework VR** (turnkey) | Engine ships an OpenVR path; REFramework activates it. |
 | **Bethesda Creation Engine 2** (Starfield) | D3D12 | **starfield2vr** (mutars) | Public adapter; Reflex-marker frame timing. See [case study](./case-studies/creation-engine-2.md). |
 | **Ubisoft AnvilNext 2.0** (Assassin's Creed) | D3D12 | **anvilengine2vr** (mutars) | Public multi-title adapter; two-hook frame timing. See [case study](./case-studies/anvil-per-eye-camera.md). |

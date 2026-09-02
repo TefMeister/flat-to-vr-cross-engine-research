@@ -736,3 +736,78 @@ deletion was by explicit name each time. **Filled one** — `alan-wake-vr/extern
 this sweep's independent NVAPI-table confirmation, which turned out to race a `/gr` session that
 answered the identical `/pd` request first; recorded above rather than corrected, since both answers
 agree and no false claim resulted.
+
+### 2026-09-02 (second sweep, afternoon, dev PC) — a short in-house delta, and the UE1–3 page grows a UE1 half
+
+**Web: the watch-list's core sources are all unchanged.** UEVR (last release 1.05, 2024-11-16),
+REFramework (v1.5.9.1, 2025-03-05; its ten most recently updated issues carry nothing on the Lua GUI
+callback, render targets or scene layers — the one VR-tagged issue is PSVR2 Sense-controller input on
+RE9), OldUnreal `Unreal-testing` (v227k_15, 2024-08-16), dgVoodoo2 (v2.87.3, 2025-06-23), mutars
+(starfield2vr v2.0.1.Public 2026-05-05, anvilengine2vr v2.0.0.Public 2026-01-25) and vorpX (25.1.5,
+January 2026) all show no release since the last sweep. PCVR Central's library page no longer prints its
+catalogue counts, so the 2026-08-31 figure stands as the last recorded. One landscape gap was found and
+filled rather than anything new: **Flat2VR Spark** (announced August 2025 — modders building licensed
+adaptations from source, in pods, with revenue participation) was absent from
+[`docs/landscape/README.md`](./landscape/README.md) despite several of its slate appearing in the
+portfolio list already there; added with UploadVR's report as the source. A steered search for which
+UE3 pixel shaders consume the view-projection (Enslaved's new open risk) found nothing public worth
+recording.
+
+**Project-repo harvest (delta since 03:06 on 2026-09-02, the previous sweep's commit; all 16 game repos
+plus `staging` pulled).** Four repos had commits in the window and only two carried research content —
+the rest were `/gs` inbox drains and tag corrections. But two commits from **02:54–02:55** on
+`enslaved-vr` and `unreal-gold-vr` landed inside the previous sweep's window *after* it had pulled, and
+`unreal-gold-vr` was not in that sweep's list at all, so both were harvested here as new. Read in full:
+`enslaved-vr` (the stage-qualified CTAB re-walk and the NVIDIA-branch negative), `unreal-gold-vr` (the
+M2 stereo proof note, its dossier delta, and the two `/gr` topics from 2026-09-01 22:31 on the
+script-event camera and the ICBINDx11Drv provenance), `XIII2003-vr` (dossier: the rescued-tree
+read-only rule), `psychonauts-vr` (modding notes 71 and 72 — the second superseding the first),
+`alice-madness-returns-vr` (the `NvStereoFixTexture` format topic — already folded by the previous sweep's
+correction commit, confirmed, nothing further). Twelve repos unchanged since the bookmark.
+
+**Generalised up this sweep — two new sections and three in-place extensions in
+[`docs/techniques/README.md`](./techniques/README.md):**
+
+- [Prove the test can fail: mutation-check a numerical verification](./techniques/README.md#prove-the-test-can-fail-mutation-check-a-numerical-verification-before-trusting-it)
+  (Unreal Gold, `n=1`) — the independent-ground-truth / different-precision / mutation-run method that
+  verified per-eye stereo maths without a launch, framed as controls rule 1 applied to a passing test,
+  plus the write-the-launch-outcome-table-first habit and the no-convergence design note.
+- [When byte-identity is the evidence, the tree is read-only](./techniques/README.md#when-byte-identity-is-the-evidence-the-tree-is-read-only)
+  (XIII, `n=1`) — fix the scanner that flags a rescued tree, never the file; branch, never edit in place.
+- **Controls rule 1 gains a fourth worked failure shape** (Psychonauts, `[disproved 2026-09-02]`) — a
+  flawlessly delivered stimulus the system was never bound to respond to, the positive control that was
+  already in the repo, and "three parameter sets of one API are not three routes"; with a matching
+  "read the game's bindings first" paragraph in the injected-input section and a corrected Psychonauts
+  row in the input-routes table.
+- **Eye height** (Psychonauts, `[measured 2026-09-02]`) — a new subsection under the body-height section:
+  camera-minus-player is a third-person camera height, take it from the head bone instead, and check the
+  ground is level.
+- **HUD & UI** (Unreal Gold) — keep the 2D layer full-window mono during a flat SBS proof, because the
+  mouse maps to the window.
+
+**Engine page. [`unreal-1-3.md`](./engines/unreal-1-3.md) — the UE3 register trap is now `n=2` and the
+page finally has a UE1 half.** The 2026-09-01 "split reflection tables by shader target" warning, written
+from Alice's near-miss, is now backed by Enslaved's actual mis-staged "9% at `c3`/`c10`" claim and its
+correction: on the vertex side the view-projection is at `c0` and nowhere else, the pixel-side slot
+differs per title (ps `c3` Enslaved, ps `c4` Alice), and the un-offset pixel-side view-projection is a
+recorded open risk. The 3D Vision section records that the NVIDIA integration is **per licensee build,
+not per engine generation** (Alice has it in 65% of pixel shaders; Enslaved has zero occurrences across
+eight files) and that the right check is a byte grep over the caches, which also covers the SM4 cache a
+`CTAB` walker cannot read. New UE1 material: no view matrix, so the per-eye camera is a view-space
+translation carried by one extra constant (numerically verified, not yet rendered); and **head-look
+needs no native code on UE1 or UE2** because the view is produced by a script event — the family's
+camera work splits cleanly into orientation at the script layer and per-eye offset/projection at the
+render device, with the pose bridge the one native piece (documented community procedure on UE1, 64-bit
+unverified). The engines index still lacks a UE1 row; added this sweep.
+
+**Attribution.** The Unreal Wiki (via Unreal Archive), OldUnreal's public 227 UnrealScript, the two
+OldUnreal forum authors of the native-package procedure, the BeyondUnreal wiki, and Flat2VR Spark
+(via UploadVR) were added; the first-party paragraph now names `unreal-gold-vr` and the specific
+Enslaved, XIII and Psychonauts findings generalised here.
+
+**Inboxes: drained none** — my own held only its `README.md` (the `/gs` drop from 09:54 had already
+been folded at 10:20). **Filled one**: `unreal-gold-vr/external-research/inbox/` got the public
+Unreal-unit scale evidence that bounds the M2 `StereoIPD=3.4` hypothesis and shows the documentation
+cannot settle it — three public figures (52.5, 50 and 44.6 UU/m) put 3.4 UU anywhere from 65 to 76 mm,
+so the dossier's plan to measure in the headset is the only route. No `engine-research/inbox/` drops
+this sweep; nothing answered a dossier dead end directly.

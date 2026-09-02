@@ -207,6 +207,10 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   and **High On Life**, alongside **Out of Sight**, **Surviving Mars**, **Postal 2**, and
   **Shadowgate VR: The Mines of Mythrok** (PSVR2) — evidence the licensed-port pipeline keeps
   scaling. <https://www.flat2vrstudios.com/>
+  - **Flat2VR Spark** (announced August 2025) — the studio's programme under which modders build
+    officially licensed adaptations from source, in small pods, with credit and revenue participation.
+    Cited as landscape context only, from UploadVR's report.
+    <https://www.uploadvr.com/flat2vr-spark-announcement/>
   - **Impact Reality** — Flat2VR Studios' parent company; confirmed (Aug 2026) $5M+ raised in a
     private round (Hartmann Capital among backers) plus a **StartEngine** equity-crowdfunding
     reservation opened to retail investors. Portfolio named in that campaign: Trombone Champ:
@@ -345,6 +349,20 @@ Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every
 - **RayCarrot** — **PsychonautsStudio** (**MIT**), a file-format tool covering all versions of the
   game including console builds, with serialization logging. Cited as public tooling context.
 
+- **The Unreal Wiki**, as preserved by **Unreal Archive** — the *Unreal Unit* page: the 16 UU per foot
+  / ≈52.5 UU per metre convention, its explicit statement that there is no fixed relation to real-world
+  units, and the per-game player-collision table (Unreal / Unreal Tournament: 78 UU tall). Read as
+  public documentation; cited to bound the Unreal Gold project's IPD-default hypothesis.
+  <https://unrealarchive.org/wikis/unreal-wiki/Unreal_Unit.html>
+- **OldUnreal**, additionally — the public 227 UnrealScript source (`Unreal-PubSrc`), read online as
+  documentation for the script-event camera finding on the UE1–3 family page; and **`[]KAOS[]Casey`**
+  and **`han`** on the OldUnreal forums, for the published native-package build-and-bind procedure
+  summarised there. **BeyondUnreal wiki** (community-preserved) for its "customising the player view"
+  page. All surfaced by the `unreal-gold-vr` project's own `/gr` research pass; no code taken.
+  <https://github.com/OldUnreal/Unreal-PubSrc> ·
+  <https://www.oldunreal.com/phpBB3/viewtopic.php?t=3938> ·
+  <https://beyondunrealwiki.github.io/pages/customising-the-player-view.html>
+
 ### Our own first-party research
 
 The [read the shipped files](./docs/techniques/README.md#read-the-shipped-files-before-you-attach-anything),
@@ -453,6 +471,17 @@ sections, and the RenderWare family page's injection-route notes, come from the 
 credited above.
 The [debug-the-right-value](./docs/techniques/README.md#prove-the-value-you-are-debugging-is-the-one-the-feature-reads)
 section is from the Resident Evil 2 Remake work credited above.
+
+The [mutation-checked verification](./docs/techniques/README.md#prove-the-test-can-fail-mutation-check-a-numerical-verification-before-trusting-it)
+section and the UE1 camera-delivery findings on the UE1–3 family page are our own work on a
+legitimately-owned copy of Unreal Gold under OldUnreal's 227k patch —
+[`unreal-gold-vr`](https://github.com/TefMeister/unreal-gold-vr). The
+[byte-identity read-only-tree rule](./docs/techniques/README.md#when-byte-identity-is-the-evidence-the-tree-is-read-only)
+is from the XIII (2003) work credited above; the
+[eye-height](./docs/techniques/README.md#measuring-eye-height-for-a-first-person-conversion-camera-minus-player-is-a-camera-height)
+and unbound-key findings are from the Psychonauts work credited above; and the stage-qualified
+register correction and the per-licensee NVIDIA-branch finding on the UE1–3 page are from the Enslaved
+work credited above, each with full evidence in that project's `modding-notes/` and `engine-research/`.
 
 Like everything else we write, these are CC-BY-4.0 — take them and build on them, just say where
 they came from.
