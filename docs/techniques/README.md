@@ -6,6 +6,7 @@ Each is distilled from public projects credited in
 
 - [Frame timing: Reflex-marker vs two-hook](#frame-timing)
 - [Stereo submission: native, synchronized-sequential, AFR, AER](#stereo-submission-strategies)
+- [OpenXR carries a pose per view where OpenVR collapses to one](#openxr-carries-a-pose-per-view-where-openvr-collapses-to-one)
 - [Dormant native stereo paths (check before you build)](#dormant-native-stereo-paths)
 - [The clip-space stereo footer: stereo without finding the camera](#the-clip-space-stereo-footer-geometry-stereo-without-ever-finding-the-camera)
 - [Temporal effects under AFR (the TAA problem)](#temporal-effects-under-afr)
@@ -32,6 +33,8 @@ Each is distilled from public projects credited in
 - [Both eyes from one recorded frame: resubmitting the command buffers](#both-eyes-from-one-recorded-frame-resubmitting-the-games-own-command-buffers)
 - [D3D9 to a modern VR compositor: the shared-handle bridge](#d3d9-to-a-modern-vr-compositor-the-shared-handle-bridge-and-its-two-traps)
 - [Never gate a state change on equality with a lerp target](#never-gate-a-state-change-on-exact-equality-with-a-value-that-only-lerps-toward-its-target)
+- [When a game compiles its shaders decides how you read its constant map](#when-a-game-compiles-its-shaders-decides-how-you-read-its-constant-map)
+- [The executable can name its own compressed formats and type hashes](#the-executable-can-name-its-own-compressed-formats-and-type-hashes)
 
 ---
 
@@ -241,6 +244,19 @@ did**. Finding `Separation` / `Convergence` uniforms in a 2008–2013-era render
 of 3D-Vision *awareness*, not of a native two-eye path — and which driver mode the title requests
 separates the two **statically**, before anything is launched.
 
+**⚠️ "Statically" assumes `.text` is readable at rest — check that first.** `[measured 2026-09-02,
+Alice: Madness Returns]` A wrapped executable (measured `.text` entropy at the theoretical ceiling,
+entry point sitting outside `.text` in its own high-entropy section, zero `CC` padding runs — the
+[packed-binary](#packedself-protecting-binaries) signature) makes the caller-count scan a guaranteed
+false negative, not a real answer, because there is nothing to disassemble on disk. The gate this
+re-triggers is `[PD]` → `[FLAT]`: the same method needs a **live memory dump of `.text`** first,
+exactly the live-scan fix that section already prescribes. **A second trap on the same binary:** its
+readable `.rdata`/`.data` can still carry a full NVAPI interface dispatch table (the linked SDK's
+fixed list, one entry per function the SDK ships) with the two mode-selecting entries absent — do not
+read that absence as "must be Automatic mode" before running the positive control: check whether
+`NvAPI_Initialize` itself — which the game certainly calls — is also missing from the same table. If
+it is, the table proves nothing about which functions the game *uses*, only which SDK it *linked*.
+
 ### It also names a mechanism the library had been treating as a black box
 
 [Dormant native stereo paths](#dormant-native-stereo-paths) warns that vintage stereo may apply
@@ -251,6 +267,44 @@ and better resolved, where id's own published lineage genuinely does move `viewo
 
 Contributed by a `/gr` estate sweep, 2026-09-01, out of the `alan-wake-vr` 3D Vision question; the
 technique itself is engine-agnostic.
+
+## OpenXR carries a pose per view where OpenVR collapses to one
+
+`[verified-static 2026-09-02]` from Khronos's own published `openxr.h`, following up a
+`[hypothesis]` two sibling projects independently reasoned their way to hours apart on the same day.
+
+**The problem this answers.** A same-frame stereo submission (needed by AER and by any true two-eye
+render) wants to hand the runtime two independent poses, one per eye, in the same frame. On
+**OpenVR**, [issue #1253](https://github.com/ValveSoftware/openvr/issues/1253) — filed by
+**LukeRoss00**, the author of the AER technique this library already documents, describing exactly
+this wall — has sat open for seven years with no Valve response: `IVRCompositor::Submit` is called
+once per eye, and SteamVR keeps only the pose from the **last** call, discarding the first. A
+same-frame two-eye submission over OpenVR therefore cannot carry two different poses at all.
+
+**OpenXR's projection layer does not have the same shape.** Reading the SDK header directly rather
+than reasoning about it: `XrCompositionLayerProjectionView` carries its **own `pose`** and its **own
+`fov`**, and `XrCompositionLayerProjection` holds an **array** of those views (`viewCount` + `views`)
+submitted **together, in one layer, in one space** — there is no separate per-eye submit call for the
+last-one-wins collision to happen to. Per-eye poses are expressible in OpenXR **by construction**.
+
+**⚠️ What this does and does not settle.** That the API can express independent per-view poses is now
+a specification fact, not an inference. That a given **runtime** honours them independently during
+reprojection is a separate, empirical question the specification cannot answer — and notably
+SteamVR's OpenXR runtime shares a vendor with the OpenVR path that has the unfixed defect. So: the
+design is no longer blocked at the API level, and the remaining risk moved from *"impossible"* to
+*"untested per runtime,"* settled by one cheap headset test — submit two views with deliberately
+different poses and confirm both are honoured rather than collapsed.
+
+**A layer-type trap worth naming separately:** an OpenXR host built for a flat "one image, both eyes"
+M1 milestone commonly uses `XrCompositionLayerQuad` — a flat rectangle with a **single** pose. That is
+the right layer for M1 and the wrong one for true per-eye stereo; a quad-layer host proves the OpenXR
+plumbing works, not that per-eye submission does. The **projection** layer above is the one this
+section is about, and it is a different code path even though the swapchain/session handling is
+shared.
+
+Generalised from `far-cry-2-vr` (which opened the question against OpenVR's known defect) and
+`XIII2003-vr` (which verified it against the header and found the layer-type gap in its own OpenXR
+host), both same-day, 2026-09-02.
 
 ## Temporal effects under AFR
 
@@ -296,6 +350,14 @@ concluding "wrong build" or "wrong version" — check whether the entry point la
 oversized or oddly-named section. That's the signature of a still-active protector stub: the real
 code exists only after the process unpacks itself in memory at startup, so a static file read can
 never see it, no matter how correct the address is.
+
+**A static entropy check finds this before you even try to disassemble.** A wrapped/encrypted `.text`
+section reads at or near the theoretical entropy ceiling (**8.00**), its entry point commonly sits
+**outside** `.text` in a separate high-entropy wrapper section, and it will show **zero `CC` (`int3`)
+padding runs** — a tell no genuine MSVC-compiled code section produces, since compilers pad function
+gaps with them. `[measured 2026-09-02, Alice: Madness Returns]` All three read instantly from the PE
+headers and a byte histogram, with no disassembler needed, and they say plainly "there is nothing
+real here to read yet" before a session spends time on a static scan that cannot possibly succeed.
 
 The fix is to scan *live* process memory instead of the file on disk. Any DLL already loaded into
 the target process (a same-name proxy DLL, or any other in-process hook) initializes before the
@@ -602,6 +664,66 @@ stays constant across draws within a frame.
 
 Generalised from `mad-max-vr`, `enslaved-vr`, `doom-2016-vr`, `the-evil-within-vr` and `XIII2003-vr`
 engine dossiers, all 2026-09-01.
+
+### When a game compiles its shaders decides how you read its constant map
+
+The recurring question — *which register or constant carries the view-projection, and what is it
+called?* — is answered by a different technique depending on **when the game turns shader source
+into bytecode**, not on which engine or graphics API it uses:
+
+| When the game compiles | What ships on disk | How to read the constant map | Seen on |
+| --- | --- | --- | --- |
+| Ahead of time, source shipped | HLSL/`.usf` **source** | just read it — reserved-register comments are usually right there | Enslaved (UE3 ships `Common.usf`; `c0` = `ViewProjectionMatrix`) |
+| Ahead of time, source stripped | compiled bytecode **with a reflection block** | parse it — D3D9 bytecode carries `CTAB` naming every constant/register, D3D10+ carries `RDEF` | Alice: Madness Returns (45,832 `CTAB` tables), Enslaved (34,046), Mad Max (`RDEF`) |
+| At runtime | HLSL plus a shipped **shader-compiler redistributable** | **hook the compiler** — proxy `d3dcompiler_4x.dll` and log every source string, entry point and define as it compiles | Alan Wake (ships `d3dcompiler_42`/`43` cabs; fails with *"could not process hlsl shader"* without them) `[inferred-static 2026-09-02, from the redistributable + the error string]` |
+
+**The tell for the third case is in the install folder, not the binary.** A shipped shader-compiler
+redistributable, or a startup error naming HLSL, means the bytecode does not exist until load — so a
+session that goes looking for a shader cache will correctly find nothing on disk and can wrongly
+conclude the game ships no shaders to read at all. Alan Wake is the worked case: the two UE3 siblings
+above answered the same question by parsing `CTAB` off a compiled cache, and that trick does not
+transfer here because there is no cache to parse — the game reaches `D3DCompile`/`D3DXCompileShader`
+in `d3dcompiler_4x.dll` **by name, from a DLL sitting in its own install folder**, the same shape as
+proxying `nvapi.dll` for a stereo call. A proxy on that one export sees every shader's source text,
+entry point and defines as they compile, in one run.
+
+Two things worth stating about the runtime-compile case specifically: it is the **easiest** of the
+three to read, not the hardest — the source names its own constants in plain text, and the compile
+call is one chokepoint in one DLL, so a single proxied export yields the whole corpus with names,
+where the compiled-cache case yields only registers and the shipped-source case depends on the
+developer having shipped sources at all. And it is the only one of the three that is **upstream of
+the bytecode**, making it the one place a per-eye term could eventually be added without patching
+bytecode or overriding a constant post hoc — a large commitment, and not a first move.
+
+**The general habit:** before planning any capture, check what the install folder says about *when*
+shaders become bytecode. A `d3dcompiler_*.dll` or a compiler cab sitting in the game's own tree is as
+informative as the renderer's import table, and it changes which of the three techniques even
+applies. Generalised across `enslaved-vr`, `alice-madness-returns-vr`, `mad-max-vr` and
+`alan-wake-vr`, 2026-09-02.
+
+### The executable can name its own compressed formats and type hashes
+
+Two related tricks for reading an unknown packed/serialized format statically, both cheaper than
+inferring the format from byte patterns:
+
+- **Compression algorithm identity is often sitting in the strings table.** Before guessing an LZ
+  variant from byte patterns, grep the executable for the compression library's own **enum
+  strings** — one project carried `LZO1X_1`, `LZO1X_999`, `LZO2A`, `LZX` as a contiguous run, and a
+  chunk header's small integer type field picked one straight off that list. Transcribing the
+  matching public decoder's published constants then reproduced every compressed block to the exact
+  output size with exact input consumption — a stronger check than any checksum, and available
+  *before* the checksum algorithm is even known. `[verified-numerically 2026-09-02, 7.90 GB
+  reproduced]`
+- **A type/identifier hash stored beside a name is, more often than not, plain CRC32 of that name.**
+  Before assuming a custom hash function, check `crc32(candidate_name)` against any 32-bit value the
+  binary stores alongside a name (a type registry, a reflection table). Once confirmed, a CRC32
+  dictionary built from every identifier-shaped string in the executable can resolve a large fraction
+  of otherwise-opaque stored hashes into named, typed objects in one pass — one project resolved 201
+  of 202 this way. Applies to any engine with reflection-style or registry-style type tables, not
+  just the one it was found on.
+
+Generalised from `prince-of-persia-2008-vr`'s static `.forge`/Scimitar decoding session, 2026-09-02
+(no launch); engine-specific layout detail stays in that project's own dossier.
 
 ## Counting events is not measuring content
 
@@ -1021,6 +1143,20 @@ what made the null look like a wall. Notes 71 and 72 in
 [`psychonauts-vr/modding-notes/`](https://github.com/TefMeister/psychonauts-vr/tree/main/modding-notes),
 the second superseding the first.
 
+**A fifth shape, from a third project** `[verified-numerically 2026-09-02, Prince of Persia 2008]` —
+**a negative search result would have been load-bearing, so a positive control was run first.** The
+plan was "search a game's serialized state data for the hash of a known, certainly-reachable state
+name" (to prove state identifiers are stored as hashes at all, before hunting for one specific
+target state). Three control hashes — states that indisputably run in normal play — matched only
+inside audio data, never inside the state records themselves. That told a different and more useful
+story than a null on the target ever could have: **the data does not store states as hashes** (it
+uses plain ordinals), so the target's absence-as-a-hash was never evidence it was missing — it was
+evidence the search category was wrong. Skipping the control would have recorded "the debug camera
+was stripped from the shipping build," and it was in fact present and authored. **Generalises beyond
+this one case: whenever a negative on a specific target would be recorded as a finding, first run the
+identical search for something that certainly must be there — if that also comes back empty, the
+method is wrong, not the target.**
+
 ### 2. Before recording a POSITIVE as an *attribution*, confirm the mechanism alone does nothing
 
 `[verified-live 2026-09-01]` The other half, and the newer one. "I wrote a displaced value into this
@@ -1326,6 +1462,19 @@ answer.** Two cases from this account, both of which cost real time:
   and the whole negative collapsed at once. This is the document-research sibling of the
   [control rules above](#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one) —
   the same failure shape, in a different tool.
+
+- **A client-side-rendered project page versus an automated fetch.** `[verified-live 2026-09-01,
+  n=2 sessions]` GitLab (and any site whose project/wiki pages render in the browser via JavaScript)
+  returns only a loading skeleton to a plain automated fetch of the page URL — indistinguishable from
+  a genuinely empty page. This produced a "licence and install method unread — needs a browser"
+  conclusion that was really a tooling gap, not an absence of information. The fix is the same shape
+  as the other rows here: **query the API that serves the real content instead of the page that
+  wraps it.** GitLab's REST API is plain JSON/raw bytes and needs no token for public projects — a
+  repository tree (`/api/v4/projects/<id>/repository/tree?path=<dir>&recursive=true`), a raw file
+  (`/api/v4/projects/<id>/repository/files/<url-encoded-path>/raw?ref=<branch>`), or a wiki page
+  (`/api/v4/projects/<id>/wikis/<slug>`) all return real content where the page fetch returns a
+  shell. The numeric project id is on the project's front page. Same discipline as the `strings -n 4`
+  row above: it was the tool, not the source, that produced the negative.
 
 ### What to do
 

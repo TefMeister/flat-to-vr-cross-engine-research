@@ -811,3 +811,109 @@ Unreal-unit scale evidence that bounds the M2 `StereoIPD=3.4` hypothesis and sho
 cannot settle it — three public figures (52.5, 50 and 44.6 UU/m) put 3.4 UU anywhere from 65 to 76 mm,
 so the dossier's plan to measure in the headset is the only route. No `engine-research/inbox/` drops
 this sweep; nothing answered a dossier dead end directly.
+
+### 2026-09-02 (third sweep, evening) — a `/gr` estate sweep in one afternoon, harvested whole
+
+**The shape of this one:** a single `/gr` estate sweep ran across the whole account between the
+previous entry's bookmark (03:06) and now, touching sixteen of sixteen game repos with either a
+CHECK-IN or FULL pass and landing two same-day cross-project verifications. This session's own inbox
+also received three genuinely new drops mid-sweep. Almost everything below came from reading that
+work rather than from the open web.
+
+**Own inbox drained: three files, by explicit name** (`grep -rni "supersedes" inbox/` returned
+nothing first) —
+`2026-09-02-gr-gitlab-rest-api-reads-what-the-web-ui-hides.md`,
+`2026-09-02-gr-when-a-game-compiles-its-shaders-decides-how-you-read-its-constant-map.md`,
+`2026-09-02-mod-compressor-enum-crc32-types-and-a-positive-control-that-earned-its-keep.md`. All
+three were genuinely new generalisations, not corrections, and all three are folded into the library
+(below); `inbox/` is now empty but for `README.md`.
+
+**Web checked, unchanged as every same-day check today has found:** UEVR (still **1.05**,
+2024-11-16, checked directly against the releases page) and REFramework (still **v1.5.9.1**,
+2025-03-05). No other watch-list source was queried on top of the four direct checks already
+recorded earlier today.
+
+**Project-repo harvest (delta since 03:06; all 22 repos in this root pulled, 0 changes on any of
+them — every commit below was already on `origin` from the concurrent `/gr` sweep).** Research-lane
+commits found on: `XIII2003-vr`, `alan-wake-vr`, `alice-madness-returns-vr`, `burnout-paradise-vr`,
+`doom-2016-vr`, `enslaved-vr`, `far-cry-2-vr`, `mad-max-vr`, `manhunt-2003-vr`,
+`prince-of-persia-2008-vr`, `psychonauts-vr`, `re-village-scope-vr`, `the-evil-within-vr`,
+`unreal-gold-vr`, `visceral-re2-vr` — fourteen of sixteen, the heaviest single-day breadth this log
+has recorded (only `arcade-controls-re2-vr`, frozen, had nothing). Most were routine `/gr` rotation
+CHECK-INs; the substantial ones are generalised below.
+
+**Generalised up this sweep — three new sections, three in-place extensions, in
+[`docs/techniques/README.md`](./techniques/README.md):**
+
+- [**OpenXR carries a pose per view where OpenVR collapses to
+  one**](./techniques/README.md#openxr-carries-a-pose-per-view-where-openvr-collapses-to-one)
+  (`far-cry-2-vr` → `XIII2003-vr`, same day, `[verified-static 2026-09-02]`) — the best cross-project
+  moment of the day: `far-cry-2-vr` re-checked the seven-year-old, still-open
+  [OpenVR #1253](https://github.com/ValveSoftware/openvr/issues/1253) (filed by **LukeRoss00**, the
+  AER author, describing exactly this same-frame-pose collision) and reasoned that OpenXR's
+  projection layer *should* avoid it by carrying a pose per view — tagged `[hypothesis]`, flagged for
+  verification. An hour later, on a sibling project, that verification happened against Khronos's own
+  published header: `XrCompositionLayerProjection` really does hold an array of per-view poses in one
+  layer/one space, so the last-submit-wins collision structurally cannot occur. The same pass also
+  caught a layer-type trap worth keeping: a **quad** layer (the common M1 "flat panel" host) has one
+  pose and cannot carry stereo at all — only the **projection** layer can. Runtime honouring stays
+  untested and is one cheap headset check away.
+- [**When a game compiles its shaders decides how you read its constant
+  map**](./techniques/README.md#when-a-game-compiles-its-shaders-decides-how-you-read-its-constant-map)
+  — folded from the drained `mod` inbox file (three projects converging on the same question: source
+  shipped → read it; compiled-and-stripped → parse `CTAB`/`RDEF`; compiled at runtime → hook the
+  compiler). **Corroborated the same afternoon** by `alan-wake-vr`'s own `/gr` pass, which found the
+  game ships `d3dcompiler_42`/`43` redistributables and fails to launch without them — direct
+  first-party evidence for the third row, now folded in with the "proxy seam" framing and credit to
+  the community troubleshooting thread that documents the failure string.
+- [**The executable can name its own compressed formats and type
+  hashes**](./techniques/README.md#the-executable-can-name-its-own-compressed-formats-and-type-hashes)
+  — folded from the drained `mod` inbox file (`prince-of-persia-2008-vr`'s completed `.forge` decode,
+  `[verified-numerically 2026-09-02, 7.90 GB reproduced]`): grep the strings table for a compression
+  library's own enum names before guessing a variant from byte patterns, and check `crc32(name)`
+  against any stored 32-bit value beside a name before assuming a custom hash — 201 of 202 type
+  hashes resolved this way in one pass. Credited **LZO** (Markus F.X.J. Oberhumer) for the decoder
+  constants transcribed to verify it.
+- **A fifth shape added to [controls rule
+  1](./techniques/README.md#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one)**
+  — the same Prince of Persia session's positive control: three certainly-present state hashes were
+  searched for and found only in audio data, proving the target data stores states as ordinals, not
+  hashes, *before* a null on the actual target state got misread as "stripped from the shipping
+  build." Third instance of this exact pattern in three days (Psychonauts, this one, and see below) —
+  worth naming as a recurring habit, not a coincidence.
+- **A new item folded into [tool defaults that fabricate false
+  negatives](./techniques/README.md#tool-defaults-that-fabricate-false-negatives)** — the drained `gr`
+  inbox file's GitLab finding: a client-side-rendered project/wiki page returns only a loading shell
+  to an automated fetch, indistinguishable from genuinely empty, where the site's REST API (no token
+  needed for public projects) returns the real tree/file/wiki content underneath. Found on
+  `psychonauts-vr`'s own research toolbox, applied by `/gr` to read Astralathe's GitLab-hosted source.
+- **A caveat added to the [Automatic-vs-Direct
+  diagnostic](./techniques/README.md#-the-diagnostic-that-matters-for-recon-automatic-vs-direct)**,
+  plus a **new entropy-signature paragraph in [packed/self-protecting
+  binaries](./techniques/README.md#packedself-protecting-binaries)** — both from `alice-madness-returns-vr`'s
+  `/pd` session, `[measured 2026-09-02]`: the exe's `.text` reads at entropy 8.00 with its entry point
+  outside `.text` and zero `CC` padding runs (a wrapper signature readable from the PE headers alone,
+  no disassembly needed), which makes the caller-count static scan for NVAPI driver mode a guaranteed
+  false negative rather than a real answer — re-gating that `[PD]` item to `[FLAT]`. The **third**
+  instance of the positive-control pattern this sweep touched: the readable `.rdata` NVAPI interface
+  table looked like it settled Direct-vs-Automatic by omission, until checking whether
+  `NvAPI_Initialize` itself — certainly called — was also absent (it was), proving the table is the
+  linked SDK's fixed list, not the game's usage.
+
+**Not generalised, deliberately.** `enslaved-vr`'s D3D9Ex/`MANAGED`-pool sidestep (the shipped D3D10
+path avoids the trap this library already documents) and `manhunt-2003-vr`'s `MHWSF`-sourced camera
+globals are real findings but stay project-specific — the first is a single project's design choice
+around an already-documented general trap, the second is RenderWare address-level detail with no
+second data point yet.
+
+**Inboxes filled: none.** Every cross-project connection surfaced this sweep (`far-cry-2-vr` ↔
+`XIII2003-vr` on OpenXR; the shader-compile-time table's Alan Wake corroboration) had already been
+cross-linked directly between those projects' own repos by the concurrent `/gr` sweep before this
+pass started — nothing was left to hand off.
+
+**One thing worth naming:** this is the third day running that a `/gr` estate sweep and this `/sr`
+sweep have landed on the same afternoon, and the second time a finding on one project was
+independently verified or corroborated on a sibling within the hour (Alan Wake's NVAPI-table race on
+2026-09-02's first entry; the OpenXR pose verification here). The account now has two research lanes
+producing genuinely overlapping, mutually-checking output on the same day, which is a different
+regime from the "one sweep, quiet day" shape most of this log describes.
