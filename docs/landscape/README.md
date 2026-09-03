@@ -87,6 +87,28 @@ author keeps working, but from source rather than from a hook.
 [flat2vrstudios.com](https://www.flat2vrstudios.com/) ·
 [x.com/Flat2VR](https://x.com/Flat2VR) · [beacons.ai/flat2vr](https://beacons.ai/flat2vr)
 
+
+**And a fourth path opened in August 2026: a free community mod passing first-party certification.**
+`[reported 2026-09-03]` The **Half-Life 2: VR Mod** (Source VR Mod Team, published by Flat2VR Studios,
+free to anyone who owns the 2004 game) is reported to have achieved **Steam Frame Verification** on
+2026-08-04 — i.e. a fan conversion carrying an official platform badge on Valve's own upcoming
+standalone headset, rather than a licensed rebuild. Two details are worth carrying beyond the news
+value:
+
+- **Standalone certification is a performance bar, not a compatibility tick.** The team's own account
+  describes the mod failing to start on the hardware at first, and reaching the target only after
+  adding **eye-tracked foveated rendering** to hold 72 fps at 1728×1728 per eye. Anyone imagining a
+  desktop-grade injection mod moving to standalone should read that as the floor.
+- **It sharpens what "official" means.** The Studios and Spark paths above involve licensing and
+  source access; this one is the *same* free mod, certified. For a library about hooking flat games,
+  that is the more encouraging of the two shapes.
+
+`[reported]` — from press coverage
+([vr.org, 2026-08-06](https://vr.org/articles/half-life-2-vr-mod-steam-frame-verified-2026)) rather
+than from the mod team's own announcement, which was not read directly; the "first verified community
+mod" framing in particular is not established — the same article implies other titles were already on
+the verified shelf.
+
 ## Sources
 
 - UEVR — [github.com/praydog/UEVR](https://github.com/praydog/UEVR) · [docs.uevr.io](https://docs.uevr.io/) · [uevr.org](https://uevr.org/)

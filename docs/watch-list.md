@@ -917,3 +917,165 @@ independently verified or corroborated on a sibling within the hour (Alan Wake's
 2026-09-02's first entry; the OpenXR pose verification here). The account now has two research lanes
 producing genuinely overlapping, mutually-checking output on the same day, which is a different
 regime from the "one sweep, quiet day" shape most of this log describes.
+
+### 2026-09-03 — full sweep (in-house delta from 2026-09-02 22:34; the web answered a two-project blocker)
+
+**The shape of this one:** a small in-house delta — four repos, seven research-lane commits, all
+overnight — but an unusually productive web half. A single search steered by that delta landed the
+answer to a question **two projects are simultaneously blocked on**, and it was not the answer either
+of them expected.
+
+**Own inbox: nothing waiting.** `inbox/` held only `README.md`; `grep -rn "^Supersedes:" inbox/` had
+nothing to check.
+
+**Web checked.** UEVR — still **1.05** (2024-11-16), read directly from the releases page.
+REFramework — still **v1.5.9.1** (2025-03-05), same. Flat2VR Studios / Spark — checked, and the
+portfolio and programme material already recorded on the landscape page is current; **one genuinely
+new landscape item** (below). Everything else on the watch list was left for the next pass in favour
+of the targeted search described next.
+
+**⭐ The find: "expressible" and "honoured" are different questions, and the public record on the
+second one contradicts itself.** The previous sweep closed the OpenXR per-view-pose question at the
+**API** level against Khronos's header, leaving *"does a runtime honour them"* as an open empirical
+risk blocking `XIII2003-vr`'s M2 submission path and `far-cry-2-vr`'s AER submission. One targeted
+search found **two public first-hand developer reports, three years apart, naming opposite culprits**:
+
+- **2020-10-29, LukeRoss00** (the same developer behind OpenVR #1253 and the AER technique), on
+  Valve's own SteamVR discussion board: spec-correct per-view poses from `xrLocateViews` produced a
+  **wrong stereo baseline and a vertical inter-eye offset** on a Valve Index; his workaround was to
+  submit **the head pose for both views** and swap the views' `fov.angleDown`. Oculus and Microsoft
+  runtimes recorded as correct. No reply on the thread.
+- **2023-09, SirKandela (Chaos LTD) with Rylie Pavlik**, Khronos forums: the **Oculus** runtime
+  appearing to ignore the submitted projection-view pose while **SteamVR respected it** — the exact
+  inverse — with Pavlik noting a runtime that truly ignored the pose could not reproject at all.
+
+Both fetched and read directly, not taken from search summaries. The pair is the finding:
+**per-view pose handling is runtime- and version-specific and has changed**, so no project may
+inherit a verdict from a sibling. And it **changes the test design**: the obvious deliberate-offset
+experiment is the weaker half, because the spec says these values *"should almost always derive
+from"* `xrLocateViews` — making a null ambiguous between "collapsed" and "declined an implausible
+pose". The stronger test is LukeRoss's failure signature, run with the legitimate poses: a wrong
+baseline **plus a vertical misalignment**, the latter being a positive identification because nothing
+in a correct stereo pair produces vertical disparity.
+
+**Project-repo harvest (delta since 2026-09-02 22:34; all 22 repos in this root pulled).**
+Research-lane commits on **four** of sixteen: `XIII2003-vr` (2), `enslaved-vr` (1),
+`manhunt-2003-vr` (1), `psychonauts-vr` (3). The other twelve were unchanged and are done. No
+dossier moved from "not yet covered in full" to "covered" this sweep — the delta was read, not the
+backlog.
+
+**Generalised up this sweep — six new sections, five in-place extensions.**
+
+In [`docs/techniques/README.md`](./techniques/README.md):
+
+- [**⚠️ Expressible is not honoured**](./techniques/README.md#-expressible-is-not-honoured--two-public-reports-two-runtimes-opposite-directions)
+  — the OpenXR finding above, appended to the existing per-view-pose section, including the test-design
+  correction and an explicit confidence statement (`[reported]`, forum accounts, years-old runtimes,
+  not reproduced here).
+- [**Per-draw stereo reaches only the draws that read the transform you
+  hooked**](./techniques/README.md#per-draw-stereo-reaches-only-the-draws-that-read-the-transform-you-hooked)
+  (`XIII2003-vr`, `[inferred-static 2026-09-02]`) — the "draw everything twice" route covers only
+  fixed-function draws; draws under a programmable vertex shader read their transform from **shader
+  constants** and stay mono. A whole-`.text` vtable scan found that path present and used in a UE2-era
+  D3D8 render device. The transferable rule is **a recon needs a denominator**: count the path you are
+  *not* hooking in the same run, and report the ratio. Plus the D3D8 trap that one `DWORD` carries both
+  FVF codes and shader handles, so the obvious classifier is unsound.
+- [**Turn off the post-processes that re-derive the view before judging a stereo
+  run**](./techniques/README.md#turn-off-the-post-processes-that-re-derive-the-view-before-judging-a-stereo-run)
+  (`enslaved-vr`, `[reported 2026-09-02]`) — motion blur, TAA, SSR, SSAO and DoF reproject at the
+  **pixel** stage, below a vertex-constant injection, so a stereo run judged with them on is judging an
+  uncorrected pass. Includes the separation corollary: on an engine whose unit is 1–2 cm, a separation
+  of 6 units is 6–12 cm — *correct in magnitude*, and the "subtly wrong" symptom was the uncorrected
+  pass, not the number.
+- [**The engine may have no projection matrix to
+  patch**](./techniques/README.md#the-engine-may-have-no-projection-matrix-to-patch)
+  (`manhunt-2003-vr`, `[reported 2026-09-02]`) — RenderWare expresses the frustum as a **view window**
+  (`tan(fov/2)` per axis) with the camera pose in a separate **frame**, so per-eye rendering is a
+  shifted view window plus a translated frame *before* begin-update. Changes the recon target from "a
+  4×4 near the camera" to "two floats and a frame pointer".
+- [**A public reimplementation of your game is a signature
+  source**](./techniques/README.md#a-public-reimplementation-of-your-game-is-a-signature-source-not-just-a-reference)
+  (`psychonauts-vr`, `[inferred-static 2026-09-02]`) — open-source mod loaders publish **byte
+  signatures**, which you can scan against your own binary: a unique match at an independently-found
+  address is corroboration *and* hands you the engine's own name for the function; a unique match
+  elsewhere is a **lead, not a fact**. With a sub-section, [**one global turns `n=1` into `n=K` for
+  free**](./techniques/README.md#one-global-turns-n1-into-nk-for-free) — a singleton global means every
+  site reaching a field off it encodes the same base, so a whole-`.text` operand scan (72 sites, none
+  eliminated on the pinned re-run) upgrades a single-site claim without launching anything.
+- [**Match the engine's own accessor, not the ideal
+  maths**](./techniques/README.md#match-the-engines-own-accessor-not-the-ideal-maths) (`psychonauts-vr`,
+  `[inferred-static 2026-09-02]`) — where a position setter composes the parent chain but the engine's
+  own `GetAbsPosition` does not, every script-facing read in the game already lives with that, so a mod
+  reading it the same way is exactly as correct as the engine is. Composing "properly" would make the
+  mod disagree with the game about where the player is.
+
+In-place extensions:
+
+- [**The void behind the player**](./techniques/README.md#the-void-behind-the-player) gained
+  [**the residual may be a second gate**](./techniques/README.md#the-residual-may-be-a-second-gate-a-pvs-steps-with-position-a-frustum-sweeps-with-yaw)
+  — `psychonauts-vr` found its level format ships a `VisibilityTree` (a from-region PVS) *separate*
+  from the frustum test, so **two gates run in series and only one follows the camera matrix**. The
+  diagnostic is free: frustum culling varies **smoothly with yaw**, a PVS shows **no yaw dependence
+  and a step change with position**. Consequences point opposite ways — first person is a translation
+  small enough to stay in one leaf, a flown free camera is not, and a black free-camera frame that
+  does not change when you rotate is not a matrix bug.
+- [**A third-party stereo fix is free
+  intelligence**](./techniques/README.md#a-third-party-stereo-fix-is-free-intelligence-about-the-engine--read-it-dont-install-it)
+  gained a sixth item: **"no fix exists" is a claim with a date and it can simply be wrong.** This
+  account recorded on 2026-08-24 that no HelixMod entry existed for Enslaved; **eqzitara had shipped
+  one in 2013**. A negative about the public record depends on how you searched. The recovered fix
+  then *corroborated* the project's own static prediction of which passes would break — two
+  independent routes, thirteen years apart, to the same list.
+- [**Before you build it, check whether the game shipped
+  it**](./techniques/README.md#before-you-build-it-check-whether-the-game-shipped-it) gained
+  [**check whether the game shipped the comfort
+  switch**](./techniques/README.md#check-whether-the-game-shipped-the-comfort-switch-you-are-about-to-write-code-for)
+  — Enslaved's `useAutoTiltup` and Alan Wake's `-rigidcamera`, `n=2` projects: automatic camera motion
+  is a comfort hazard the shipped game often lets you turn off from an ini.
+- [**Tool defaults that fabricate false
+  negatives**](./techniques/README.md#tool-defaults-that-fabricate-false-negatives) gained the case hit
+  during this sweep: **a docs/registry host can 403 an automated fetcher** while serving browsers
+  normally. The Khronos registry did exactly that on a page a search engine had already indexed — read
+  it another way, never record it as "the spec does not say".
+- [**When byte-identity is the evidence, the tree is
+  read-only**](./techniques/README.md#when-byte-identity-is-the-evidence-the-tree-is-read-only) —
+  **corrected**, by the project it came from, within a day of being written. `XIII2003-vr` needed that
+  rescued tree and edited it; a fresh build no longer reproduces the deployed DLL. Nothing was lost
+  because the pristine state is a **commit**. The durable rule replaces the old one: **anchor a
+  reproduction claim to a commit hash inside the claim**, and do not ask a live source tree to stay
+  frozen. Generally: *a claim whose evidence is "the state of some files" decays silently; one whose
+  evidence is a content hash does not.*
+
+Engine pages: [`renderware.md`](./engines/renderware.md) gained the view-window section and the
+struct-stride self-consistency caution; [`double-fine-psychonauts.md`](./engines/double-fine-psychonauts.md)
+gained the two-gates section and the community-tooling-as-signature-source section;
+[`unreal-1-3.md`](./engines/unreal-1-3.md) gained a UE2 per-draw-coverage section and a UE3
+stereo-judgement section (motion blur, unit convention, the fix's pass list, `useAutoTiltup`, and the
+"no fix exists" correction).
+
+Landscape: [`landscape/README.md`](./landscape/README.md) gained the **Steam Frame verification** item
+— the free Half-Life 2: VR Mod reported to have passed first-party certification on 2026-08-04, after
+adding eye-tracked foveated rendering to hold 72 fps at 1728×1728 per eye. `[reported]` from press
+coverage, with the "first verified community mod" framing explicitly **not** claimed.
+
+**Inboxes drained: none waiting (own inbox empty).**
+**Inboxes filled: two**, both `engine-research/`, both on the OpenXR runtime finding, deliberately
+written as two different notes rather than one duplicated:
+`XIII2003-vr/engine-research/inbox/2026-09-03-sr-the-offset-test-is-the-weaker-half-of-the-per-view-pose-question.md`
+(their offset test is built — this says what it can and cannot conclude, and what to look for instead)
+and
+`far-cry-2-vr/engine-research/inbox/2026-09-03-sr-per-view-poses-are-honoured-differently-by-runtime.md`
+(which also points at the undrained `/gr` drop already in that inbox, so the curator folds both
+together).
+
+**New credits:** **SirKandela** (Chaos LTD) and **Rylie Pavlik**; **eqzitara** for the 2013 Enslaved
+3D Vision fix; **LukeRoss00** a second time for the 2020 SteamVR report; **Fire-Head**'s existing entry
+extended to cover **MHWSF**; **Jill (`scrunguscrungus`)**'s entry extended to cover Astralathe's
+signatures and **PsychoPortal**, with repository links. All read online; no code taken from any of them.
+
+**One thing worth naming.** Three of this sweep's six new sections are about **an instrument that
+cannot see the answer it is being asked for** — a recon with no denominator, an offset test whose null
+is ambiguous, a stereo run judged through an uncorrected pass. That is now the single most common
+shape in this library, and the cheapest habit against all three is the same one: before running a
+test, say out loud what a **negative** result would mean, and check the instrument could have produced
+a positive.

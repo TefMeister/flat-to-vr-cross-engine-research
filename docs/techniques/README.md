@@ -306,6 +306,67 @@ Generalised from `far-cry-2-vr` (which opened the question against OpenVR's know
 `XIII2003-vr` (which verified it against the header and found the layer-type gap in its own OpenXR
 host), both same-day, 2026-09-02.
 
+### ⚠️ Expressible is not honoured — two public reports, two runtimes, opposite directions
+
+`[reported 2026-09-03]` Everything above is about what the **API** can express. Whether a **runtime**
+acts on independent per-view poses is a separate question, and the public record answers it worse
+than *"untested"*: it answers it **differently for different runtimes, and differently at different
+times**.
+
+- **2020-10-29 — SteamVR wrong, Oculus and Microsoft right.** **LukeRoss00** — the same developer
+  who filed the OpenVR #1253 defect above — reported on Valve's own SteamVR discussion board that
+  submitting the spec-correct per-view poses from `xrLocateViews` through `xrEndFrame` produced a
+  **wrong stereo baseline and a vertical offset between the two eyes** on a Valve Index (SteamVR
+  1.15.4, its OpenXR runtime 0.1.0). His workaround was to submit **the head pose for both views**
+  and to swap the two views' `fov.angleDown` — i.e. to deliberately depart from the specification in
+  order to get a correct picture. He recorded the Oculus and Microsoft runtimes as handling the same
+  code correctly. The thread carries no reply.
+- **2023-09 — the report inverts.** On the Khronos forums, **SirKandela** (Chaos LTD) reported the
+  **Oculus desktop runtime appearing to ignore** the submitted `XrCompositionLayerProjectionView`
+  pose, holding both projections centred on the HMD, and explicitly noted that **SteamVR respected
+  it**. **Rylie Pavlik** replied that a runtime genuinely ignoring the pose would break timewarp
+  outright — reprojection needs to know the pose an image was rendered for — so *"ignored"* may be
+  the wrong description of what was observed. The reporter's own resolution was to abandon the
+  projection layer for a quad layer.
+
+**Read the pair, not either one.** They are three years apart and they name **opposite** culprits,
+and that is the finding: per-view pose handling is **runtime- and version-specific, and it has
+changed**. Neither *"it works"* nor *"it is broken"* can be written into a dossier as a general fact
+about OpenXR, and any design that depends on independent per-view poses carries a per-runtime,
+per-version risk that must be re-checked on the target rather than inherited from a sibling project.
+
+**⚠️ It also changes how to test for it.** The obvious experiment — submit the two views with
+deliberately opposite lateral offsets and watch for the image to split between the eyes — is weaker
+than it looks, and the spec text says why: `pose` and `fov` *"should almost always derive from"* the
+`XrView` values `xrLocateViews` returned, so a synthetic offset is precisely the off-the-beaten-path
+submission a runtime is least likely to have been tuned for. A null result is then **ambiguous**
+between *"this runtime collapses per-view poses"* and *"this runtime declined an implausible pose"* —
+the [silent no-op](#silent-no-ops-verification-that-cannot-see-the-failure) shape this library keeps
+running into.
+
+**The stronger test is the one LukeRoss's report hands you for free: submit the legitimate located
+per-view poses and look for his failure signature** — a visibly wrong stereo baseline together with a
+**vertical** misalignment between the eyes. The vertical disparity is the valuable half: nothing in a
+correct stereo pair produces it, so seeing it is a **positive identification of the defect** rather
+than the absence of an expected effect. Run the synthetic-offset test too where it is already built —
+it is cheap, and a clean split is genuinely informative — but do not let a null from it stand as the
+answer.
+
+**⚠️ Confidence, stated rather than implied.** Both accounts are first-hand developer reports on
+forums, on hardware and runtime versions that are now years old, and neither has been reproduced
+here. This moves the risk from *"untested"* to *"known to vary between runtimes"*; it does **not**
+say what today's runtime does on your headset. That still costs one headset run.
+
+Sources, read online: LukeRoss00's report on the
+[SteamVR discussion board](https://steamcommunity.com/app/250820/discussions/8/3001046778344834329/)
+(2020-10-29) · SirKandela's thread with Rylie Pavlik on the
+[Khronos forums](https://community.khronos.org/t/oculus-runtime-ignores-projection-layer-views-pose/110078)
+(September 2023) · the `XrCompositionLayerProjectionView` reference page in the
+[Khronos OpenXR registry](https://registry.khronos.org/OpenXR/specs/1.1/man/html/XrCompositionLayerProjectionView.html).
+Relevant right now to `XIII2003-vr` (which has a projection-layer submission path built and a
+deliberate-offset test compiled in) and to `far-cry-2-vr` (blocked on the identical question for its
+AER submission); a pointer went into both projects.
+
 ## Temporal effects under AFR
 
 TAA, motion vectors, and NVIDIA-history-style features assume frame N+1 continues frame N's
@@ -524,6 +585,44 @@ Measured on Psychonauts (2005) across a 170° sway, fourteen frames per configur
 
 They are complementary rather than competing, which the table shows: together they cut peak void by
 80 %, and the residual is a patch of sky rather than a surrounding abyss.
+
+### The residual may be a second gate: a PVS steps with position, a frustum sweeps with yaw
+
+`[reported 2026-09-02]` The table above leaves a residual that the two levers never close, and it is
+worth knowing that **the residual may not be the same problem at all.** Many engines run **two
+visibility gates in series**, and only one of them follows the camera's orientation:
+
+| gate | keys on | behaviour as you turn your head |
+| --- | --- | --- |
+| **frustum cull** | the camera basis — the matrix you are injecting into | varies **smoothly with yaw** |
+| **from-region PVS / portal set** | which **leaf or room the camera is in** — a position, orientation-independent | **no change with yaw at all**; a **step change** when you cross into another leaf |
+
+Psychonauts' level format turned out to ship a `VisibilityTree` separate from its collision tree and
+its navmesh — an octree with one bit-buffer per leaf sized from `LeavesCount − 1`, i.e. **one bit per
+other leaf: a precomputed from-region visible set**. Its per-object frustum test is a distinct
+function taking a bounding box, which the yaw sweep above had already shown follows the camera basis.
+Two gates, one matrix.
+
+**The diagnostic is free and needs no headset.** Sweep yaw at a fixed position, then sweep position at
+a fixed yaw, and score near-black pixels for both:
+
+- black that **varies continuously with yaw** → frustum. Widening and camera-turning apply.
+- black that is **flat across a full rotation but jumps when you move** → PVS. Widening the frustum
+  cannot touch it, turning the engine camera cannot touch it, and **no amount of transform work will
+  fix it** — you are outside what the level data says is visible from where you are standing.
+
+**Two practical consequences, opposite in sign.** Moving the eye to the player's head for first person
+is a **small translation that stays inside the same leaf**, so a PVS gate is unlikely to affect it. A
+**flown free camera** is the opposite case: fly outside the level and the current leaf's visible set
+can be empty, blacking the screen for reasons that have nothing to do with your matrices. Before
+diagnosing a black free-camera frame as a basis or transform bug, check whether it **changes when you
+rotate on the spot** — if it does not, stop debugging the matrix.
+
+Generalised from [`psychonauts-vr/engine-research/`](https://github.com/TefMeister/psychonauts-vr/tree/main/engine-research)
+(dossier §11, folded 2026-09-02 from a `/gr` pass over public work on the game's level format and its
+open-source mod loader). `[reported]` rather than measured: the two-gate structure is read from public
+documentation of the level format plus a located, partially-disassembled visibility function, and the
+paired yaw-vs-position sweep described above has not yet been run.
 
 ### Do not rotate twice
 
@@ -1433,6 +1532,27 @@ cheaper one than debugging the interaction later. Compare
 inside your own toolchain.
 
 
+### Check whether the game shipped the comfort switch you are about to write code for
+
+`[reported 2026-09-02, n=2 games]` Automatic camera motion — tilt, bob, shake, auto-centring, chase-cam
+lag — is a first-order **comfort hazard** in VR and one of the first things a conversion wants gone. It
+is also exactly the sort of behaviour a shipped game often exposes an off-switch for, because it
+annoyed somebody on the development team too.
+
+- Enslaved's chase-camera ini carries a `useAutoTiltup` flag that can simply be turned off.
+- Alan Wake ships a `-rigidcamera` command-line switch of the same character.
+
+Both were found by reading the game's own configuration and launch options — no hooking, no patching,
+nothing to maintain across a game update, and no risk of fighting the engine for a value it will
+rewrite next frame. Before writing a hook to suppress a camera motion, spend the few minutes on the
+game's ini files, its launch arguments and its own gameplay options. The same reflex applies to motion
+blur, depth of field and film grain, which
+[have to be off anyway](#turn-off-the-post-processes-that-re-derive-the-view-before-judging-a-stereo-run)
+before a stereo run can be judged at all.
+
+Generalised from [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr) and
+[`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr).
+
 ## Tool defaults that fabricate false negatives
 
 A recurring and expensive failure shape: **a default in a tool you are not thinking about silently
@@ -1475,6 +1595,16 @@ answer.** Two cases from this account, both of which cost real time:
   (`/api/v4/projects/<id>/wikis/<slug>`) all return real content where the page fetch returns a
   shell. The numeric project id is on the project's front page. Same discipline as the `strings -n 4`
   row above: it was the tool, not the source, that produced the negative.
+
+**A documentation host can 403 an automated fetcher while serving browsers normally.** Hit while
+checking a specification page during the 2026-09-03 sweep: the Khronos registry returned
+`403 Forbidden` to an automated fetch of a reference page that is publicly readable in a browser and
+whose text a search engine had already indexed. The failure carries no hint that it is about the
+*client* rather than the *content*, so it is very easy to record as "the page is gone" or "the spec
+does not say". Treat a 403 from a docs, registry or wiki host as **"read it another way"** — a
+browser, a search engine's cached text, a mirror, or the project's own source repository — and never
+as evidence about what the document contains. Same family as the client-side-rendered page above: the
+tool's limitation gets read as the world's.
 
 ### What to do
 
@@ -1977,6 +2107,25 @@ per-pass list is a ready-made inventory of exactly which passes break under ster
 Prior art has a date; re-check it before quoting it.
 
 
+### A sixth addition, from the 2026-09-03 sweep
+
+**6. "No fix exists" is a claim with a date on it, and it can simply be wrong.** One project's
+external research recorded, on 2026-08-24, that no HelixMod or 3DMigoto entry existed for its game.
+It was wrong: **eqzitara** had shipped one for that exact title in October 2013. The cost of the
+error was a fortnight of treating the project as having **no** per-eye prior art when it in fact had
+a decade-old report on the same binary. A negative about the public record is the easiest kind of
+claim to get wrong — it depends on how you searched, not on what exists — so tag it `[reported]` at
+best, put a date on it, and re-run the search before letting it steer a design. Compare item 5 above:
+prior art can be **newer** than you recorded as well as **present** when you recorded none.
+
+**And when the fix is found, its value is corroboration as much as inventory.** In this case the
+project had already predicted, from its own shader-reflection work, that its vertex-constant
+injection would leave a large family of pixel-stage passes uncorrected. The public fix's own list of
+what it had to correct — shadows, crosshairs, effects, menus, with HUD depth still imperfect —
+matched that prediction, arrived at by a different person, a different method and thirteen years
+earlier. Two independent routes to the same pass list is a much stronger position than either alone,
+and it promotes *"watch for anything odd"* into a ranked list with shadows at the top.
+
 ## A proxy DLL must export everything the target actually imports
 
 The proxy-DLL foothold — drop a same-named `d3d9.dll` / `dinput8.dll` / `winmm.dll` beside the exe,
@@ -2320,6 +2469,227 @@ from it**, never by editing it in place; if a tool ever complains about a file i
 Generalised from [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research)
 (dossier, 2026-09-02).
 
+### ⚠️ Correction 2026-09-03: anchor the claim to a **commit**, not to the tree
+
+The rule above is right about the evidence and wrong about how to protect it, and it failed within a
+day of being written. The project it came from needed that tree — it was the only surviving source
+for the work in hand — so within hours a development pass added files to it, edited four more, and a
+later pass extended them. A fresh build of the tree no longer reproduces the installed DLL, and the
+"read-only" instruction had simply been overtaken by the project's own needs.
+
+**Nothing was lost, because git had already solved this.** The untouched tree is still exactly
+reproducible at the rescue **commit**, and re-verifying the byte-identity claim means building *that
+commit*, not `HEAD`. So the durable form of the rule is:
+
+- **Anchor a byte-identity (or any reproduction) claim to a commit hash in the claim itself**, not to
+  a directory. `[verified-numerically <date>, at <hash>]` survives everything a working tree does not.
+- **Do not ask a live source tree to stay frozen.** A tree the project needs will be edited; a rule
+  that forbids it will be broken by the people who most need the evidence to hold.
+- The half that does survive: **do not tidy the frozen artefacts inside such a tree** to satisfy a
+  hygiene checker. Teach the checker to skip vendored and rescued trees instead.
+
+The general lesson is broader than rescued source: **a claim whose evidence is "the state of some
+files" decays silently, and a claim whose evidence is a content hash does not.** Where a claim rests
+on reproducing something, name the immutable thing it can be reproduced *from*.
+
+## Per-draw stereo reaches only the draws that read the transform you hooked
+
+`[inferred-static 2026-09-02, n=1 binary]` Generalised out of
+[`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr) (Unreal Engine 2 / D3D8).
+
+A tempting stereo design on a fixed-function-era API is **draw everything twice**: hook the draw call
+and issue each batch once per eye, each with its own view and projection and its own half-width
+viewport. It is attractive because it needs no camera hunt, and because — unlike patching a shared
+transform setter — it has
+[no early-out to defeat](#stereo-hazard-a-setter-that-early-outs-on-an-unchanged-matrix): the engine's
+own cached matrix is never modified, so the cache behaves exactly as stock.
+
+**The gap is that "its own view and projection" means different things for different draws.** A draw
+issued through the **fixed-function** pipeline takes its transform from the API's transform state. A
+draw issued under a **programmable vertex shader** takes it from **shader constants the game uploaded**,
+and is completely unaffected by anything you do to fixed-function state. Those draws stay **mono**
+while everything around them goes stereo — a silent, partial failure that presents as a depth oddity
+on some objects rather than as a missing code path.
+
+This is not hypothetical on old binaries. A whole-`.text` vtable-call scan of one UE2-era D3D8 render
+device found the programmable path **present and used**: 10 `CreateVertexShader` sites, 17
+`SetVertexShader`, 4 `SetVertexShaderConstant`, against 15 `SetTransform` — and one constant-upload
+site pushes **five consecutive constants starting at register `c0`**, which is the shape of a 4×4
+transform plus one spare. What is *not* statically knowable is the part that decides the design:
+whether those draws carry **world geometry** or only skinning, terrain and effects, and what fraction
+of a real frame they are.
+
+**So the recon needs a denominator.** This is the practical rule, and it generalises past D3D8: an
+instrument that counts traffic on the path you intend to hook cannot tell you what that path
+**covers** — only what it sees. Counting `SetTransform` calls all day says nothing about the draws
+that never call it. **Count the path you are not planning to hook in the same run**, and report the
+two as a ratio: *fixed-function draws vs programmable-VS draws, per frame*. A zero on the second
+number turns the cheap design into the right design; a non-zero one tells you what you would have
+shipped broken. This is the same failure family as
+[counting events instead of measuring content](#counting-events-is-not-measuring-content) — a number
+that cannot express the answer you need.
+
+**⚠️ And on D3D8 the obvious classifier does not work.** That API overloads a single `DWORD` for
+**both** FVF codes and vertex-shader handles, so "this draw is programmable" cannot be read off the
+value the game set. The heuristic that an FVF has its low bit clear is a runtime convention, not a
+guarantee, and a design should not rest on it. Record instead what `CreateVertexShader` actually
+**returned** and test membership of that set — and **ignore declaration-only creations** (created with
+no shader function), which still run fixed-function and would otherwise inflate the programmable count
+and condemn a design that was fine. Keep the bookkeeping off the hot path: bump one counter in the
+draw hooks and do the set lookup in the far rarer shader-binding call.
+
+**Report the instrument's own ceiling.** If the shader-handle table can overflow, say so in the log
+and treat an overflowed run's programmable count as a **lower bound** rather than a measurement.
+
+## Turn off the post-processes that re-derive the view before judging a stereo run
+
+`[reported 2026-09-02]` Generalised out of [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr)
+(Unreal Engine 3 / D3D9), where a public 3D Vision fix for the same binary made the point explicitly.
+
+A stereo injection that works at the **vertex** stage — patching a view or view-projection constant so
+geometry is transformed per eye — does not touch the **pixel-stage** copies of that same matrix. Any
+post-process that re-derives the view for itself therefore keeps running **monoscopically over a
+stereo image**:
+
+- **motion blur** (reprojects using view-projection, per pixel),
+- **temporal AA**, **screen-space reflections**, **SSAO**, **depth of field**, and anything else
+  reconstructing world position from depth.
+
+The consequence for *testing* is the one that costs time: **a stereo run judged with these effects on
+is judging an uncorrected pass, not your fix.** You will see smearing, ghosting or a doubled image
+and attribute it to your separation value, your basis, or your injection point, when the geometry
+underneath was correct all along.
+
+**So the first line of any stereo test protocol is: turn them off in the game's own options or ini.**
+It costs nothing, it needs no code, and it removes an entire class of misleading result before you
+start tuning anything. Only once the geometry is confirmed correct is it worth deciding whether each
+effect gets [fixed per eye or patched out](#temporal-effects-under-afr) for the shipped mod.
+
+**A useful corollary about separation.** With the post-processing off, the project's own separation
+figure stopped looking wrong: on an engine whose conventional world unit is 1–2 cm, a separation of 6
+units is 6–12 cm — at or above a real interpupillary distance, i.e. **correct in magnitude**. The
+"something is subtly off" symptom that had been read as a bad separation value was the uncorrected
+pixel-stage pass. Rule out the passes you are not touching before you tune the number you are.
+
+## The engine may have no projection matrix to patch
+
+`[reported 2026-09-02]` Generalised out of
+[`manhunt-2003-vr`](https://github.com/TefMeister/manhunt-2003-vr) (RenderWare).
+
+Per-eye work is usually described as *"find the projection matrix and build an off-axis frustum"*.
+Older and middleware engines frequently **do not store one** where you can reach it. RenderWare, for
+example, expresses a camera's frustum as a **view window**: a pair of half-tangents,
+`tan(fov/2)` per axis, held on the camera object beside an aspect ratio, from which the matrix is
+built downstream at begin-update time. The camera's position and orientation live not in a view
+matrix but in the camera's **frame** — a separate transform node.
+
+**This is good news, not bad.** Where an engine keeps the frustum in this decomposed form, a per-eye
+render becomes two edits in the engine's own vocabulary:
+
+1. **shift the view window** to make the frustum off-axis for that eye, and
+2. **translate the camera's frame** by half the interpupillary distance along its right vector,
+
+both applied before the engine begins its update for that eye — no matrix to intercept, decompose,
+or reconstruct, and nothing downstream to fight. It also means the search target changes: stop
+hunting for a 4×4 near the camera and start hunting for **two floats and a frame pointer**, which are
+much easier to identify by value and much harder to confuse with a derived output.
+
+**Generalise the reflex, not the field names.** Before assuming an engine hides a projection matrix,
+check what its camera actually stores: FOV plus aspect, half-tangents, a view window, near/far planes,
+or a matrix. Whichever it is, that is the representation the renderer reads, and therefore the one to
+edit — see [finding the camera matrix the engine actually
+reads](#finding-the-camera-matrix-the-engine-actually-reads) for why editing a derived copy achieves
+nothing.
+
+## A public reimplementation of your game is a signature source, not just a reference
+
+`[inferred-static 2026-09-02, n=1 game]` Generalised out of
+[`psychonauts-vr`](https://github.com/TefMeister/psychonauts-vr), against **Astralathe** — a
+GPLv3 mod loader and API extender for the same 2005 title. Nothing was copied, and it is not installed.
+
+An open-source mod loader, decompilation or API extender for the game you are working on is
+ordinarily treated as documentation. It is more useful than that: such projects have to locate engine
+functions in the retail binary too, so they usually **publish byte signatures** — and a signature is
+something you can run against **your own** executable.
+
+**The method, and why it is stronger than reading their addresses.**
+
+1. Take each published signature and scan your own binary for it. Record **how many matches** there
+   are; a signature with one match is worth having, a signature with several is worth nothing until
+   narrowed.
+2. **A unique match at an address you had already identified independently is corroboration** — two
+   parties, two methods, one address — and it also hands you the engine's **own name** for that
+   function. That naming is often the real prize: it can settle whether the thing you hook is the
+   engine's top-level per-frame entry point or an inner helper of it, a question that changes what
+   your hook is guaranteed to see.
+3. **A unique match at an address you had not found is a lead, not a fact.** It came from their
+   binary analysis, not yours. Verify it in your own image before building on it — disassemble it and
+   check it does what the name claims.
+4. **Split the confidences.** Being able to compute an address is one claim; the *meaning* attached
+   to what lives there is a different one, sourced from them. Tag them separately, exactly as with
+   [an unverified ID→name table](#-the-claim-hygiene-lesson-which-is-the-transferable-half). In
+   the worked case, a chain to the scripting VM's state pointer was confirmed structurally in our own
+   binary while the claim about *which field of it* is the interpreter state stayed `[reported]` —
+   and that is the half that would crash if wrong. Read it and print it before passing it to anything.
+5. **Disassembling around a newly named function is where the free findings are.** Locating one
+   visibility function this way immediately corroborated two unrelated prior claims from other
+   sessions — a camera flags byte and an engine-wide culling toggle whose earlier measured null
+   result the disassembly now *explained* (the flag gates only one branch, and an earlier check can
+   return before reaching it). A confirmed null with a mechanism is worth far more than a confirmed
+   null alone.
+
+**⚠️ Two cautions.** Their addresses are for **their** build — match the version, and prefer
+signatures over addresses for exactly this reason. And note anything self-recursive before you hook
+it: a function that calls itself once per box face will make a naive counter report several times the
+real number of objects.
+
+**Licensing:** GPLv3 (or any licence) on their repository restricts **their code**. It does not make
+a fact about your own binary unusable, and this method takes no code — it takes a pattern, runs it
+against your own file, and keeps your own result. Read online, credit the project, copy nothing.
+
+### One global turns `n=1` into `n=K` for free
+
+A related trick from the same pass, and it costs one scan. If an address is a **singleton global** —
+one engine object, one application object — then **every site in the binary that reaches a field off
+it must encode that same base address**. So a claim resting on a single observed site can be upgraded
+by scanning `.text` for the same operand pattern and counting. In the worked case a base-plus-offset
+pattern matched **72 sites**, and re-running with the operand pinned to the candidate address matched
+all 72 with none eliminated — the strongest corroboration any address in that project's dossier has,
+obtained without launching the game.
+
+Two conditions make it valid, and both must be stated with the result: the global really is a
+singleton (two instances of the class would break the argument), and the match count is reported
+**with** the pinned-operand re-run, since the unpinned pattern alone would also match any *other*
+global used the same way.
+
+## Match the engine's own accessor, not the ideal maths
+
+`[inferred-static 2026-09-02, n=2 functions]` Generalised out of
+[`psychonauts-vr`](https://github.com/TefMeister/psychonauts-vr).
+
+When you read an object's world position out of a scene graph, the textbook answer is to compose the
+parent chain. A worked case is a useful corrective. In that engine, the position **setter** converts a
+world position into the node's local space through its parent, while the engine's own
+`GetAbsPosition` and `GetPlayerPosition` accessors contain **no reference to the parent field at all**
+— they return the node's own transform row directly. Getter and setter genuinely disagree.
+
+**The conclusion is not "the engine has a bug to work around".** It is that **every script-facing
+position read in that game already lives with this**, all of its own gameplay logic included — so a
+mod that reads the position the same way is **exactly as correct as the engine is, and no more
+wrong**. Composing the parent chain "properly" would make the mod disagree with the game about where
+the player is, which is a worse failure than inheriting the game's own convention.
+
+**The reflex to take:** when a transform read looks theoretically incomplete, go and read what the
+engine's **own** accessor does before adding maths to it. If the engine doesn't compose, don't
+compose — and record the one case that would break the assumption (here: an object that actually
+acquires a non-null parent) as a **named, testable** condition rather than a vague caveat, so a single
+live reading can retire it.
+
+**⚠️ One scanning caution from the same investigation:** a whole-`.text` scan for writes to a struct
+offset finds **unrelated classes that happen to share that offset**. Two of the hits there were a
+texture pointer and an unrelated three-field write at the same displacement. An offset is not a type;
+confirm the class before counting a site as evidence.
+
 ## Sources
 
 - **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, the log-before-the-call habit, and the exclusive-mode DirectInput wall that `SendInput` cannot cross; generalised out of [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research) §9a/§9b; the byte-identity read-only-tree rule from the same dossier (2026-09-02)
@@ -2338,6 +2708,22 @@ Generalised from [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/
   [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr)
 - **Arcade Controls for RE2 VR** (this account) — the signal-cannot-separate-the-states guard;
   generalised out of [`arcade-controls-re2-vr`](https://github.com/TefMeister/arcade-controls-re2-vr)
+- **Enslaved VR** (this account) — the post-processing-before-judging-stereo rule and the shipped
+  comfort-switch habit; generalised out of [`enslaved-vr/engine-research/`](https://github.com/TefMeister/enslaved-vr/tree/main/engine-research)
+- **Manhunt VR** (this account) — the projection-matrix-free frustum (view window plus camera frame);
+  generalised out of [`manhunt-2003-vr/engine-research/`](https://github.com/TefMeister/manhunt-2003-vr/tree/main/engine-research)
+- **LukeRoss00** — additionally his 2020 [SteamVR discussion-board
+  report](https://steamcommunity.com/app/250820/discussions/8/3001046778344834329/) on per-view poses
+  being mishandled by that runtime, and the workaround published with it
+- **SirKandela** (Chaos LTD) and **Rylie Pavlik** — the 2023 [Khronos forum
+  thread](https://community.khronos.org/t/oculus-runtime-ignores-projection-layer-views-pose/110078)
+  reporting the opposite runtime behaving the opposite way
+- **eqzitara** and the HelixMod community — the published 3D Vision fix for Enslaved (2013), read
+  online for its pass list and its motion-blur requirement; no code taken
+- **Jill (`scrunguscrungus`)** — **Astralathe** (GPLv3), whose published function signatures are the
+  worked example of scanning someone else's signatures against your own binary: <https://gitlab.com/scrunguscrungus/astralathe>
+- **Fire-Head** — **MHWSF**, the Manhunt widescreen fix whose published camera globals named the
+  view-window representation; read online, verified independently, no code taken
 - **HelixMod community** (incl. **Chiz**) and the **geo-11 / 3D Vision fix scene** — their published
   per-game fix write-ups, changelogs and settings documentation, read online as reports on engine
   behaviour. No code taken. <https://helixmod.blogspot.com/>
