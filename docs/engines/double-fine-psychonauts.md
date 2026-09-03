@@ -81,6 +81,21 @@ Their addresses are for their build and remain **leads until verified locally**;
 the transferable part. Method and cautions:
 [a public reimplementation of your game is a signature source](../techniques/README.md#a-public-reimplementation-of-your-game-is-a-signature-source-not-just-a-reference).
 
+### `BoxVisible` disassembled: the engine ships its own cull-camera override, 2026-09-03
+
+`[inferred-static 2026-09-03]` The frustum/PVS test was fully disassembled without a launch, and two
+earlier readings of it are `[disproved]`: the "recursive" self-call is a one-shot **delegation** to a
+different camera held in a global, and the helper is a plain vector add. That global has a public
+setter and getter — **culling from one camera while rendering from another is a built-in facility**,
+reachable by one call and no hook. The gate order is fully mapped (delegation → PVS, keyed by the
+camera's leaf index and never reading orientation → frustum last), which is direct structural support
+for the two-gates model above, and there are two one-bit disables: one clears both tests, one skips
+only the PVS stage. So **the cheapest first test is a flag, not a trampoline**. Also settled: the
+level format has no entity parenting (any parent is assigned at runtime), and levels ship only as
+`PPAK` (`.ppf`) containers — no loose `.plb` — for which public tools exist (DoubleFine Explorer
+explicitly supports the re-release format). Names for the facility are ours; nothing has been
+exercised.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" row.

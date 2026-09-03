@@ -66,6 +66,33 @@ construction — this family has one project on it.*
   shipped on Games for Windows Live; the installed Steam build has **zero** `xlive`/GFWL files or
   strings across the exe and all nine module DLLs. Checked specifically rather than assumed.
 
+### §6 answered statically, 2026-09-03: projection arrives separately from view, and the camera is one global on a no-ASLR image
+
+`[inferred-static 2026-09-03]` The shipped shader bank (`shaders/build/pc/`, 62 `RFX ` containers)
+is **pre-compiled D3D9 bytecode with `CTAB` intact** — 9,971 constant tables, every constant named
+with its register — so the off-disk reflection method transfers here after all, and the earlier
+"the game compiles at runtime, proxy the compiler" reading is `[disproved 2026-09-03]`. What the
+tables show is **the best matrix shape in the estate for stereo**: `g_mViewToClip` (projection, 4×4)
+and `g_mLocalToView` (object-to-view, 4×3) are delivered **separately**, so per-eye rendering is two
+independent single-float edits — eye translation into the view matrix, and a convergence shear
+expressed through the projection's *own* `row0.x`, which keeps it correct when the game changes FOV.
+Storage class is `MATRIX_ROWS`, settled two ways (metadata and `dp4` bytecode); the projection
+register is **`c0` or `c192`** depending on a 192-register skinning palette, so a proxy must resolve
+it per shader. 515 particle/foliage/terrain shaders bypass the split with a fused matrix and need the
+clip-space form with `p00` supplied from a cached projection. All of it is verified numerically
+(1,080 + 72 configurations, mutation-tested) and none of it has run in the game.
+
+On the game side, a public cheat table's byte pattern (Jim2point0's, read online) ported exactly and
+led to the camera object behind **one static global** with FOV at `+0x214`; **`AlanWake.exe` has no
+ASLR** (`DYNAMIC_BASE` unset, no `.reloc`), so every static address on this project is permanent. The
+critical path is now injection depth — device-level hooking of `SetVertexShaderConstantF` — not
+knowledge. Engine-agnostic forms:
+[the storage-class check](../techniques/README.md#determine-the-matrix-storage-class-two-ways-before-writing-any-per-eye-edit),
+[the register-displacement trap](../techniques/README.md#the-register-is-not-fixed-a-skinning-palette-displaces-the-camera-constants),
+and [the shipped-compiler correction](../techniques/README.md#when-a-game-compiles-its-shaders-decides-how-you-read-its-constant-map).
+Also settled: the game is a 3D Vision **Automatic** consumer, and
+[3D Vision itself is discontinued](../generic-drivers/README.md#-3d-vision-itself-is-discontinued--what-that-means-for-a-games-native-stereo-toggle).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" row.

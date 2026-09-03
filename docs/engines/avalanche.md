@@ -41,6 +41,18 @@ orientation row. Curated by the cross-project research sweep.*
   must be found by value, though reflection has already narrowed that to about twenty float4 slots
   in one named buffer.
 
+
+**Update 2026-09-03.** `GlobalConstants` is **two layouts, not one** `[inferred-static 2026-09-03]`:
+2,352 bytes in 465 shaders (17 float4 slots plus light-position and light-colour arrays) and 512 bytes
+in 186 shaders (20 slots plus a three-matrix `ShadowTransform`, very likely the shadow-pass variant).
+It binds to `b0` in all 651, but `b0` is not exclusively this buffer, so a patch must key on more than
+the register. The by-value probe the earlier paragraph calls for is **written** — a per-frame
+constant-buffer fingerprint pass in the live-verified `dxgi.dll` proxy, compile-verified and tested
+offline against constructed ground truth (17 assertions), pre-committing both readings so one launch
+decides — and has **never been run against the game**. The detector design came from the sibling
+`enslaved-vr` project via a `/gr` pass, which is the estate's first case of one project's validated
+probe being ported to another's renderer.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" row.

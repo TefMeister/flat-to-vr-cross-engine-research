@@ -91,6 +91,43 @@ Releases: [github.com/ThreeDeeJay/geo-11/releases](https://github.com/ThreeDeeJa
 
 ---
 
+## ⚠️ 3D Vision itself is discontinued — what that means for a game's native stereo toggle
+
+`[reported 2026-09-03]` Every driver on this page descends from, replaces, or routes around
+**NVIDIA 3D Vision**, so its status matters to any game that shipped a native "Stereo3D" option:
+
+- NVIDIA announced the end of 3D Vision driver support on **2019-04-11**; **425.31 is the last
+  driver that includes it**. (Wikipedia, citing NVIDIA's support-plan notice; NVIDIA's own page
+  refuses automated fetches.)
+- **DX11** stereo lingered to **452.06** through community workarounds and was removed with the
+  RTX 30-series launch driver (456.38, October 2020). **DX9 games are *reported* to remain
+  compatible on current drivers** — one source (3D Fix Manager's page), unconfirmed in this estate,
+  and the most consequential line here for the many D3D9 titles being converted.
+- The driver-made stereo also needs a display: a 120 Hz 3D Vision monitor with the IR emitter, a
+  3DTV Play set, or **anaglyph glasses in "3D Vision Discover" mode on any GeForce**. HelixVision
+  used Discover mode precisely to avoid the hardware.
+- Getting 425.31 onto a current Windows generally means removing the DCH driver and installing
+  offline, or a community driver-modding tool (3D Fix Manager's Drivers tab, the "3D Vision Driver
+  Changer"). None of that belongs on a machine that also runs a current VR runtime.
+
+**For a flat-to-VR project the practical reading is:** a game's own stereo toggle will usually do
+nothing on a current driver, so do not spend a launch discovering that; **the value of a native 3D
+Vision integration is the shader plumbing it left behind** — the stereo-parameters texture, the
+enabled flag, the compiled-in clip-space shear — which a proxy can feed itself, with no NVIDIA
+driver, no 3D display and no headset-versus-monitor confusion. And **none of this is a VR route**:
+3D Vision drives a display, not an HMD. The mechanism is written up in
+[the clip-space stereo footer](../techniques/README.md#the-clip-space-stereo-footer-geometry-stereo-without-ever-finding-the-camera)
+and its takeover in
+[taking over the stereo parameters texture](../techniques/README.md#-taking-over-the-stereo-parameters-texture--the-cost-above-turned-into-a-lever).
+
+Sources: [Wikipedia, Nvidia 3D Vision](https://en.wikipedia.org/wiki/Nvidia_3D_Vision);
+[Helix Mod: 3D Fix Manager](https://helixmod.blogspot.com/2017/05/3d-fix-manager.html) (Pauldusler);
+[Helix Mod: Announcing geo-11](https://helixmod.blogspot.com/2022/06/announcing-new-geo-11-3d-driver.html);
+[HelixVision driver notes](https://steamcommunity.com/app/1127310/discussions/0/1635291505036080879/)
+(Bo3b). Researched by a `/gr` pass for `alice-madness-returns-vr`, 2026-09-03.
+
+---
+
 ## Vulkan — Vk3DVision
 
 The two drivers above cover D3D9 and D3D11. For **Vulkan** titles the equivalent is **Vk3DVision**

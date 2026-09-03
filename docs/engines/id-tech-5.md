@@ -79,6 +79,22 @@ and the skip-intro cvars did not cover it.
 [dormant-stereo-path shortcut](../case-studies/id-tech-6-dormant-stereo.md) its successor offers
 should not be assumed for this generation.
 
+### The shaders were on disk all along — `.tangoresource` decoded, 2026-09-03
+
+`[verified-numerically 2026-09-03]` The Evil Within ships its shader bytecode: `base/common.tangoresource`
+(magic `0x2394ABCD`, big-endian entry count, paired name records with a trailing hash, entries stored
+as **headerless raw deflate**, and a big-endian offset/csize/usize/id table at the end) yields
+**2,785 DXBC shaders with `RDEF` intact**. The project's own `constantBufferV` appears in 1,208 of
+them at `cb0` with its rows *named* (`mvpmatrixx/y/z/w`) at explicit byte offsets, and the runtime
+table it had built live matches **167 of 168 by hash with zero disagreements** — two unrelated
+methods, one table. Consequence: "scattered" MVP rows are almost always one thing, **z and w
+swapped** (33 of 34), the patch now reads all four offsets instead of refusing non-contiguous
+layouts (shader coverage 66.7 % → 86.9 %), and a latent out-of-bounds write in the old bounds check
+— valid only while offsets ascend — was found by inspection. 249 of 9,001 entries (2.8 %) do not
+inflate as raw deflate and are unexplained; no shader was among them. Method note worth more than the
+finding: the first scan looked for zlib framing, which headerless deflate does not have, and would
+have been written up as "not zlib" — a test that could not have produced a positive.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "id Tech 5" row.
