@@ -312,6 +312,61 @@ well-attested across search results and the GDC announcement is independently re
 here has read the page directly in a browser. Treat the three bullets as reliable and anything finer
 as unverified.
 
+### ⚠️ UE2 / D3D8: a per-draw stereo route does not automatically cover the whole frame
+
+`[inferred-static 2026-09-02, n=1 binary]` from XIII (2003). The attractive stereo design at the
+D3D8 layer is to draw every world batch twice, once per eye, with per-eye transforms and half-width
+viewports — attractive partly because it never modifies the render device's cached matrix and so has
+no [early-out](../techniques/README.md#stereo-hazard-a-setter-that-early-outs-on-an-unchanged-matrix)
+to design around.
+
+It has a gap on this generation, and the gap is measurable rather than theoretical. A whole-`.text`
+vtable-call scan of one UE2-era `D3DDrv` found the **programmable vertex-shader path present and
+used** — ten shader creations, seventeen binds, four constant uploads, one of which pushes five
+consecutive constants from register `c0` — alongside fifteen fixed-function transform calls. Draws
+running under a vertex shader take their view and projection from **those constants**, not from the
+fixed-function transform state, so a per-draw route that only handles the latter leaves exactly those
+draws **mono**.
+
+What static analysis cannot say is whether those draws carry world geometry or only effects, and what
+fraction of a frame they are — so the recon has to **count both paths in the same run** and report
+the ratio, not just count the path it intends to hook. Method, and the D3D8-specific trap that an FVF
+code and a shader handle share one `DWORD`:
+[per-draw stereo reaches only the draws that read the transform you hooked](../techniques/README.md#per-draw-stereo-reaches-only-the-draws-that-read-the-transform-you-hooked).
+
+**Worth knowing on the same generation:** NVIDIA's stereo driver rated UT2004 — same UE2 lineage —
+"excellent" by intercepting the fixed-function projection per draw, below the engine `[reported]`.
+That is encouraging for the route's *feasibility* on titles whose frames really are fixed-function,
+and it is not evidence about any particular binary's shader usage.
+
+### UE3 / D3D9: judge stereo with motion blur off, and check the separation units before believing a symptom
+
+`[reported 2026-09-02]` from Enslaved: Odyssey to the West, corroborated by **eqzitara**'s public 3D
+Vision fix for the same game (2013), read online — credited in
+[`ATTRIBUTION.md`](../../ATTRIBUTION.md), nothing copied.
+
+- **Motion blur must be off** (`MotionBlur=False` in the engine ini, or the in-game option) before any
+  stereo judgement on this generation. UE3's motion blur reprojects at the **pixel** stage, using a
+  copy of the view-projection that a vertex-constant injection never touches — so a stereo run judged
+  with it on is judging an uncorrected pass. Generalised:
+  [turn off the post-processes that re-derive the view](../techniques/README.md#turn-off-the-post-processes-that-re-derive-the-view-before-judging-a-stereo-run).
+- **Check the unit convention before calling a separation value wrong.** UE3's conventional world unit
+  is 1–2 cm, so a separation of 6 units is 6–12 cm — at or above a real IPD. A "subtly wrong depth"
+  symptom at a value in that range is more likely an uncorrected pass than a bad number, and in the
+  worked case a completely independent fitting method landed on the same magnitude.
+- **A public stereo fix's pass list is a ranked watch list.** That fix had to correct shadows,
+  crosshairs, effects and menus, and left HUD depth imperfect even so — which matched, thirteen years
+  early, this account's own static prediction that a large family of pixel-stage passes would remain
+  uncorrected. Shadows are the first thing to check on a UE3 stereo run, not a generic "watch for
+  anything odd".
+- **`useAutoTiltup` in the chase-camera ini can be turned off** — a shipped comfort switch, in the
+  same class as Alan Wake's `-rigidcamera`. Read the ini before writing a hook.
+
+⚠️ **And a correction worth carrying:** this account recorded on 2026-08-24 that no HelixMod /
+3DMigoto entry existed for Enslaved. That was **wrong** — the 2013 fix above exists. A negative about
+the public record depends on how you searched, not on what exists; re-run the search before letting
+one steer a design.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Unreal Engine 2 / 3" row.

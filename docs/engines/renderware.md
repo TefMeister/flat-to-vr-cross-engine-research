@@ -80,6 +80,43 @@ game, and it ships a different renderer rather than hooking the shipped one. Two
   null-pointer crashes deep in unrelated engine code. Any retrofit that forces windowed mode on this
   family must resize the window before the engine builds its camera.
 
+### ⭐ There is no projection matrix to patch — the frustum is a **view window**
+
+`[reported 2026-09-02]` from **Fire-Head**'s public MHWSF widescreen fix for Manhunt (2003), read
+online and credited in [`ATTRIBUTION.md`](../../ATTRIBUTION.md); nothing copied, and the addresses it
+publishes have not yet been verified in our own process.
+
+The single most useful structural fact about this family for VR: a RenderWare camera does **not**
+carry a view matrix and a projection matrix the way a modern engine does.
+
+- The frustum is a **view window** — a pair of half-tangents, `tan(fov/2)` per axis — held on the
+  camera object beside an aspect ratio. The projection is built from it downstream, at begin-update
+  time.
+- The camera's position and orientation live in its **frame**, a separate transform node, not in a
+  view matrix.
+
+**So per-eye rendering is expressible in the engine's own vocabulary**, without intercepting or
+reconstructing a matrix: **shift the view window** to make that eye's frustum off-axis, **translate
+the camera's frame** by half the IPD along its right vector, and let the engine begin its update. Two
+floats and a frame pointer, applied before begin-update, in place of a matrix hunt.
+
+It also changes what to search for during recon. Hunting a 4×4 near the camera object is the wrong
+target on this family; the identifiable things are the two half-tangent floats (they change when the
+game's FOV changes, and they are `tan` of half the value the debug output prints) and the camera
+pointer inside the screen/scene singleton that holds them. Manhunt additionally compiles
+printf-style FOV and frustum debug output into its retail executable, which gives a second,
+independent handle on the same values.
+
+The general form of this is in the technique library:
+[the engine may have no projection matrix to patch](../techniques/README.md#the-engine-may-have-no-projection-matrix-to-patch).
+
+⚠️ **The load-bearing risk in adopting published globals like these is the struct stride.** The
+layout of the screen/scene singleton is what puts the camera pointer at a particular displacement; if
+the field list is off by one, a session follows a garbage pointer with no obvious sign it has done
+so. Verify a published layout with a **self-consistency check** rather than trusting it — e.g. read a
+width field and its reciprocal field from the same struct and confirm they actually agree, and check
+the dimensions against the resolution the game is really running.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" and "Anything

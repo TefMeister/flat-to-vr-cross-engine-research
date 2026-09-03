@@ -134,8 +134,21 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
 
 - **Fire-Head** — **MHNoDRM**, the community write-up documenting Manhunt (2003)'s 16 SecuROM-remnant
   IAT-hook addresses and their fake-return-value mechanism. Technique studied and independently
-  verified against our own live memory dump; no code reused.
+  verified against our own live memory dump; no code reused. Also **MHWSF**, the same author's
+  public widescreen fix for the game, whose published camera/screen globals (the view-window pair
+  that RenderWare uses in place of a projection matrix, and the `RwCamera` pointer beside it) are
+  cited as a report about a binary we own — read online, verified independently in our own process,
+  no code reused.
   <https://github.com/Fire-Head/MHNoDRM>
+- **SirKandela** (Chaos LTD) and **Rylie Pavlik** — the 2023 Khronos-forum thread reporting an
+  OpenXR desktop runtime holding both projection views on the HMD pose regardless of the poses
+  submitted, and the reply explaining why a runtime that truly ignored the pose could not reproject
+  correctly. Read online as a report on runtime behaviour; nothing taken.
+  <https://community.khronos.org/t/oculus-runtime-ignores-projection-layer-views-pose/110078>
+- **eqzitara** — the HelixMod 3D Vision fix published for Enslaved: Odyssey to the West (Premium
+  Edition), 2013. Cited for its public description of which passes it had to correct and its
+  motion-blur requirement, which independently corroborated our own static prediction on the same
+  binary. Closed source; read online, never installed, no code taken.
 - **OldUnreal** (Smirftsch and the OldUnreal community) — custodians of Unreal Engine 1:
   the Epic-licensed 227 community maintenance patch line (currently 227k), with its SDK,
   64-bit builds, modern renderers, and render-device contract. The foundation of this account's
@@ -349,7 +362,14 @@ Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every
   and patcher for the modern Psychonauts release (in beta, hosted on GitLab), together with the
   ecosystem built on it (PsychoRando; the Psychonauts Archipelago integration). Cited here as the
   worked example of *check whether the community already built it — and whether it collides with your
-  proxy*. Not installed by this account at the time of writing.
+  proxy*. Not installed by this account at the time of writing. Additionally credited, from the
+  2026-09-03 sweep, as the **signature source** worked example: Astralathe publishes byte signatures
+  for engine functions, and scanning those against our own legitimately-owned executable corroborated
+  several independently-found addresses and recovered the engine's own names for them — a method that
+  takes a pattern, not code. The same author's **PsychoPortal** level-format work is the source of the
+  `VisibilityTree`/PVS structure described on the engine page. Read online only; no code taken, and
+  the GPLv3 terms on their repository govern their code, which we do not use.
+  <https://gitlab.com/scrunguscrungus/astralathe> · <https://gitlab.com/scrunguscrungus/psychoportal>
 - **RayCarrot** — **PsychonautsStudio** (**MIT**), a file-format tool covering all versions of the
   game including console builds, with serialization logging. Cited as public tooling context.
 
@@ -502,6 +522,16 @@ verify that `XrCompositionLayerProjection` carries an array of per-view poses, c
 as a specification fact rather than an inference. Generalised out of `far-cry-2-vr` and `XIII2003-vr`'s
 own first-party research, both credited above.
 
+The section's [2026-09-03 addition on runtime
+behaviour](./docs/techniques/README.md#-expressible-is-not-honoured--two-public-reports-two-runtimes-opposite-directions)
+credits **LukeRoss00** a second time, for his 2020 report on Valve's SteamVR discussion board that
+spec-correct per-view poses produced a wrong stereo baseline and a vertical inter-eye offset on that
+runtime, together with the workaround he published; and **SirKandela** and **Rylie Pavlik**, credited
+above, for the 2023 thread that reports the opposite runtime behaving the opposite way. Both are read
+purely as public reports on runtime behaviour. The specification wording quoted alongside them is the
+**Khronos Group's** own `XrCompositionLayerProjectionView` reference page in the
+[OpenXR registry](https://registry.khronos.org/OpenXR/specs/1.1/man/html/XrCompositionLayerProjectionView.html).
+
 The [encrypted-`.text` entropy signature](./docs/techniques/README.md#packedself-protecting-binaries)
 and its [Automatic-vs-Direct caveat](./docs/techniques/README.md#-the-diagnostic-that-matters-for-recon-automatic-vs-direct)
 are our own first-party static work on a legitimately-owned copy of Alice: Madness Returns (2011),
@@ -516,6 +546,25 @@ above under **LZO**; full evidence in
 method](./docs/techniques/README.md#tool-defaults-that-fabricate-false-negatives) came from the
 `psychonauts-vr` project's own research toolbox, applied by a `/gr` sweep to read Astralathe's
 GitLab-hosted source.
+
+
+The [per-draw stereo coverage
+section](./docs/techniques/README.md#per-draw-stereo-reaches-only-the-draws-that-read-the-transform-you-hooked),
+the [projection-matrix-free frustum
+section](./docs/techniques/README.md#the-engine-may-have-no-projection-matrix-to-patch), the
+[public-reimplementation signature
+method](./docs/techniques/README.md#a-public-reimplementation-of-your-game-is-a-signature-source-not-just-a-reference),
+the [engine's-own-accessor
+rule](./docs/techniques/README.md#match-the-engines-own-accessor-not-the-ideal-maths), the
+[PVS-versus-frustum diagnostic](./docs/techniques/README.md#the-void-behind-the-player) and the
+[post-processing rule](./docs/techniques/README.md#turn-off-the-post-processes-that-re-derive-the-view-before-judging-a-stereo-run)
+are our own first-party research on legitimately-owned copies of XIII (2003), Manhunt (2003),
+Psychonauts (2005) and Enslaved: Odyssey to the West, generalised out of each project's
+`engine-research/` folder and credited to those projects above. Where they build on someone else's
+public work — **Jill (`scrunguscrungus`)**'s Astralathe signatures, **Fire-Head**'s MHWSF globals,
+**eqzitara**'s 3D Vision fix, and the public documentation of Psychonauts' level format — that work
+is credited above and was read online only; every address, count and measurement quoted was
+re-derived in our own binaries.
 
 Like everything else we write, these are CC-BY-4.0 — take them and build on them, just say where
 they came from.

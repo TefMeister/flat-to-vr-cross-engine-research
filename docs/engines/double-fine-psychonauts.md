@@ -45,6 +45,42 @@ means the parts that held up as engine-independent and were promoted to
   person has to reach gameplay first. Worth knowing before designing any automated test harness for
   a game of this era. `[verified-live 2026-08-28]`
 
+### ⭐ Two visibility gates, and only one follows the camera
+
+`[reported 2026-09-02]` The engine culls in **two stages**, which matters to every camera-moving mod
+on it. A per-object frustum test (`ECamera::BoxVisible`, taking a bounding box) follows the camera
+basis — that is the gate the 2026-08-28 yaw sweep measured and the one the void work moved. Underneath
+it, the `.plb` level format ships a **`VisibilityTree` separate from the collision tree and the
+navmesh**: an octree whose per-leaf bit-buffer is sized from `LeavesCount − 1`, i.e. one bit per other
+leaf — a precomputed **from-region PVS** keyed on *where the camera is*, not where it looks.
+
+Consequences for the projects on this engine, and they point in opposite directions:
+
+- **First person is probably unaffected by the PVS.** Moving the eye to Raz's head is a translation
+  small enough to stay inside the same leaf.
+- **A flown free camera is affected.** Outside the level the current leaf's visible set can be empty,
+  producing a black frame that no amount of transform work will fix.
+- **The residual void that survived the 2026-08-28 mitigations may be this gate, not the frustum.**
+  The distinguishing test is cheap and needs no headset: frustum culling varies *smoothly with yaw*,
+  a PVS shows *no yaw dependence and a step change with position*.
+
+The generalised form, with the diagnostic written out, is in
+[the void behind the player](../techniques/README.md#the-residual-may-be-a-second-gate-a-pvs-steps-with-position-a-frustum-sweeps-with-yaw).
+
+### The community's own tooling is a signature source for this binary
+
+This game has an unusually strong open-source ecosystem for its age — a mod loader and API extender
+(**Astralathe**, GPLv3) and a level-format toolchain (**PsychoPortal**), both by Jill
+(`scrunguscrungus`), credited in [`ATTRIBUTION.md`](../../ATTRIBUTION.md). Beyond being documentation,
+they publish **byte signatures** for engine functions, which can be scanned against your own
+executable: several of this account's independently-identified addresses were corroborated that way
+in one static pass, and the engine's own names for them recovered (confirming, for instance, that the
+per-frame hook site is the top-level render entry point rather than an inner helper).
+
+Their addresses are for their build and remain **leads until verified locally**; the signatures are
+the transferable part. Method and cautions:
+[a public reimplementation of your game is a signature source](../techniques/README.md#a-public-reimplementation-of-your-game-is-a-signature-source-not-just-a-reference).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" row.
