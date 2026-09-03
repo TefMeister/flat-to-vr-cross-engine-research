@@ -111,6 +111,27 @@ in [`engines-index.md`](../engines-index.md#how-to-identify-an-unknown-engine-st
 Even with all three caveats, a dormant path is worth finding: it hands you the engine authors' own
 answers to "how do I get two views out of this renderer", which is normally the expensive part.
 
+
+**Two more cautions, added 2026-09-03 from two UE3/Remedy-era 3D Vision titles:**
+
+4. **The driver feature a dormant path talks to may itself be dead.** NVIDIA 3D Vision — the target
+   of every "Stereo3D" menu toggle of the 2009–2013 PC generation — was discontinued in April 2019;
+   **425.31 is the last driver that includes it**, DX11 stereo survived to 452.06 via workarounds and
+   was removed with the RTX 30-series launch driver, and only DX9 is *reported* to still work on
+   current drivers `[reported 2026-09-03]`. So on a current machine the game's own stereo checkbox
+   will typically do nothing — not because the path is stripped, but because the other end is gone.
+   Details and sources in [generic drivers](../generic-drivers/README.md#-3d-vision-itself-is-discontinued--what-that-means-for-a-games-native-stereo-toggle).
+   This is *good* news for the estate's approach: both titles examined turned out to be pure
+   **consumers** of driver-published separation and convergence (Automatic mode, no `SetDriverMode`,
+   no `SetActiveEye`, getters only), so a proxy that supplies those values itself drives a stereo
+   path the shipping shaders already implement, with no NVIDIA driver in the loop.
+5. **Before adding a per-eye edit at a second stage, check whether the shipped shaders already apply
+   it there.** Alice's pixel shaders carry NVIDIA's `x' = x + S·(w − C)` compiled into retail —
+   28,017 of 43,025 branch on the stereo-enabled constant and 14,479 read the parameters texture —
+   so shearing the pixel-stage matrix *as well* would apply the offset twice. `[inferred-static
+   2026-09-03]` A dormant stereo path may be partly live in the bytecode even when it is dead at the
+   driver, and the stages are usually asymmetric by design.
+
 ## The clip-space stereo footer: geometry stereo without ever finding the camera
 
 `[reported 2026-09-01]` — from NVIDIA's own published developer documentation. Nothing here has been
@@ -270,7 +291,7 @@ technique itself is engine-agnostic.
 
 ## OpenXR carries a pose per view where OpenVR collapses to one
 
-`[verified-static 2026-09-02]` from Khronos's own published `openxr.h`, following up a
+`[reported 2026-09-02]` — read directly from Khronos's own published `openxr.h`, first-party but a document read rather than a measurement — following up a
 `[hypothesis]` two sibling projects independently reasoned their way to hours apart on the same day.
 
 **The problem this answers.** A same-frame stereo submission (needed by AER and by any true two-eye
@@ -435,6 +456,64 @@ may expect a different faked return value or a different side effect (a write to
 not just a return value). There is no single fix; each site needs its own disassembly and its own
 targeted repair, usually cheapest as "force the branch the game itself takes on success," which
 restores the game's own intended path rather than inventing new behavior.
+
+
+### Name the wrapper first — on Steam it is usually Steam's own, and then unpacking is a static step
+
+`[measured 2026-09-03, n=3 projects]` The section above assumed the fix is always to read live
+memory. That is the universal fallback, but three projects in this estate have now hit an encrypted
+`.text` and two of them found something cheaper: **the wrapper was Steam's own DRM stub (SteamStub),
+applied at upload time, and public open-source unpackers restore `.text` on disk without running the
+game.** That keeps the whole job in the no-game-running tier — on one project it moved a blocked scan
+from "needs a launch" back to "static, do it now" purely by naming the packer.
+
+**The identification, in three cheap reads, none of which runs anything:**
+
+1. **Section names.** A section called **`.bind`** is SteamStub. (`.vmp0`/`.vmp1` is VMProtect;
+   `.themida`/`.winlice` is Themida.) The wrapper section is usually the last one in the file.
+2. **Entry point outside `.text`** — something else runs first, and `.text` is very likely encrypted
+   until it does.
+3. **The two statistics already described above** — `.text` entropy at the 8.00 ceiling and zero
+   `CC` padding runs.
+
+Then the version tell: **SteamStub v3.x carries a header magic `0xC0DEC0DF` inside `.bind`**, and
+the stub's own code validates it (a `cmp dword [reg+4], 0xC0DEC0DF`), so finding that constant is
+conclusive. **Its absence is not** — the v2.x stub has no such marker. Alice: Madness Returns
+(2011) was v3.1 with the magic; Prince of Persia (2008) was **v2.1 with no magic** and all the other
+tells present, and Steamless unpacked both (`.text` entropy 8.00 → 6.7 / 6.6, `CC` runs reappear,
+`.bind` gone, entry point back inside `.text`). ⚠️ **A `steam_api.dll` import is a positive-only
+witness**: one of the two wrapped games has **no Steamworks API at all**, only the wrapper — its
+absence proves nothing.
+
+**Three consequences worth more than the unpacking itself:**
+
+- **A packed `.text` retroactively voids every code-search negative ever recorded against that exe.**
+  Strings in `.rdata` were always readable, so string-based findings stand; but any *"no such
+  instruction / immediate / call in `.text`"* result was a search of ciphertext and could not have
+  returned a positive. One project had leaned on exactly such a negative for a design decision.
+  Audit the dossier for them the moment a wrapper is identified.
+- **Expect the unpacked file not to launch.** It generally will not run standalone, because the game
+  still expects the environment the stub set up. That is the expected outcome, not a failed unpack —
+  the goal is a readable section, not a second way to start the game. Work on a **copy**, never the
+  shipped exe, and do not commit the result: it is game content.
+- **Re-run the positive control on the unpacked copy before believing anything from it.** On Alice
+  the still-packed copy was scanned side by side as a negative control and returned zero for every
+  id *including the control* — the false negative demonstrated rather than argued. A partial unpack
+  would fail the same way.
+
+And once the code is readable, do not expect small-integer immediates to be informative in either
+direction — the unpacked Prince of Persia image carried 1,196 and 592 occurrences of the two
+enum values a session had been hunting, because those are ordinary integers. A name-driven registry
+leaves no literal by construction; the search belongs in the data files, not the exe.
+
+Sources: [atom0s/Steamless](https://github.com/atom0s/Steamless) and
+[GHFear/Steamstub-v3-Unpacker](https://github.com/GHFear/Steamstub-v3-Unpacker) (both explicitly
+for software you own); Adam Hlt's
+["Cube World Reversing — Unpack the game"](https://adamhlt.com/cube-world-reversing-unpack-the-game/)
+for the `.bind` / entry-point / encrypted-at-rest description. Generalised from
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr),
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr) and the Manhunt
+case study, 2026-09-03; the identification test was first written up by a `/gr` pass on Alice.
 
 ## Launching a Steamworks game directly
 
@@ -774,7 +853,7 @@ into bytecode**, not on which engine or graphics API it uses:
 | --- | --- | --- | --- |
 | Ahead of time, source shipped | HLSL/`.usf` **source** | just read it — reserved-register comments are usually right there | Enslaved (UE3 ships `Common.usf`; `c0` = `ViewProjectionMatrix`) |
 | Ahead of time, source stripped | compiled bytecode **with a reflection block** | parse it — D3D9 bytecode carries `CTAB` naming every constant/register, D3D10+ carries `RDEF` | Alice: Madness Returns (45,832 `CTAB` tables), Enslaved (34,046), Mad Max (`RDEF`) |
-| At runtime | HLSL plus a shipped **shader-compiler redistributable** | **hook the compiler** — proxy `d3dcompiler_4x.dll` and log every source string, entry point and define as it compiles | Alan Wake (ships `d3dcompiler_42`/`43` cabs; fails with *"could not process hlsl shader"* without them) `[inferred-static 2026-09-02, from the redistributable + the error string]` |
+| At runtime | HLSL plus a shipped **shader-compiler redistributable** | **hook the compiler** — proxy `d3dcompiler_4x.dll` and log every source string, entry point and define as it compiles | **none in this estate** — the case first filed here (Alan Wake) was `[disproved 2026-09-03]`: it ships pre-compiled CTAB after all; see the correction below |
 
 **The tell for the third case is in the install folder, not the binary.** A shipped shader-compiler
 redistributable, or a startup error naming HLSL, means the bytecode does not exist until load — so a
@@ -793,6 +872,52 @@ where the compiled-cache case yields only registers and the shipped-source case 
 developer having shipped sources at all. And it is the only one of the three that is **upstream of
 the bytecode**, making it the one place a per-eye term could eventually be added without patching
 bytecode or overriding a constant post hoc — a large commitment, and not a first move.
+
+
+**⚠️ Corrected 2026-09-03 — the third row's worked case was wrong, and the inference behind it is
+the lesson.** Alan Wake's retail install turned out to ship **62 pre-compiled shader containers
+(~16 MB) with `CTAB` intact, in a plain folder outside its archives** — 9,971 constant tables — so
+it belongs in the **second** row, not the third, and the off-disk method that carried Alice and
+Enslaved carried it too `[disproved 2026-09-03]`. The chain *"ships a compiler ⇒ compiles at runtime
+⇒ no cache to read ⇒ proxy the compiler"* broke at every arrow, and three static checks separate the
+cases before anyone builds a proxy:
+
+1. **Does the redist folder say anything?** A `DirectX\` folder full of `D3DCompiler_4x` cabs is
+   usually the **stock DirectX redistributable**, shipped verbatim by nearly every DX9-era title —
+   Alan Wake's is the complete June-2010 redist, 154 cabs spanning 2005 onward. Count them; a whole
+   historical redist describes Microsoft's installer, not the renderer.
+2. **Which entry point does the game actually call?** `D3DXCompileShader*` (D3DX9) and `D3DCompile`
+   (`d3dcompiler`) are different seams, and D3DX9 delegating to D3DCompiler internally does **not**
+   make the latter the game's call site. Proxying the wrong one intercepts nothing.
+3. **Do shader SOURCES ship?** The decisive check, and it costs a directory listing. No `.hlsl`,
+   `.fx`, `.usf` or engine-specific source — and especially a `...FromFile` entry point with nothing
+   to point at — means the compile path is a **developer/fallback affordance with no inputs in a
+   retail install**. The error strings are real code; that does not make the path reachable.
+
+The general form: **presence of a capability in a shipped binary is evidence about the build
+system, not about runtime behaviour.** Retail builds carry dev-only paths — editors, hot-reload,
+recompilation — no player reaches. Before concluding "it must do X at runtime", look for the *inputs*
+X would need; missing inputs is far stronger evidence than a present code path. (The mirror error is
+covered elsewhere on this page: an *absent* capability is not proof either when `.text` is packed or
+the call is resolved by string.) The third row therefore currently has **no worked case in this
+estate**; it stays as a real possibility, not an observed one.
+
+#### The register is not fixed: a skinning palette displaces the camera constants
+
+`[inferred-static 2026-09-03, n=2 engines]` Two unrelated D3D9 engines, read the same day, put the
+same matrix in **two different registers depending on whether the shader is skinned**: Alan Wake's
+projection sits at `c0` in 2,238 shaders and `c192` in 2,084, because a 192-register skinning
+palette occupies `c0..c191` in every skinned shader (n=1,954, zero counter-examples); Prince of
+Persia (2008)'s fused `g_WorldViewProj` sits at `c0` in 6,292 and `c128` in 2,016, because a
+128-register `g_Bones` palette occupies `c0..c127` in exactly those 2,016. Any proxy that assumes one
+register corrupts the other half of the corpus — silently, since the write lands on a valid bone
+matrix. The robust pattern on both is the same: **parse the reflection block out of the bytecode at
+shader-creation time and keep a per-shader register map at runtime** — the same data the off-disk
+scan reads, read again where it is authoritative. The converse does not hold (unskinned shaders can
+also sit at the displaced register), so the register does not identify a skinned shader.
+
+Generalised from [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) and
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr), 2026-09-03.
 
 **The general habit:** before planning any capture, check what the install folder says about *when*
 shaders become bytecode. A `d3dcompiler_*.dll` or a compiler cab sitting in the game's own tree is as
@@ -875,6 +1000,16 @@ the submission layer.
 
 Generalised from the `XIII2003-vr` dossier.
 
+
+**Measured 2026-09-03, same project, one session — the early-out is RARE, and the requirement is
+unchanged.** `[measured 2026-09-03]` Cumulative would-fire counts: world **0.27 %** (3,536 of
+1,325,094 sets), view **0.98 %** (3,536 of 361,272), projection **0 %** — the engine never re-sets an
+identical projection. That bounds how often vanilla play *reaches* the early-out; it does not retire
+the guard, because the hazard was never frequency. It is that a cache left holding *our* modified
+matrix makes the engine's next legitimate set look redundant. What the number changes is the
+**cost** of honouring the requirement — small — so the transform-setter route is no longer the
+expensive option it looked.
+
 ## Composition bugs that masquerade as handedness
 
 `[verified-numerically 2026-09-01, n=1 game]` (Dunia / Far Cry 2) When a head-tracking composition comes out
@@ -910,6 +1045,71 @@ Related: [do not rotate twice](#do-not-rotate-twice), which is the same family �
 applied in the wrong place.
 
 Generalised from the `far-cry-2-vr` dossier and modding notes.
+
+## Determine the matrix storage class two ways before writing any per-eye edit
+
+`[verified-numerically 2026-09-03, n=3 projects, two classes]` The clip-space eye offset
+`x' = x + S·(w − C)` is the workhorse of D3D9-era stereo and appears in several projects here. In
+matrix language it is *"row 0 gets `S` times row 3 added, then `S·C` subtracted from its last
+entry"*. That is correct **as mathematics** and dangerously incomplete **as instructions**, because
+"row 0" is not a place in memory. Where it lives depends on the shader's **matrix storage class**,
+and two projects in this estate landed on opposite sides of it on the same day:
+
+| | Alan Wake (Remedy) · Prince of Persia 2008 (Scimitar) | Alice: Madness Returns (UE3) |
+| --- | --- | --- |
+| `CTAB` class | `D3DXPC_MATRIX_ROWS` | `D3DXPC_MATRIX_COLUMNS` |
+| register *i* holds | row *i* | column *i* |
+| bytecode shape | four `dp4 out.n, c[i], v` — full dot products | `mul r, c1, v.y` then three `mad`s accumulating a whole float4 |
+| `clip.x` is | `dot(c0, v)` | the `.x` **lane** across all four registers |
+| the per-eye edit | `c0 += S·c3` ; `c0.w −= S·C` | `c[i].x += S·c[i].w` for all *i* ; `c3.x −= S·C` |
+
+**The two implementations are transposes of each other.** Porting one onto the other mixes columns,
+corrupts `clip.w`, and **still renders** — the worst failure mode, because the result is a plausible
+wrong picture rather than an error. Alice's test suite transplants the Alan Wake implementation
+verbatim and shows it diverging (`ndc.x` off by ~0.03) with `clip.w` corrupted; mutation testing on
+both suites (twelve and six mutants, all caught, controls pass) shows they genuinely discriminate.
+
+**The check is cheap and needs no game running — do both halves:**
+
+1. **The reflection block states the class outright.** D3D9 `CTAB` records a `TypeInfo` per constant
+   whose first `u16` is the `D3DXPARAMETER_CLASS` (`2` = rows, `3` = columns). Most tooling ignores
+   this field; for stereo work it is the single most load-bearing thing in the table.
+2. **The bytecode is the confirming second read.** Four consecutive `dp4`s against consecutive
+   registers ⇒ registers are rows (column-vector `M·v`). A `mul`/`mad` chain accumulating one float4
+   from `v.x`, `v.y`, `v.z`, `v.w` ⇒ registers are columns (row-vector `mul(v, M)`).
+
+The metadata alone can be stale or mis-set by a toolchain, and the bytecode alone can be ambiguous
+in a shader that uses only part of the matrix. Alan Wake's `g_mLocalToView` is the worked case for
+needing both: declared `4×4`, occupying **3** registers — consistent only with a `[0,0,0,1]` fourth
+row elided and translation living in each row's `.w`, which the class field cannot tell you and the
+`dp4` + `mov r.w, v.w` pattern settles at once.
+
+This generalises past stereo: **any** code that patches a shader-constant matrix in flight — FOV
+override, camera detachment, projection hacks — has to answer the same question first, and the
+failure is always a plausible-looking wrong picture. Pair it with
+[the register-displacement trap](#the-register-is-not-fixed-a-skinning-palette-displaces-the-camera-constants):
+together they are the two ways a "just write the matrix" plan silently breaks.
+
+### On a fused matrix, `p00` cannot be recovered under object scale — keep the camera's projection
+
+`[verified-numerically 2026-09-03, n=2 projects]` The clip-space form needs the projection's own
+`p00` (the `[0][0]` focal term) to scale the separation. When the engine hands over a **standalone
+projection** it is right there — and Alan Wake shows the elegant consequence: express the convergence
+shear through the projection's *own* `row0.x`, and the game's FOV, near and far never have to be
+recovered, so the edit stays correct when the game changes FOV at runtime. When the engine hands over
+only a **fused** `World→Clip` (Prince of Persia 2008 has no standalone projection at all; Alan Wake's
+particle, foliage and terrain paths bypass its split), the tempting recovery `p00 ≈ |row0.xyz|` is
+exact on a rigid `P·V` and **demonstrably wrong the moment the object carries scale**, because the
+scale is baked into the same row. Both projects' suites assert both halves. The rule: **supply `p00`
+from a cached camera projection you captured elsewhere, never recover it from a fused matrix**; and
+note that a fused draw's *attribution* — camera pass or shadow/light pass, the same shader serving
+both — is a runtime question that reflection cannot answer, so a fused edit needs a pass
+discriminator (the active render target) before it is safe.
+
+Generalised from [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr),
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr) and
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr), all 2026-09-03;
+the storage-class table was first filed by the modding lane as an inbox drop.
 
 ## VR body height: the HMD-anchored float
 
@@ -1552,6 +1752,33 @@ before a stereo run can be judged at all.
 
 Generalised from [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr) and
 [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr).
+
+### …and check that the shipped switch still *dispatches* — a binding in a config is a lead, not a feature
+
+`[verified-live 2026-09-03, n=6 keys + 1 controller chord, one build]` The habit above has a failure
+mode of its own: a shipping build can keep every **binding** and strip the **dispatch** the bindings
+call. Enslaved (UE3) ships console key bindings with no console, a full debug-camera input map with
+no reachable debug camera, and a *developer's own* `F9 = shot` binding in a shipped ini — and none of
+them do anything, because console-style exec commands (`FOV`, `shot`, `ToggleDebugCamera`) dispatch
+nowhere in that build. The controller chord that would open the debug camera also did nothing, for
+the same one reason: its job is to *call* an exec command, and exec dispatch is gone. Movement, menus
+and a hot-plugged virtual XInput pad all worked, so the input side was fine; the far end was missing.
+
+Two things to carry:
+
+- **Config is a lead; running it is the evidence.** A binding surviving in a shipped ini says the
+  feature existed when the ini was authored, not that the build can reach it. Six keys across two
+  sessions is enough to stop trying keys and go looking for the dispatch itself.
+- **Build the test so it can go positive.** The `F9 = shot` case was chosen because it ships in the
+  developer's own ini and does not depend on any edit of ours — so a null there is a real null. The
+  positive control for the pad was the same pad moving the character a moment later.
+
+When the dispatch is stripped, the remaining command channels are in-process (call the engine's exec
+entry point directly from your own proxy, located by pattern — static work) or a virtual controller
+for anything gated behind a pad; the estate's proven virtual-pad tool drove this game hot-plugged,
+with no restart.
+
+Generalised from [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr), 2026-09-03.
 
 ## Tool defaults that fabricate false negatives
 
@@ -2351,11 +2578,33 @@ inheritance does the work; no wrapper objects, no vtable forwarding.
 
 **🪤 Two traps, and both decide the design rather than tune it:**
 
-- **`D3DPOOL_MANAGED` does not exist on a D3D9Ex device.** Any `CreateTexture` /
-  `CreateVertexBuffer` / `CreateIndexBuffer` asking for it **fails**. So the silent upgrade above is
-  only viable if the game's renderer never asks for MANAGED — and *that is not answerable
-  statically*. It is the difference between a one-line proxy change and a resource-remapping project,
-  so establish it first, with a logging proxy, before committing to the approach.
+- **`D3DPOOL_MANAGED` does not exist on a D3D9Ex device** — any `CreateTexture` /
+  `CreateVertexBuffer` / `CreateIndexBuffer` asking for it **fails**. This library first recorded
+  that as *"the difference between a one-line proxy change and a resource-remapping project, not
+  answerable statically"*. **Corrected 2026-09-03: it is a solved, bounded proxy problem, and it is
+  not a gate.** `[reported 2026-09-03]` The established rewrite, in the proxy's own `Create*`
+  wrappers, is **`D3DPOOL_MANAGED → D3DPOOL_DEFAULT + D3DUSAGE_DYNAMIC`**, and it is safe for a
+  reason rather than by luck: Microsoft's own `D3DPOOL` reference says MANAGED exists so the runtime
+  can restore resources after **device loss**, and its "Lost Devices" page says a 9Ex device **never
+  returns `D3DERR_DEVICELOST`** — so on 9Ex the pool has nothing left to do, and translating it away
+  is the migration the design implies. The `DYNAMIC` half is load-bearing: DEFAULT textures cannot be
+  locked unless dynamic, whereas MANAGED ones always can, so plain DEFAULT would make every
+  allocation succeed and then fail at the first `Lock()`. DEFAULT × DYNAMIC is a legal pairing and
+  MANAGED × DYNAMIC is not, so the rewrite can never collide with a usage flag the game already set.
+  **Prior art:** `elishacloud/dxwrapper`'s `D3d9to9Ex` option does exactly this, following Special
+  K's strategy, and its maintainer reports **7 of 8 tested games working**. The same source names what
+  actually breaks on 9Ex, which replaces one vague unknown with four observable ones: **paletted
+  textures** are unsupported; **16-bit textures** only work in system memory; **D3DX functions remain
+  problematic** (relevant to any 2008–2011 title with a D3DX dependency chain); and **some titles
+  fail outright at device creation**. All four are cheap to observe on the first Ex launch. An
+  instrumented MANAGED count is still worth having — it sizes how much `Lock()` traffic gets
+  re-pointed — but it is a measurement to ride along on a launch that is happening anyway, not a
+  prerequisite in front of static work. Sources:
+  [D3DPOOL](https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dpool),
+  [Lost Devices (Direct3D 9)](https://learn.microsoft.com/en-us/windows/win32/direct3d9/lost-devices),
+  [dxwrapper discussion #105](https://github.com/elishacloud/dxwrapper/discussions/105).
+  Found by a `/gr` pass for `enslaved-vr`, whose dossier adopted it the same day and un-gated its
+  D3D9Ex route.
 - **There is no D3D9 keyed mutex.** `D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX` has no
   `IDirect3D9KeyedMutex` counterpart, so the synchronisation primitive every D3D11 interop tutorial
   reaches for is unavailable to a D3D9Ex producer. The established substitute is an
@@ -2540,6 +2789,35 @@ draw hooks and do the set lookup in the far rarer shader-binding call.
 
 **Report the instrument's own ceiling.** If the shader-handle table can overflow, say so in the log
 and treat an overflowed run's programmable count as a **lower bound** rather than a measurement.
+
+
+**✅ Measured the next day — the gap is real, and the design changed because of it.** `[measured
+2026-09-03, n=26,595 frames / 343 one-second intervals / 3,254,942 draws, one session]` The recon
+above was run with the denominator, on the same UE2/D3D8 title: programmable-VS draws were present in
+**338 of 343** intervals, a frame-weighted **8.72 %** of all draws, peaking at **51.4 %** of one
+second's draws (mean 11.8 per frame, max 113.7), from only **six** distinct vertex shaders in the
+whole session; the handle table did not overflow, so the figure does not understate. The
+all-fixed-function seconds were menus and loads — **the busiest gameplay seconds had the highest
+programmable share**, the opposite of the reassuring pattern. Decision: draw-twice stays the
+backbone (~91 % of draws, no early-out to fight) **plus a vertex-shader-constants path** for the
+rest; the live constant uploads were `c0 ×5` (confirming the static `+0x4205` inference), `c0 ×8`
+and `c10 ×1`, so the per-eye matrix's destination is known even though *what* those draws are is
+still `[hypothesis]`. **Do not carry the 8.72 % across engines** — the transferable part is the
+question and the method, not the value; another engine could be 0 % or 60 %.
+
+Two further measurements from the same run are worth copying into any draw-twice recon:
+
+- **Split projection sets into perspective vs orthographic per frame.** Here orthographic
+  outnumbered perspective **4.6 : 1** (12.9 vs 2.8 per frame) — most projection traffic is HUD and
+  canvas, so a stereo path that rewrites *every* projection corrupts the interface far more often
+  than it fixes the world.
+- **Count distinct view matrices per frame.** Vanilla already issued **3–8** distinct views per frame,
+  so "the view matrix" is not one thing and the player camera has to be **identified**, not assumed.
+
+And one instrument trap: a bounded matrix-dump budget (`N` dumps per run) was **spent entirely on the
+menu** — every dump carried the same pre-gameplay frame number, so no gameplay matrix was captured
+while the per-interval counters were fine. Gate dump budgets on a frame threshold or a key, not on
+"first N".
 
 ## Turn off the post-processes that re-derive the view before judging a stereo run
 

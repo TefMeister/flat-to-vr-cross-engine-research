@@ -242,6 +242,31 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
 - The **flatscreen-to-VR modding community** broadly — forums, wikis, Discord/Reddit threads,
   and countless per-game fix authors whose collected knowledge underlies all of the above.
 
+- **atom0s** — **Steamless**, the open-source SteamStub (Steam DRM wrapper) unpacker, explicitly for
+  software you own. Read online for its supported-variant list and stated purpose; nothing copied.
+  Its existence is what turns an encrypted `.text` from a runtime-dump problem into a static one.
+  <https://github.com/atom0s/Steamless>
+- **GHFear** — **Steamstub-v3-Unpacker**, a second open-source SteamStub v3 unpacker; read online
+  only. <https://github.com/GHFear/Steamstub-v3-Unpacker>
+- **Adam Hlt** — "Cube World Reversing — Unpack the game", the write-up that describes the `.bind`
+  section, the entry-point redirection into it and `.text` being encrypted at rest.
+  <https://adamhlt.com/cube-world-reversing-unpack-the-game/>
+- **elishacloud** — **dxwrapper** / **DirectX-Wrappers**, whose `D3d9to9Ex` option and its
+  maintainer's discussion of the `D3DPOOL_MANAGED → DEFAULT + DYNAMIC` rewrite (7 of 8 games working,
+  and the four named 9Ex limits) are cited as prior art for the D3D9Ex upgrade. **Kaldaien**'s
+  **Special K** is credited there as the origin of that strategy. Read online; no code reused.
+  <https://github.com/elishacloud/dxwrapper/discussions/105> · <https://github.com/elishacloud/DirectX-Wrappers>
+- **Pauldusler** — **3D Fix Manager** and its page's driver-support history (425.31 / 452.06, the
+  October 2020 DX11 removal, DX9 compatibility, Discover mode), cited for the 3D Vision status note.
+  <https://helixmod.blogspot.com/2017/05/3d-fix-manager.html>
+- **davegl1234** — named by Helix Mod as the developer of the **geo-11** replacement stereo driver
+  (June 2022); credited alongside **ThreeDeeJay**, who hosts its releases.
+  <https://helixmod.blogspot.com/2022/06/announcing-new-geo-11-3d-driver.html>
+- **Jim2point0** — the FRAMED-hosted Alan Wake cheat table whose FOV and time-scale byte patterns
+  (read online as XML) ported exactly to our build and led to the camera global. Patterns re-derived
+  in our own binary; nothing copied. <https://framedsc.com/GameGuides/Alan_Wake.htm>
+- **Neovad** — the Helix Mod Alan Wake 3D Vision fix, whose comment thread documents v1.06's
+  FOV-dependent shadows. <https://helixmod.blogspot.com/2014/08/alan-wake.html>
 ## Open-source libraries commonly used by these projects
 
 Each under its own license:
@@ -565,6 +590,25 @@ public work — **Jill (`scrunguscrungus`)**'s Astralathe signatures, **Fire-Hea
 **eqzitara**'s 3D Vision fix, and the public documentation of Psychonauts' level format — that work
 is credited above and was read online only; every address, count and measurement quoted was
 re-derived in our own binaries.
+
+The [storage-class check](./docs/techniques/README.md#determine-the-matrix-storage-class-two-ways-before-writing-any-per-eye-edit)
+and its [fused-matrix `p00` rule](./docs/techniques/README.md#on-a-fused-matrix-p00-cannot-be-recovered-under-object-scale--keep-the-cameras-projection),
+the [register-displacement trap](./docs/techniques/README.md#the-register-is-not-fixed-a-skinning-palette-displaces-the-camera-constants),
+the [shipped-compiler correction](./docs/techniques/README.md#when-a-game-compiles-its-shaders-decides-how-you-read-its-constant-map),
+the [wrapper-naming section](./docs/techniques/README.md#name-the-wrapper-first--on-steam-it-is-usually-steams-own-and-then-unpacking-is-a-static-step),
+the [shipped-switch-still-dispatches caution](./docs/techniques/README.md#and-check-that-the-shipped-switch-still-dispatches--a-binding-in-a-config-is-a-lead-not-a-feature)
+and the measured extensions to the per-draw-coverage and early-out sections are our own first-party
+research on legitimately-owned copies of Alan Wake, Alice: Madness Returns, Prince of Persia (2008),
+Enslaved: Odyssey to the West and XIII (2003), generalised out of each project's `engine-research/`
+folder and credited to those projects above:
+[`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) ·
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr) ·
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr) ·
+[`enslaved-vr`](https://github.com/TefMeister/enslaved-vr) ·
+[`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr). Where they rest on someone else's public
+work — Microsoft's D3D9 documentation, **elishacloud**'s dxwrapper discussion, **atom0s**'s
+Steamless, **Jim2point0**'s cheat table, NVIDIA's `nvstereo.h` — that work is credited above and was
+read online only; every address, count and measurement quoted was re-derived in our own binaries.
 
 Like everything else we write, these are CC-BY-4.0 — take them and build on them, just say where
 they came from.

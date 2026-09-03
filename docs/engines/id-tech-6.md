@@ -120,6 +120,15 @@ in-process key-state hooks install perfectly and do nothing. `[measured + verifi
 Full detail and the general rule:
 [injected input](../techniques/#injected-input-measure-it-against-a-control-never-against-zero).
 
+
+**Eye-field hunt, 2026-09-03.** The BFG-source prediction that `viewEyeBuffer` and
+`stereoScreenSeparation` would be adjacent reflection fields was tested and **disproved for id Tech
+6** — zero hits in either exe, exhaustive substring search `[disproved 2026-09-03, n=2 exes]`. The
+look-alike pair `leftFrameOffset`/`rightFrameOffset` is adjacent in the reflection table but types as
+two 256-byte buffers, not floats. Names transfer across id generations; layouts do not. No positive
+eye-field candidate exists; walking the 72-byte reflection records outward from a known anchor is the
+untried static angle. The `ringcam` write path remains compile-verified and never run.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "id Tech 6" row.

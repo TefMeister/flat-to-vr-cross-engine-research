@@ -847,7 +847,7 @@ CHECK-INs; the substantial ones are generalised below.
 
 - [**OpenXR carries a pose per view where OpenVR collapses to
   one**](./techniques/README.md#openxr-carries-a-pose-per-view-where-openvr-collapses-to-one)
-  (`far-cry-2-vr` → `XIII2003-vr`, same day, `[verified-static 2026-09-02]`) — the best cross-project
+  (`far-cry-2-vr` → `XIII2003-vr`, same day, `[reported 2026-09-02]`, a first-party header read) — the best cross-project
   moment of the day: `far-cry-2-vr` re-checked the seven-year-old, still-open
   [OpenVR #1253](https://github.com/ValveSoftware/openvr/issues/1253) (filed by **LukeRoss00**, the
   AER author, describing exactly this same-frame-pose collision) and reasoned that OpenXR's
@@ -1079,3 +1079,91 @@ is ambiguous, a stereo run judged through an uncorrected pass. That is now the s
 shape in this library, and the cheapest habit against all three is the same one: before running a
 test, say out loud what a **negative** result would mean, and check the instrument could have produced
 a positive.
+
+### 2026-09-03 (second sweep, evening, home PC) — the largest in-house delta yet, and seven inbox drops
+
+**The shape of this one:** an eleven-hour in-house window (from 10:27 to 21:40 local) in which the
+modding lane and two `/gr` passes produced **research-lane commits on 15 of 16 game repos**, ten of
+them with substantive `ENGINE-DOSSIER.md` changes, plus **seven files waiting in this library's own
+inbox** — three from `/gr`, three from the modding lane, one a `Supersedes:` correction. The web
+half was deliberately short; the in-house half is where the generalisable material was.
+
+**Own inbox: seven files, all drained by name.** `grep -rn "^Supersedes:" inbox/` found one:
+`2026-09-03-gr-two-verified-static-tags-are-still-live-in-the-library.md`, superseding the `/gs`
+"3b clean estate-wide" claim as it applies here — both live `[verified-static]` tags (techniques
+§OpenXR-per-view-pose opening line, and the 2026-09-02 sweep-log row) are now `[reported 2026-09-02]`
+with "first-party header read" in the prose, per `/gs`'s own precedent. A full-tree grep, not a delta
+scan, confirms **zero** remain in this repo. The other six drops and where each landed:
+
+| Drop | From | Landed |
+| --- | --- | --- |
+| a packed `.text` makes every static scan a false negative | `/gr` | new sub-section [**Name the wrapper first**](./techniques/README.md#name-the-wrapper-first--on-steam-it-is-usually-steams-own-and-then-unpacking-is-a-static-step) under *Packed/self-protecting binaries* — now `n=3` (Manhunt, Alice, **and Prince of Persia 2008 the same day**, SteamStub v2.1 with no `0xC0DEC0DF` magic) |
+| the D3D9 → D3D9Ex upgrade is a solved proxy problem | `/gr` | the `D3DPOOL_MANAGED` trap in [**D3D9 to a modern VR compositor**](./techniques/README.md#d3d9-to-a-modern-vr-compositor-the-shared-handle-bridge-and-its-two-traps) **rewritten**: `MANAGED → DEFAULT + DYNAMIC`, why it is safe (9Ex never loses the device), dxwrapper/Special K prior art (7 of 8), the four real 9Ex limits; "not answerable statically, decide after a launch" withdrawn |
+| 3D Vision is a discontinued driver feature | `/gr` | new section in [generic drivers](./generic-drivers/README.md#-3d-vision-itself-is-discontinued--what-that-means-for-a-games-native-stereo-toggle) (425.31 / 452.06 / 456.38, DX9 caveat, Discover mode), plus cautions 4 and 5 under *Dormant native stereo paths* |
+| a shipped shader compiler does not imply shipped compilation | modding | the compile-time table's third row **corrected** (Alan Wake moved to row 2, row 3 now has no worked case in the estate) with the three static checks; new sub-section [**the register is not fixed**](./techniques/README.md#the-register-is-not-fixed-a-skinning-palette-displaces-the-camera-constants) — `n=2` engines (Alan Wake `c0`/`c192`, Prince of Persia `c0`/`c128`), same skinning-palette displacement |
+| draw-twice designs must measure the programmable path | modding | measured extension to [**Per-draw stereo reaches only…**](./techniques/README.md#per-draw-stereo-reaches-only-the-draws-that-read-the-transform-you-hooked): 8.72 % frame-weighted, 51.4 % peak, 338/343 intervals, design changed to backbone-plus-constants; plus the ortho:perspective 4.6:1 and 3–8-views-per-frame measurements and the dump-budget-spent-on-the-menu trap |
+| the same stereo formula transposes between engines | modding | new section [**Determine the matrix storage class two ways**](./techniques/README.md#determine-the-matrix-storage-class-two-ways-before-writing-any-per-eye-edit) — `n=3` projects across two classes (Alan Wake and PoP `MATRIX_ROWS`, Alice `MATRIX_COLUMNS`), with the sub-section [**on a fused matrix, `p00` cannot be recovered under object scale**](./techniques/README.md#on-a-fused-matrix-p00-cannot-be-recovered-under-object-scale--keep-the-cameras-projection), `n=2` (Alan Wake's fused paths, PoP's fused-only engine) |
+
+**Web checked.** UEVR still **1.05** (2024-11-16), REFramework still **v1.5.9.1** (2025-03-05),
+OldUnreal `Unreal-testing` still **v227k_15**, all read from the GitHub releases API. **dgVoodoo2
+v2.87.4 is new** (2026-09-02, one day before this sweep): a patch release whose main purpose is a
+crash fix for Windows 11 26H1+ builds, with a note that NVIDIA users need driver ≥ 616.56 to avoid
+32-bit D3D12 crashes — relevant to anyone routing a D3D9 title through dgVoodoo2 → geo-11 on a
+current Windows; recorded here, no doc change needed. Vk3DVision: archived 2026-03-05, already
+recorded on 2026-09-01. Flat2VR: search results mention an official **System Shock VR** announced at
+an August 2026 showcase and a **Flat2VR Spark** licensed-adaptation programme; **neither page was
+fetched this sweep, so nothing was added to the landscape page** — a target for the next pass.
+Everything else on the watch list was left in favour of the in-house harvest.
+
+**Project-repo harvest (delta since 2026-09-03 10:27 local; all 22 repos in this root pulled).**
+Research-lane commits on 15 of 16 (`arcade-controls-re2-vr` has no research lanes). Substantive
+dossier changes read in full: `alan-wake-vr`, `alice-madness-returns-vr`, `prince-of-persia-2008-vr`,
+`the-evil-within-vr`, `enslaved-vr`, `doom-2016-vr`, `XIII2003-vr`, `psychonauts-vr`, `mad-max-vr`,
+`unreal-gold-vr`; one new `external-research` topic in `re-village-scope-vr` (the tone-curve
+finding — read, judged RE-Engine-specific, **not** generalised, as its author also concluded). Stamp-only
+changes: `burnout-paradise-vr`, `far-cry-2-vr`, `manhunt-2003-vr`, `visceral-re2-vr`. No dossier
+moved from "not yet covered in full" to "covered" — this was a delta read.
+
+**Generalised up this sweep, beyond the inbox table above:**
+
+- [**…and check that the shipped switch still dispatches**](./techniques/README.md#and-check-that-the-shipped-switch-still-dispatches--a-binding-in-a-config-is-a-lead-not-a-feature)
+  (`enslaved-vr`, `[verified-live 2026-09-03, n=6 keys + 1 chord]`) — a shipping build kept every
+  binding and stripped the exec dispatch they call; config is a lead, running it is the evidence, and
+  the developer's own `F9 = shot` binding was the positive control.
+- [**Stereo hazard: early-out**](./techniques/README.md#stereo-hazard-a-setter-that-early-outs-on-an-unchanged-matrix)
+  gained the measurement (`XIII2003-vr`): 0.27 % / 0.98 % / 0 % would-fire — rare, and the
+  requirement unchanged, because the hazard was never frequency.
+- The packed-binary section also carries Prince of Persia's two lessons: a packed `.text`
+  **retroactively voids every code-search negative** on that exe, and small-integer immediates are
+  uninformative in both directions once unpacked.
+
+Engine pages, each with a dated 2026-09-03 section: [`remedy-alan-wake.md`](./engines/remedy-alan-wake.md)
+(§6 answered statically; separate projection; one camera global; no ASLR),
+[`scimitar-anvil.md`](./engines/scimitar-anvil.md) (shader pack decoded; fused `g_WorldViewProj`
+at `c0`/`c128`; SteamStub 2.1; repacker built and validated),
+[`unreal-1-3.md`](./engines/unreal-1-3.md) (Alice `MATRIX_COLUMNS` and Automatic; Enslaved's stripped
+dispatch and clean shadow test; Unreal Gold's stock gamma settled from SDK source),
+[`id-tech-5.md`](./engines/id-tech-5.md) (`.tangoresource` decoded, 2,785 DXBC shaders on disk,
+167/168 hash match with the runtime table, z/w-swapped rows),
+[`avalanche.md`](./engines/avalanche.md) (two `GlobalConstants` layouts; the by-value probe written,
+ported from Enslaved), [`double-fine-psychonauts.md`](./engines/double-fine-psychonauts.md)
+(`BoxVisible` disassembled; the engine's own cull-camera override; `PPAK` containers),
+[`id-tech-6.md`](./engines/id-tech-6.md) (BFG eye-field names disproved for id Tech 6).
+
+**Inboxes drained: seven** (own inbox, listed above, deleted by explicit filename after all seven
+were read and the one `Supersedes:` applied first). **Inboxes filled: one** —
+`unreal-gold-vr/engine-research/inbox/2026-09-03-sr-does-the-draw-twice-coverage-question-reach-a-urenderdevice.md`,
+because XIII's drop was addressed to that project by name; the note argues the coverage gap does not
+reach a `URenderDevice` and hands over the two measurements that do transfer as questions.
+
+**New credits:** **atom0s** (Steamless), **GHFear**, **Adam Hlt**, **elishacloud** (dxwrapper) with
+**Kaldaien**'s Special K as the origin of the MANAGED rewrite, **Pauldusler** (3D Fix Manager),
+**davegl1234** (geo-11, beside the existing ThreeDeeJay entry), **Jim2point0** (the Alan Wake table),
+**Neovad** (the Alan Wake Helix fix). All read online; no code taken from any of them.
+
+**One process note, because this library collects instrument failures.** The first attempt to apply
+this sweep's insertions used a script that decoded the snippet as UTF-8 while reading the target file
+as bytes; Perl then re-encoded every pre-existing non-ASCII character in each touched file — eleven
+files, the techniques page eight times over. It was caught before commit by a one-line grep for the
+mojibake signature, the files were restored from git, and the insertions re-run byte-for-byte. The
+check that catches it costs nothing and should precede every commit that edits prose by script.

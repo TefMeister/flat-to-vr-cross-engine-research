@@ -78,6 +78,29 @@ orientation row. Curated by the cross-project research sweep.*
   — you cannot need two presets unless there are two paths. Scope live camera investigation to check
   both early rather than assuming one covers the other.
 
+### 2026-09-03: the shader pack decodes with the same LZO2A container, the exe is SteamStub 2.1, and the `.forge` repacker is built
+
+`[verified-numerically 2026-09-03]` Prince of Persia (2008)'s `ekshaderspccompress.bin` is the
+**same LZO2A container as `.forge`** behind a five-byte preamble (1,361 blocks, zero failures, the
+file consumed exactly), yielding **17,464 `CTAB`** tables — so the 2026-09-01 "the shader pack is
+compressed, the CTAB route does not work here" conclusion was a correct measurement with a wrong
+inference, and §6 is answered: `g_WorldViewProj` is **fused**, `MATRIX_ROWS`, at `c0` in 6,292
+shaders and **`c128` in 2,016** — exactly the shaders carrying a 128-register `g_Bones` palette. There
+is **no standalone projection**, so `p00` cannot be recovered from the fused matrix under object scale;
+see [the fused-matrix rule](../techniques/README.md#on-a-fused-matrix-p00-cannot-be-recovered-under-object-scale--keep-the-cameras-projection).
+
+The launcher exe is **SteamStub Variant 2.1** — `.bind`, entry point inside it, `.text` at entropy
+8.00, but **no `0xC0DEC0DF` magic** (that marker is v3.x only). Steamless unpacked a copy, which
+**retroactively voids every code-search negative** previously recorded against `.text` on this
+project, including one §6 had leaned on; string findings stand. See
+[naming the wrapper](../techniques/README.md#name-the-wrapper-first--on-steam-it-is-usually-steams-own-and-then-unpacking-is-a-static-step).
+The `.forge` per-block checksum is **Adler-32 seeded to 0** (LZO's own `lzo_adler32(0, …)`) — the
+one-bit seed difference is why plain Adler-32 had been correctly ruled out — and with that the
+repacker was built and validated (null-op byte-identical on three archives up to 752 MB; the real
+`CR_Debug_1stPerson` edit verified by a full-archive diff, 29 of 30 datafiles identical, the touched
+one differing at exactly four bytes). Deployment is a user decision; whether the edit alone makes the
+first-person camera win is untested.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Ubisoft AnvilNext 2.0" row.

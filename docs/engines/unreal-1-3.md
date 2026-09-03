@@ -367,6 +367,37 @@ Vision fix for the same game (2013), read online — credited in
 the public record depends on how you searched, not on what exists; re-run the search before letting
 one steer a design.
 
+### UE3, 2026-09-03: Alice stores its matrices as COLUMNS, and Enslaved's build stripped exec dispatch
+
+Two same-day findings from the UE3 pair, both with an engine-agnostic form on the techniques page.
+
+- **Alice: Madness Returns — `ViewProjectionMatrix` is `D3DXPC_MATRIX_COLUMNS`** (`mul`/`mad`
+  accumulation, no `dp4`), the transpose of Alan Wake's and Prince of Persia's `MATRIX_ROWS`, so the
+  identical clip-space formula needs a transposed implementation: `c[i].x += S·c[i].w` for all four
+  registers, then `c3.x −= S·C`. Transplanting the row-form code produces a plausible wrong picture.
+  `[verified-numerically 2026-09-03, n=54 configurations]` The exe is **SteamStub v3.1**; unpacking
+  a copy let the NVAPI caller-count scan run: **Automatic** mode, getters only, no `SetDriverMode`,
+  no `SetActiveEye` — the same verdict as Alan Wake, reached independently, and the two pixel-stage
+  facts that follow: `ps c4` is wildly overloaded (a blind write would touch ~33,000 shaders), and
+  **the shipped pixel shaders already apply NVIDIA's shear** in 4,042 of them, so a second per-eye
+  edit at the pixel stage would double-apply it. `[inferred-static 2026-09-03]` The engine gate
+  `AllowNvidiaStereo3d` ships `True` inside `NVCHANGE` markers — the stereo support is an
+  NVIDIA-supplied patch to UE3, which is why it appears in these licensees and not in stock UE3.
+- **Enslaved — a shipped binding is not a live feature.** `[verified-live 2026-09-03, n=6 keys + 1
+  chord]` Tilde/Tab/F10 open no console; shipped and added key bindings for `shot`, `FOV`,
+  `ToggleDebugCamera` dispatch nowhere (a developer's own `F9 = shot` binding was the control);
+  the debug-camera controller chord through a virtual XInput pad also did nothing, while the same pad
+  moved the character. The coherent reading is a shipping UE3 build with the console / cheat-manager
+  **exec dispatch compiled out** but its input maps left in. Remaining command channels are in-process
+  exec from the proxy (static work) or the pad for pad-gated features. Also measured: shadows pass a
+  matched-depth stereo test exactly (no swim), and the D3D9Ex `MANAGED` trap is
+  [solved prior art](../techniques/README.md#d3d9-to-a-modern-vr-compositor-the-shared-handle-bridge-and-its-two-traps),
+  so route (a) D3D9Ex is preferred over `-d3d10`.
+- **Unreal Gold (UE1)** — stock gamma is **not a constant**: `Gamma = Brightness × 2`, the default
+  `GM_XOpenGL` mode is the identity at the default `Brightness = 0.5`, so stock applies no gamma at
+  defaults; the project's hardcoded 2.0 was `[disproved 2026-09-03]` from the SDK's own source. Stock
+  DX9 mode swaps the green and blue exponents. Record `GammaMode` and `Brightness` before any A/B.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Unreal Engine 2 / 3" row.
