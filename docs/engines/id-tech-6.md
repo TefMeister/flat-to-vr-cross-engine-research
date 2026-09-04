@@ -129,6 +129,26 @@ two 256-byte buffers, not floats. Names transfer across id generations; layouts 
 eye-field candidate exists; walking the 72-byte reflection records outward from a known anchor is the
 untried static angle. The `ringcam` write path remains compile-verified and never run.
 
+### 2026-09-04: a virtual XInput pad drives this engine, and a value-scan taught a lesson about its base
+
+- **⭐ A ViGEmBus virtual Xbox 360 pad is bound as a real controller and drives both movement and
+  look** `[verified-live 2026-09-04, n=2 per axis with reversal]`. Left stick: pure translation, camera
+  basis unchanged. Right stick: pure yaw, position unchanged. Both reversed cleanly, and destroying the
+  pad raised the game's own *"Controller Disconnected"* toast — confirmation the game had bound the
+  device rather than merely that Windows enumerated it. This engine links XInput 1.4 directly, which is
+  the precondition. **It is focus-independent**, unlike the `SendInput` look route recorded above, so it
+  is the better instrument for camera work on this family. Cross-engine write-up:
+  [known input routes](../techniques/README.md#known-input-routes-by-engine-family).
+- **A camera-copy scan found zero, and the cap was a red herring** `[verified-live 2026-09-04]`. The
+  scanner's window was genuinely 6.6× too small and that was genuinely fixed — and the widened scan
+  still found nothing, because it was scanning the process's *largest* mapping while a by-value search
+  located the sixty-four camera copies clustered near the start of a **different** region. Base, not
+  range. The general form is on the techniques page:
+  [check the base before you widen the range](../techniques/README.md#when-a-scan-finds-nothing-check-its-base-before-you-widen-its-range).
+  One loose end for this family: the region actually holding the copies reports tens of thousands of
+  flushes, which sits oddly beside this page's reading that the camera buffer is host-coherent and off
+  the flush path — worth resolving before either statement is relied on.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "id Tech 6" row.

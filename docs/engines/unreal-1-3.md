@@ -448,6 +448,39 @@ techniques page as [a D3D9 `Reset` can disarm a device hook](../techniques/READM
   turn". An impatient route, not a dead one; the same shape as
   [saturate first, then tune down](../techniques/README.md#saturate-first-then-tune-down--a-too-small-injection-reads-exactly-like-failure).
 
+### 2026-09-04b: ⭐ on UE3, a per-eye shear written to vertex `c0` REACHES THE SCREEN
+
+`[verified-live 2026-09-04, reversible]` The first proxy launch on Alice: Madness Returns settled the
+question this family's whole camera section has been building toward, and it did so in two runs of one
+session — the second of which needed no rebuild.
+
+- **The interception works.** The proxy wrapped the device and registered 6,725 shaders on a normal
+  play session, with no compatibility flag and no crash.
+- **⭐ The game does write its view-projection to vertex `c0`, and our edit lands on the picture.**
+  Saturating the two parameters slid the entire scene bodily sideways; restoring them recentred it
+  **exactly**. Proportional, horizontal rather than vertical, and reversible — the three properties
+  scene animation cannot fake. At default separation the shift was simply **sub-visible**, which is why
+  the first run read as nothing. This is the strongest confirmation this family has that the `c0`
+  delivery route recorded above is the right lever.
+- **The first run's "inconclusive" was instrumentation, not evidence** — the statistics line fired
+  before the enabling hotkey, the write counter was gated behind the enabled flag, and the hotkey
+  sampled the value at the toggle instant. Recording that as a negative would have written off a
+  working lever. The escape was to **toggle twice and read the second line**; both the trap and the
+  escape are on the techniques page under
+  [the gated diagnostic](../techniques/README.md#the-diagnostic-that-is-gated-on-the-failure-it-was-written-to-explain)
+  and [prove an effect by reversing it](../techniques/README.md#prove-an-effect-by-reversing-it-not-by-scoring-it).
+- **The native `3D STEREO` row really is present in the video options and toggles freely**
+  `[verified-live 2026-09-04, n=1]` — not driver-hidden, corroborating this page's finding that the
+  NVIDIA stereo patch to UE3 ships enabled in these licensee builds. It was **not** engaged; that risks
+  a renderer mode switch and is not the route.
+- **The `FreeLibrary` trap did not bite here** `[verified-live 2026-09-04]`: the proxy stayed resident
+  for the whole session including the settings screens, which can reset the device. The defect is real
+  and still worth its one-line fix, but on this title it remains latent — a useful reminder that
+  *exposed* and *failing* are different states.
+
+**Still open on this title:** whether HUD and screen-space elements follow the shear (the pixel-stage
+concern this page raises for the family), and true two-eye rendering rather than a single sheared view.
+
 ### 2026-09-04: XIII's shaders are assembly TEXT in the DLL, and UE2's two pipelines share one transform
 
 Two static results from XIII (UE2 / D3D8), read out of the shipped renderer DLL with nothing running

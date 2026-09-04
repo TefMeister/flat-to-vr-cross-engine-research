@@ -798,6 +798,41 @@ on the write path or at the upstream source rather than on a copy.
 
 Generalised from a `doom-2016-vr` modding-session hand-off, 2026-08-31.
 
+### When a scan finds nothing, check its BASE before you widen its RANGE
+
+`[verified-live 2026-09-04, n=1 project]` A worked failure, because the wrong fix was both real and
+convincing.
+
+A scanner that learns the camera's location by matching a known value found **zero** hits. Inspection
+turned up a genuine defect: its scan window was **6.6× smaller** than the span it needed to cover, so
+it had been reading a fraction of the region. That was fixed, the window widened, the build deployed —
+and the next run **still found zero**, having scanned the full span with no truncation at all.
+
+The actual cause was the **base**, not the range. The scanner asked the process for its *largest*
+memory mapping and scanned that. A by-value search then located the camera copies — sixty-four of
+them, a packed position and a clean view matrix — clustered near the start of a **different** region
+entirely. The scan had been reading the right offsets in the wrong buffer, and no amount of widening
+could have corrected that.
+
+**Two rules come out of it, and the second is the one that costs sessions:**
+
+- **A scan has three parameters, and range is the least likely to be wrong.** Base, stride and range:
+  check that the base is the region actually holding the data (locate it once by value), and that the
+  stride matches the layout, before touching the range. "Largest mapping" is a heuristic for *where a
+  game keeps big things*, not for *where this value lives* — a process can hold several equally large
+  mappings.
+- **⚠️ A real defect found while diagnosing a symptom is not thereby the cause.** The undersized window
+  was a true bug and fixing it was correct; it simply was not the reason for the zero. The tell is
+  that the fix was verified by *compilation*, and belief in it ran ahead of the run that tested it.
+  Until the failing path has actually been exercised again, a fix explains nothing — the same trap as
+  [an early-out that stops the failing path being exercised](#stereo-hazard-a-setter-that-early-outs-on-an-unchanged-matrix),
+  and the reason this account tags a claim by how it was established rather than by how convinced its
+  author was.
+
+The instrument was worth keeping either way: the widened window now prints the scanned span against
+the full one and warns when the ceiling is still exceeded, so the next zero comes with its own
+diagnosis. Generalised from [`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr), 2026-09-04.
+
 ## Read the shipped files before you attach anything
 
 `[verified-live 2026-09-01, n=5 projects]` (first seen 2026-08-26) The strongest single pattern this
@@ -886,6 +921,27 @@ Denuvo-class protection for the same reason reflection does — the bundle is da
 [`flat-to-vr-RE-toolkit`](https://github.com/TefMeister/flat-to-vr-RE-toolkit) (splits a bundle by
 stage, disassembles with Microsoft's `fxc -dumpbin`, tallies `cb<N>[slot]` reads per register, and for
 vertex shaders walks the chain from `o0` back to the cbuffer slots), is ours and free to use.
+
+**⚠️ Correction 2026-09-04 — that walk must respect PROGRAM ORDER, and ours did not.** The
+back-walk from the position output is only as good as its notion of what actually reached the output.
+Shader registers are **reused**: `r0` can carry a term into `SV_Position` early in the program and
+something entirely unrelated later. A walk that collects every cbuffer slot ever seen in a register on
+the position chain, without regard to whether the write happened *before* the position was written,
+**over-reports** — ours did, by thirty-four rows on one census `[inferred-static 2026-09-04]`.
+
+The concrete damage, and the reason this is worth a paragraph rather than a changelog line: the
+over-report listed a run of slots as feeding the position that turned out to be a **falloff/blend
+block and a projector space written to a texcoord**, not a transform at all. That is precisely the
+"a 4×4-shaped run is shape, not meaning" trap this section exists to warn about, arriving one level
+up — **in the tool built to avoid it.**
+
+**Two things follow.** First, when a census lists a slot, check what that slot's result is actually
+*written to* before believing it; a slot whose value ends up in `o3` is a texcoord, whatever its shape.
+Second, the [re-audit rule](#the-instrument-can-be-the-bug) applies to your own analysis tools as much
+as to your hooks: when the tool was fixed, its unaffected sections were re-run and reproduced
+**byte-for-byte**, which is what allows the earlier conclusions drawn from them to stand rather than
+all needing to be re-derived. Record that check; without it a tool fix invalidates everything it ever
+produced.
 
 Generalised from [`mad-max-vr/modding-notes/`](https://github.com/TefMeister/mad-max-vr/tree/main/modding-notes)
 (`2026-09-03c-the-two-layouts-are-vertex-and-pixel-and-the-camera-matrix-is-per-pass.md`).
@@ -1249,6 +1305,57 @@ Generalised from [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr),
 [`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr), all 2026-09-03;
 the storage-class table was first filed by the modding lane as an inbox drop.
 
+### ⭐ And then the edit itself is ONE ELEMENT, not a rebuilt matrix
+
+`[verified-numerically 2026-09-04, n=33 Python cases + 26 C assertions, 1 project]` The section above
+says where the focal term must come from. This one says how little you have to do with it, and it is
+the most economical result this library holds on per-eye rendering.
+
+Take the row-vector convention (`clip = pos · M`, the one you establish with the
+[storage-class check](#determine-the-matrix-storage-class-two-ways-before-writing-any-per-eye-edit)).
+A per-eye camera is a translation of `d` along the **view** x axis, so `V_eye = V · T` and
+
+```
+M_eye = W · V · T · P  =  M + W · (V·T − V) · P
+```
+
+`(V·T − V)` has exactly one non-zero entry, `[3][0] = d`. For any **affine** `W` — fourth column
+`[0,0,0,1]ᵀ`, true of every object transform — the product preserves that shape, and post-multiplying
+by `P` turns it into *row 3 gains `d` × row 0 of `P`*. Row 0 of a perspective projection is
+`[w, 0, 0, 0]` for a symmetric **and** for an off-centre frustum alike, because an off-centre frustum
+carries its shift in row 2. So the whole per-eye edit is:
+
+```
+M[3][0] += d * w        // w = the horizontal focal term, from the SHARED matrix
+```
+
+**Why that is better than rebuilding `V_eye · P`, which is the obvious plan:**
+
+- **It reads and writes nothing depth-related.** No row 2, no near/far, no `Q`. Every reversed-Z,
+  infinite-far or unusual-clip-convention question simply cannot affect it — and those are exactly
+  the questions that stay `[hypothesis]` longest on an unfamiliar engine. One project dropped a plan
+  that depended on its reversed-Z reading being right, and on stepping around an unexplained
+  per-position clip-z constant, in favour of this.
+- **It is one float instead of sixteen**, so there is no transcription surface and no
+  decompose-recompose round trip to lose precision in.
+- **It works unchanged on the per-object path.** Where the matrix is `W · V · P` rather than `V · P`,
+  it is the same element, the same `d` and the same `w` — no second derivation when that path is
+  built.
+
+**⚠️ The one trap, and it is the section above restated:** `w` must come from the **shared** matrix.
+`|column 0|` of a *per-object* matrix has the object's scale baked in — a 3×-scaled object reads
+3.54 where the true `w` is 1.18 — so taking `w` from the matrix you are editing silently scales that
+object's stereo separation by its own size. Cache `w` from the camera's own transform, and assert it.
+
+**Two things this does not give you.** The convention matters: under column-vector storage the same
+argument lands on the transposed element, so establish the storage class first rather than trying
+both. And the algebra being proven is not the picture being right — the project above has the
+derivation, the write path and 63 self-test assertions, and **has not yet rendered a frame with it**.
+
+Generalised from [`mad-max-vr`](https://github.com/TefMeister/mad-max-vr) (`engine-research/` §7a,
+2026-09-04), where it is proven against independently multiplied `W`, `V` and `P` for ordinary,
+reversed-Z-infinite and off-centre projections.
+
 ## VR body height: the HMD-anchored float
 
 A distinctive third-person-body symptom, and one that is easy to spend weeks mis-attributing:
@@ -1595,10 +1702,39 @@ DirectInput, and `SendInput` fails completely on one while driving the other. Wh
 that XIII takes the mouse in **exclusive** mode, which `SendInput` cannot cross, while DOOM's DI8
 reads the ordinary OS input stack that `SendInput` feeds. Record exclusivity, not just the API name.
 
-**Add an "imports XInput?" note as you extend this table.** Where a game links XInput directly, a
-**ViGEmBus virtual gamepad** is likely the *strongest* route rather than the fallback: the game sees
-a genuine controller, movement and look sit on the sticks, and DirectInput's exclusive mode never
-enters into it. That turns "which backend do I try first" from a guess into a lookup.
+**Add an "imports XInput?" note as you extend this table** — and where the answer is yes, a
+**ViGEmBus virtual gamepad is now measured to be the strongest route, not the fallback.**
+
+`[verified-live 2026-09-04, n=2 per axis with reversal]` On a game that imports XInput directly, a
+virtual Xbox 360 pad created by ViGEmBus was bound as a genuine controller: the left stick walked the
+player as a pure translation with the camera basis unchanged, the right stick turned the view as a
+pure yaw with the position unchanged, and each reversed cleanly. The game even raised its
+*"Controller Disconnected"* toast when the pad was destroyed on script exit — **positive confirmation
+that the game had bound the virtual device**, not merely that Windows had enumerated it, which is the
+control most virtual-device tests are missing.
+
+**Three properties make it better than synthetic keyboard or mouse for camera work, not merely
+equal:**
+
+- **It is focus-independent.** XInput is polled regardless of which window is foreground, so the whole
+  "must be the foreground window" fragility of `SendInput` disappears — and on this very game
+  `SendInput` look *does* need focus.
+- **It sidesteps exclusive DirectInput entirely.** The trap that swallowed one project's injected
+  mouse yaw as exactly 0.0° cannot arise, because the pad is a different device class the game already
+  listens to.
+- **Nothing is injected.** The OS delivers input through an API the game already calls, so there is no
+  hook to install, nothing to crash at startup, and no interaction with a proxy you are also
+  debugging.
+
+**The precondition, and the honest limit:** the target must actually import XInput — check the import
+table, do not infer it — and the virtual pad must be seen to appear on a slot and round-trip a stick
+value before you rely on it. **A game that reads *only* DirectInput for its pad may not see a ViGEm
+XInput device**, which is untested here, so treat "imports XInput" as the gate and everything beyond
+it as `[hypothesis]`. Where a feature is gated behind a **controller-only** gesture — a thumbstick-click
+chord, say — this is the only route that can send it at all.
+
+Generalised from a [`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr) modding hand-off,
+2026-09-04; the driver is ViGEmBus, credited in `ATTRIBUTION.md`.
 
 ### Read the import table before you design the input layer
 
@@ -1787,6 +1923,41 @@ Generalised from `doom-2016-vr` modding-session hand-offs, 2026-08-31 and 2026-0
 habit came from the human partner asking whether earlier results might be wrong because the game was
 not in the assumed state; the specific confound turned out to be a different one, but the instinct
 found it.
+
+## Prove an effect by REVERSING it, not by scoring it
+
+Two unrelated projects landed on the same discrimination on the same day, one in rendering and one in
+input, and it is worth stating on its own because the alternative — a similarity score between two
+screenshots — has repeatedly failed on both.
+
+**The rule: an effect is real when pushing it one way moves the thing, pushing it the other way moves
+it the other way, and restoring the parameter restores the original exactly.** Scene animation, idle
+drift, autoexposure, a breathing camera and a wandering NPC can all produce a difference score. None
+of them can produce a **proportional, signed, reversible** response to a parameter you control.
+
+- **In rendering** `[verified-live 2026-09-04]`: a stereo shear at default parameters was
+  *sub-visible*, and the frame difference it produced (mean ≈ 5, no coherent horizontal shift) was
+  indistinguishable from animation. Saturating the two parameters slid the whole scene bodily
+  sideways; restoring them recentred it exactly. Proportional, horizontal rather than vertical, and
+  reversible — three properties animation cannot fake, and together they promoted an inconclusive
+  session to a settled result. This is
+  [saturate first, then tune down](#saturate-first-then-tune-down--a-too-small-injection-reads-exactly-like-failure)
+  arriving from the rendering side.
+- **In input** `[verified-live 2026-09-04, n=2 per axis with reversal]`: each stick axis of a virtual
+  pad was confirmed by an **isolated** motion read off the engine's own camera values — a pure
+  translation with the camera basis unchanged, then a pure yaw with the position unchanged — and then
+  reversed. The project explicitly abandoned luma-difference scoring for this, having been misled by
+  it before.
+
+**The practical form:** pick a readout that is a *number the engine owns* rather than a picture where
+possible; move the parameter far enough to be unmistakable; then move it back and check you land on
+the original value. Where only a picture is available, demand that the change be **directional and
+proportional**, not merely present. And record the reversal in the log — a result that was proven by
+reversing should say so, because the next reader's first question is whether scene noise could have
+produced it.
+
+Generalised from [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr)
+and [`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr), both 2026-09-04.
 
 ## Never CPU-scan mapped GPU memory in place — it is write-combined
 
@@ -2881,6 +3052,23 @@ behind one `if` `[compile-verified 2026-09-04]`.
 works** — which is exactly the state in which its answer is most interesting. Print periodically and
 at shutdown instead, and let volume be managed by the interval rather than by a predicate on
 success. Generalised from [`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr).
+
+**A second project met the same shape the same week, and its escape is worth stealing.** A first-ever
+proxy launch was meant to answer *does our per-eye edit reach the screen?* and came back
+**inconclusive** for three instrumentation reasons at once: the one-shot statistics line fired before
+the hotkey that enabled the feature, the write counter was gated behind the enabled flag, and the
+hotkey handler sampled the value of interest **at the toggle instant** — so its `not seen yet` was
+produced by construction rather than measured. The frame diff that was supposed to back it up showed
+only scene animation. **A result like that is not a negative**, and recording it as one is how a
+working lever gets written off.
+
+**The escape needed no rebuild: toggle twice.** On → let enabled frames actually run → off → on, then
+read the **second** enable line, which now samples after the feature has had frames to work in. That
+retest turned the same session's inconclusive into a confirmed result. **Whenever a diagnostic
+samples at the moment you flip something, flipping twice is the free fix** — and it is worth trying
+before rebuilding the instrumentation, because it costs one launch you were having anyway.
+Generalised from [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr),
+2026-09-04.
 
 ## Counting callers separates what a binary *links* from what it *uses*
 
