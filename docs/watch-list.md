@@ -1167,3 +1167,60 @@ as bytes; Perl then re-encoded every pre-existing non-ASCII character in each to
 files, the techniques page eight times over. It was caught before commit by a one-line grep for the
 mojibake signature, the files were restored from git, and the insertions re-run byte-for-byte. The
 check that catches it costs nothing and should precede every commit that edits prose by script.
+
+### 2026-09-04 — morning sweep, home PC (in-house delta from 2026-09-03 21:52; two inbox drops)
+
+**Own inbox: two files, both drained by name** (`grep -rn "^Supersedes:" inbox/` found none):
+
+| Drop | From | Landed |
+| --- | --- | --- |
+| disassemble the shaders: a 4×4-shaped run is shape, not meaning; a per-pass camera hides from a per-frame filter | `/pd` on `mad-max-vr` | two new sub-sections under *Read the shipped files*: [**Reflection gets you to "N unnamed slots"; disassembly names them by use**](./techniques/README.md#reflection-gets-you-to-n-unnamed-slots-disassembly-names-them-by-use) (same-name cbuffer at two sizes = two stages; a bound buffer may exceed the declaration, `[reported]` from Microsoft's `VSSetConstantBuffers` page; shape is not meaning) and [**a "constant across every draw" filter excludes a per-pass camera by design**](./techniques/README.md#-a-constant-across-every-draw-in-the-frame-filter-excludes-a-per-pass-camera-by-design), filed as the third member of the cadence-assumption family beside the early-out hazard and event-counting |
+| one tone-curve file compiled as both HLSL and C++ | `/pd` on `re-village-scope-vr` | new section [**Test a runtime-compiled shader without the game: one file, two compilers**](./techniques/README.md#test-a-runtime-compiled-shader-without-the-game-one-file-two-compilers) (common-subset maths, build-system raw-string, harness on the shipped bytes, `fxc` over the assembled source, the `#ifdef`-around-raw-string trap, the MSYS `/T` gotcha); the Uchimura GT fingerprint went to the [RE Engine page](./engines/re-engine.md#the-games-tone-curve-is-a-published-one-and-its-parameters-are-readable) as engine-specific |
+
+**Project-repo harvest (all 22 repos in this root pulled; research-lane commits after the last
+sweep's 21:52 commit on four).** Read in full: `enslaved-vr` dossier §9a/§9b and note 2026-09-03d
+(the device-`Reset` finding and the surface table), `mad-max-vr` dossier correction block and note
+2026-09-03c, `re-village-scope-vr` dossier §7. `doom-2016-vr`'s 20:00 eye-field disproof was
+already on the id Tech 6 page from yesterday's evening sweep — confirmed, nothing further. The
+`/gr` external-research drains stamped 21:37–21:38 were verdict-folds already harvested yesterday.
+`ai-game-control-profiles` received a modding-lane inbox drop (Enslaved pad timing and menu routes) —
+that inbox belongs to its own owner; the pad-settle-time observation reached this library through the
+Enslaved note instead. No dossier moved from "not covered" to "covered" — delta read only.
+
+**Generalised up this sweep, beyond the inbox table:**
+
+- [**A D3D9 `Reset` can disarm a device hook, silently and late**](./techniques/README.md#a-d3d9-reset-can-disarm-a-device-hook-silently-and-late)
+  (`enslaved-vr`, `[verified-live 2026-09-03, n=2 resets, 1 title]`): constants hook dead for the
+  life of the process after any `Reset`, failing 120–240 frames *after* the call; the operational
+  rule (read the armed counter before believing a screenshot; test both a deliberate and an incidental
+  reset) is engine-agnostic even though the mechanism is still `[hypothesis]` and UE3's to check.
+- Engine pages: [`avalanche.md`](./engines/avalanche.md) (the shadow-variant reading `[disproved]`,
+  two stages, per-pass clip transform at slots 0..3, two delivery paths for a VR patch),
+  [`unreal-1-3.md`](./engines/unreal-1-3.md) (Reset, ignored saved resolution, the measured stereo
+  surface table with decals still open, pad settle time), [`re-engine.md`](./engines/re-engine.md)
+  (GT tonemap identification, zone-dependent white point, the `(P − m)·l / a` span).
+
+**Web checked.** UEVR **1.05**, REFramework **v1.5.9.1**, OldUnreal `Unreal-testing` **v227k_15**,
+dgVoodoo2 **v2.87.4** (2026-09-02, recorded yesterday) — all unchanged, read from the GitHub releases
+API; mutars' most recent push is still `DebugMCP` (2026-08-22), nothing VR-side. **The Flat2VR
+target yesterday's log left for this pass turned out to be already covered:** the landscape page
+carries both **System Shock VR** (announced 2026-08-13, Flat2VR Studios with Nightdive) and
+**Flat2VR Spark** (2025-08-12) from an earlier sweep — re-fetched both UploadVR pieces to confirm,
+no change needed, and no engine or tooling detail was published for either. One targeted search for
+the Enslaved `Reset` mechanism (UE3 post-reset object re-creation vs a D3D9 vtable hook) found
+nothing public; the question stays with the project as a static task. Nothing else on the watch list
+was fetched.
+
+**Inboxes drained: two** (own inbox, listed above, deleted by explicit filename). **Inboxes filled:
+none** — nothing this sweep found was addressed to one project that the project had not already
+written down itself.
+
+**New credits:** **Hajime Uchimura** (Polyphony Digital, the GT tonemap, CEDEC 2017) and Microsoft's
+`VSSetConstantBuffers` reference and `fxc`; first-party credit extended to `mad-max-vr`,
+`enslaved-vr`, `re-village-scope-vr` and the toolkit's `dxbc-usage.py`. All read online; no code
+taken.
+
+**Process note.** Every file in this working tree is CRLF on disk (`core.autocrlf=true` on this
+machine), so a script that anchors on `
+` finds nothing; the insertion script reads with universal
+newlines and writes CRLF back, and the mojibake grep from yesterday's note ran clean before commit.

@@ -316,6 +316,19 @@ Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every
 - **Adrian Courrèges** — *"DOOM (2016) — Graphics Study"*, a frame-by-frame breakdown of the
   renderer's passes. <https://www.adriancourreges.com/blog/2016/09/09/doom-2016-graphics-study/>
 - **Ubisoft** — *Dunia shader-pipeline architecture*, REAC 2023.
+- **Hajime Uchimura** (Polyphony Digital) — *"HDR theory and practice"*, CEDEC 2017: the **GT
+  tonemap** (a three-section curve: toe, exactly linear middle, shoulder), whose published default
+  parameters are the fingerprint by which RE Engine's `via.render.ToneMapping` was identified on the
+  [RE Engine page](./docs/engines/re-engine.md#the-games-tone-curve-is-a-published-one-and-its-parameters-are-readable).
+  Read online as documentation; our implementation was written from the published formula in our own
+  words and code. [slides](https://www.slideshare.net/nikuque/hdr-theory-and-practicce-jp) ·
+  [Polyphony's HDR/WCG paper on the same curve](http://cdn2.gran-turismo.com/data/www/pdi_publications/PracticalHDRandWCGinGTS_20181222.pdf)
+- **Microsoft** — the D3D11 reference for
+  [`VSSetConstantBuffers`](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-vssetconstantbuffers),
+  which documents that a bound constant buffer may exceed what a shader addresses — the fact behind
+  the "a live size no shader declares" note in the
+  [reflection → disassembly section](./docs/techniques/README.md#reflection-gets-you-to-n-unnamed-slots-disassembly-names-them-by-use);
+  and `fxc`, the shader compiler whose `-dumpbin` disassembly that section relies on.
   <https://enginearchitecture.realtimerendering.com/downloads/reac2023_dunia_shader_pipeline.pdf>
 - **id Software** — the official GPL source release of **Doom 3 BFG Edition**, used here as
   first-party documentation of how the id lineage applies stereo separation (`renderView_t`'s
@@ -427,6 +440,20 @@ generalised out of our own static analysis of legitimately-owned copies of **Mad
 [`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr) ·
 [`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr) ·
 [`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr).
+
+The [reflection → disassembly](./docs/techniques/README.md#reflection-gets-you-to-n-unnamed-slots-disassembly-names-them-by-use)
+and [per-pass filter](./docs/techniques/README.md#-a-constant-across-every-draw-in-the-frame-filter-excludes-a-per-pass-camera-by-design)
+sub-sections, the [D3D9 `Reset` section](./docs/techniques/README.md#a-d3d9-reset-can-disarm-a-device-hook-silently-and-late)
+and the [one-file-two-compilers section](./docs/techniques/README.md#test-a-runtime-compiled-shader-without-the-game-one-file-two-compilers)
+are our own first-party research on legitimately-owned copies of Mad Max, Enslaved: Odyssey to the
+West and Resident Evil Village, generalised on 2026-09-04 out of each project's notes:
+[`mad-max-vr`](https://github.com/TefMeister/mad-max-vr) ·
+[`enslaved-vr`](https://github.com/TefMeister/enslaved-vr) ·
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr). The `dxbc-usage.py` tool
+those sections mention is ours, in
+[`flat-to-vr-RE-toolkit`](https://github.com/TefMeister/flat-to-vr-RE-toolkit). Where they rest on
+someone else's public work — Microsoft's D3D11 documentation and `fxc`, Hajime Uchimura's published
+GT tonemap — that work is credited above and was read online only.
 
 The [control rules](./docs/techniques/README.md#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one),
 the [write-combined memory section](./docs/techniques/README.md#never-cpu-scan-mapped-gpu-memory-in-place--it-is-write-combined)

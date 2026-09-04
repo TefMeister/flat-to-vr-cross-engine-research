@@ -35,6 +35,8 @@ Each is distilled from public projects credited in
 - [Never gate a state change on equality with a lerp target](#never-gate-a-state-change-on-exact-equality-with-a-value-that-only-lerps-toward-its-target)
 - [When a game compiles its shaders decides how you read its constant map](#when-a-game-compiles-its-shaders-decides-how-you-read-its-constant-map)
 - [The executable can name its own compressed formats and type hashes](#the-executable-can-name-its-own-compressed-formats-and-type-hashes)
+- [A D3D9 `Reset` can disarm a device hook, silently and late](#a-d3d9-reset-can-disarm-a-device-hook-silently-and-late)
+- [Test a runtime-compiled shader without the game: one file, two compilers](#test-a-runtime-compiled-shader-without-the-game-one-file-two-compilers)
 
 ---
 
@@ -843,6 +845,81 @@ stays constant across draws within a frame.
 Generalised from `mad-max-vr`, `enslaved-vr`, `doom-2016-vr`, `the-evil-within-vr` and `XIII2003-vr`
 engine dossiers, all 2026-09-01.
 
+### Reflection gets you to "N unnamed slots"; disassembly names them by use
+
+`[inferred-static 2026-09-03, n=651 shaders, 1 title]` The paragraph above ends with "watch that
+buffer for a slot that changes when the camera moves but stays constant across draws within a
+frame". One project built exactly that probe, ran it once, and then — with the game closed —
+disassembled the same shaders it had only reflected, and found that three things the probe design
+had taken for granted were wrong. All three transfer to any D3D10/11 title whose bytecode ships with
+reflection intact, so they are recorded here rather than in that project's dossier alone.
+
+- **The same cbuffer name at two sizes is more likely two STAGES than two passes.** A reflection
+  census showed the shared buffer declared at 512 bytes by 186 shaders and 2,352 bytes by 465, and
+  the smaller one had been read as "the shadow-pass variant" because it carried three cascade
+  matrices. The `RDEF` chunk also records the *program type*, and sorting on it split the census
+  cleanly: every 512-byte declaration is a vertex shader and every 2,352-byte one a pixel shader.
+  One C-side buffer, two stage-specific views of it. Check the stage field before naming a layout
+  after a pass.
+- **A bound buffer can be larger than the shader's declaration, so a live size that no shader
+  declares is not a mystery buffer.** `[reported]` Microsoft's own reference for
+  [`VSSetConstantBuffers`](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-vssetconstantbuffers)
+  says a bound resource may exceed what a shader can address and the shader simply sees its declared
+  prefix. So when the live probe saw a 3,136-byte buffer created in lockstep with the 512-byte one
+  and no shipped shader declaring 3,136 bytes, the parsimonious reading is the pixel-side allocation
+  being bigger than the 2,352 bytes its shaders declare — `[hypothesis]` in that project until a
+  bind census confirms it, but the *shape* is ordinary D3D11 behaviour, not evidence of a hidden
+  layout.
+- **A run of four camera-varying slots is not a matrix until an instruction multiplies by it.** The
+  probe had flagged slots 16..19 as the shared view-projection because they changed with the camera
+  and sat in a 4×4-shaped block. Disassembly showed slots 16 and 17 read as an `xyz` offset plus a
+  `w` scale for a projected coordinate in thirteen vertex shaders, and slots 18 and 19 read by
+  **nothing**. The clip transform was at slots 0..3: a `mul` / `mad` / `mad` / `add` chain on the
+  input position ending in `SV_Position`, in fifteen shaders. **Shape is layout coincidence; use is
+  meaning.** Walk the register chain back from the position output and list which cbuffer slots feed
+  it — that is the only list that names "the camera" with any authority.
+
+The transferable habit is cheap: **disassemble before you design the probe, not after you read its
+log.** Reflection is a table of contents; the instruction stream is the text. It works through
+Denuvo-class protection for the same reason reflection does — the bundle is data, not code — and on
+651 shaders it ran in about a minute. The tool that did it, `dxbc-usage.py` in
+[`flat-to-vr-RE-toolkit`](https://github.com/TefMeister/flat-to-vr-RE-toolkit) (splits a bundle by
+stage, disassembles with Microsoft's `fxc -dumpbin`, tallies `cb<N>[slot]` reads per register, and for
+vertex shaders walks the chain from `o0` back to the cbuffer slots), is ours and free to use.
+
+Generalised from [`mad-max-vr/modding-notes/`](https://github.com/TefMeister/mad-max-vr/tree/main/modding-notes)
+(`2026-09-03c-the-two-layouts-are-vertex-and-pixel-and-the-camera-matrix-is-per-pass.md`).
+
+### ⚠️ A "constant across every draw in the frame" filter excludes a per-PASS camera by design
+
+`[verified-live 2026-09-03b, n=1 title]` for the write cadence; `[inferred-static 2026-09-03c]` for
+what the rows are. The by-value probe described two sections up carried a filter that seemed
+obviously right: the view matrix is one thing per frame, so keep only slots that are identical across
+every draw in the frame and vary between frames. On the same title the engine writes its shared
+buffer **about ten times per frame — once per pass** — and the camera rows differ per pass (shadow
+cascades, reflection, main). The filter therefore excluded the actual clip transform **by
+construction**, and could only ever have found per-frame quantities such as the camera *position*,
+which is exactly what it reported.
+
+Two rules follow, and neither costs a launch:
+
+- **Decide the filter from the fill cadence, not from the concept.** If the buffer is written more
+  than once per frame, "constant within the frame" is the wrong invariant; the right one is
+  "constant within a *write*, and the write whose view origin matches the main camera is the one you
+  want".
+- **Log per write, not per frame.** A per-frame histogram cannot show a per-pass matrix at all; the
+  per-write dump is where it appears, so it is not an optional verbosity level. The follow-up probe
+  on that project flags the write whose per-pass origin slot equals the frame-constant camera
+  position — one dump answers both "which write is the main pass" and "what is in it".
+
+This is the third member of a family this page already holds: the
+[early-out hazard](#stereo-hazard-a-setter-that-early-outs-on-an-unchanged-matrix) (a setter that
+skips unchanged uploads), [counting events instead of content](#counting-events-is-not-measuring-content),
+and now a filter whose invariant the engine does not hold. Each is an instrument whose design
+encodes an assumption about cadence, and each fails silently when the engine's cadence differs.
+
+Generalised from the same `mad-max-vr` note as the section above.
+
 ### When a game compiles its shaders decides how you read its constant map
 
 The recurring question — *which register or constant carries the view-projection, and what is it
@@ -1243,6 +1320,49 @@ anywhere an inspector would look.
   normally where it went, which makes "enable the validation layer during bring-up" a structural
   precaution rather than a debugging step. This generalises past D3D11 to Vulkan's validation layers
   and to any `void` submit/execute entry point.
+
+## A D3D9 `Reset` can disarm a device hook, silently and late
+
+`[verified-live 2026-09-03, n=2 resets, 1 title]` A D3D9 proxy that had been feeding a per-draw
+stereo edit through hooked `SetVertexShaderConstantF` for tens of thousands of frames stopped seeing
+**any** constant uploads after the game's first `IDirect3DDevice9::Reset`, and never saw one again for
+the life of the process. Everything else kept working: `Present` fired at a clean 60 fps, the proxy's
+own `Reset` hook logged the event, and its forced-window logic re-applied correctly. Only the constants
+path went quiet — and nothing on screen said so.
+
+Three details make this worth a section rather than a bug report:
+
+- **Both kinds of reset trigger it.** One came from changing resolution in the options menu; the other
+  from an ordinary **checkpoint restart** that nobody asked for. Forcing a fixed window makes resets
+  rare, which is why the symptom had gone unexplained for a session — rarity hid it.
+- **It is not instantaneous.** One more healthy per-frame summary printed *after* the reset, and only
+  the next was dead — so whatever removes the hook runs roughly 120–240 frames later, not inside the
+  `Reset` call. The prime suspect is the engine re-creating its device-side objects after the reset
+  onto a path the hook no longer covers; that is `[hypothesis]`, checkable statically, and on that
+  project queued as a no-launch task.
+- **The control is clean.** Same DLL, same machine, minutes apart: a fresh launch reads healthy every
+  time. Relaunch is the only recovery known so far.
+
+**The operational rule generalises to every D3D9 hook in the estate**, and the API-level cause is
+engine-agnostic even if the exact mechanism turns out to be one engine's: **treat `Reset` as a
+lifecycle event your hook must be *proven* to survive, and test it deliberately** — change a
+resolution, then trigger an in-game reload — before trusting any stereo observation taken after
+either. Put an "armed" counter in the log (here, the number of per-eye edits applied per summary
+interval) and **read it before believing a screenshot**; a stereo mod that has been disarmed renders a
+perfectly good mono frame, which is the
+[silent no-op](#silent-no-ops-verification-that-cannot-see-the-failure) shape once more.
+
+A second finding from the same run is UE3-specific in cause but worth a line here because it shapes
+test design on any title: the game asked `CreateDevice` for the **desktop** resolution on every launch
+regardless of the resolution stored in its own config, and only a `Reset` ever applied the stored
+value. So on that title a matched-resolution backbuffer and a live stereo were, for the moment,
+mutually exclusive — and a per-region stereo measurement had to be shown robust to a uniform
+downscale (it is: a uniform scale moves every tile equally, so "this patch is not moving with its
+neighbours" survives it).
+
+Generalised from [`enslaved-vr/modding-notes/`](https://github.com/TefMeister/enslaved-vr/tree/main/modding-notes)
+(`2026-09-03d-reset-kills-the-stereo-and-glancing-water-measures-clean.md`); the full proxy log of the
+run that reset is in that repo's `dev-archive/recon/`.
 
 ## Hook to acquire a handle the API will not give you
 
@@ -2704,6 +2824,50 @@ display tuning, and worth saying so nobody tunes it.
 Generalised from [`unreal-gold-vr/modding-notes/`](https://github.com/TefMeister/unreal-gold-vr/tree/main/modding-notes)
 (`2026-09-02-m2-stereo-proof-built-verified-deployed.md`); the test output and mutation record are in
 that repo's `dev-archive/recon/`.
+
+## Test a runtime-compiled shader without the game: one file, two compilers
+
+`[compile-verified 2026-09-03]` for the build, `[verified-numerically 2026-09-03]` for the harness;
+`n=1` project. The section above proves stereo maths off-line by compiling the DLL's own header into a
+console test. It does not cover the other place maths hides in a VR plugin: **HLSL handed to
+`D3DCompile` at load time as a string.** Two consequences for a no-launch lane — a typo surfaces only
+at the next launch, and the curve inside the shader can be tested only by transcribing it into a
+harness, at which point the harness tests the transcription and not the shipped bytes. A stereo
+harness in this estate caught exactly that distinction the hard way.
+
+The route that closes both gaps, worked once on a compositor plugin's tone curve:
+
+1. **Write the maths in the C/HLSL common subset** — scalar `float`, arithmetic, `?:`, `pow`, `exp`,
+   `f`-suffixed literals; no vector types, no HLSL-only intrinsics such as `saturate` or `smoothstep`,
+   no `double` literals. Keep it in its own file (`.inc`).
+2. **Compile the same bytes twice.** `#include` the file into the plugin as C++ (a CPU-side inverse is
+   a natural consumer); and have the build system read the file into a generated header as a raw
+   string that the plugin prepends to its HLSL before `D3DCompile`. With CMake that is a
+   `file(READ)` into a `configure_file` template, plus `CMAKE_CONFIGURE_DEPENDS` on the `.inc` so
+   editing it re-runs the step.
+3. **A numeric harness includes the `.inc` directly** and checks it against an *independently
+   derived* reference plus the analytic properties the design relies on — here, a transcription of the
+   published curve (maximum deviation 5e-8), the straight section exactly straight, value and slope
+   continuous at the shoulder, and the inverse round-tripping. The harness tests the bytes the GPU
+   runs.
+4. **Run `fxc` over the assembled source**, so the shader is *compiled* without the game. A short
+   script concatenates the `.inc` with the shader string extracted from the source file and compiles
+   every entry point with the Windows Kits compiler. One gotcha for Git Bash users: MSYS rewrites
+   `/T` into a drive path — use `-T` and `MSYS2_ARG_CONV_EXCL="*"`.
+
+**The trick that does not work:** wrapping a raw-string delimiter in `#ifdef` so one file is both
+code and string. Raw-string tokens are formed before conditional inclusion, so the skipped branch
+still swallows the code. Do it in the build system.
+
+A bonus habit from the same note: **published defaults are a fingerprint.** When a live engine exposes
+tonemap parameters that match a named curve's published defaults to the digit, that identifies the
+curve strongly enough to build against — and, as here, the identification can turn out to matter
+(a "length" parameter that is a fraction of headroom, not an absolute). The RE Engine instance is on
+[its family page](../engines/re-engine.md#the-games-tone-curve-is-a-published-one-and-its-parameters-are-readable).
+
+Generalised from [`re-village-scope-vr/modding-notes/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/modding-notes)
+(`2026-09-03-tone-curve-gt-shoulder.md`); the harness and check script are in that project's
+private staging tree, and the method is described here entirely in our own words.
 
 ## When byte-identity is the evidence, the tree is read-only
 
