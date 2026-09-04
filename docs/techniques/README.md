@@ -1252,6 +1252,100 @@ matrix makes the engine's next legitimate set look redundant. What the number ch
 **cost** of honouring the requirement — small — so the transform-setter route is no longer the
 expensive option it looked.
 
+## Enumerate every CPU write path to a constant buffer before believing your coverage
+
+`[measured 2026-09-04, n=167 shaders]` A per-draw constant patch is only as complete as the set of
+**write paths** it shadows, and on D3D11 there is more than one. A project whose patcher covered the
+large shared world buffer found a large minority of its geometry uncovered, and the reason was neither
+the shaders nor the patch mechanism — it was **which API call the buffer is filled through**.
+
+| Buffer usage | How the CPU writes it | What a patcher must hook |
+| --- | --- | --- |
+| `DEFAULT` | `UpdateSubresource` — the only CPU write path such a buffer has | that call |
+| `DYNAMIC` | `Map(WRITE_DISCARD)` then `Unmap` | both, copying the mapped contents at `Unmap` while the pointer is still valid |
+
+**The instructive part is that the filter which hid the second population was correct.** The pool
+registered only `DEFAULT` buffers and rejected `DYNAMIC` ones explicitly, on good grounds — its shadow
+was fed by `UpdateSubresource`, which a dynamic buffer never sees. The rule was right for what it did
+and wrong as a definition of coverage, and nothing in the logs said so, because a buffer nobody watches
+generates no events at all. **A registration filter is a claim about the world; check it against the
+world.** On that project, of the matrix-bearing shaders in the live table, **42% declared their
+constant buffer at one of the sizes the coverage test had shown carrying real geometry** — all of them
+already had complete reflected layouts recorded, so they had been patchable all along, and only the
+buffer was out of reach.
+
+**The fix is another shadow source, not another patch mechanism.** Hook the second write path, copy
+into a shadow, and let the existing draw-time path run unchanged. Two details from the implementation
+worth stealing:
+
+- **Partition the existing arrays rather than duplicating them** — a disjoint index range for the new
+  population means every invariant already reviewed for the first applies to the second unmodified, and
+  the hot lookup does not slow down.
+- **⚠️ Mind pointer width in your lock-free bookkeeping.** That project caught a pending-map table
+  claiming its slot with a **32-bit** interlocked compare-exchange on a **64-bit** resource pointer,
+  which truncates. It was found before it shipped; a truncating claim would have matched the wrong
+  buffer occasionally and produced corruption no log would explain.
+
+Generalised from [`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr), 2026-09-04,
+where the second path is built, guarded by compile-time assertions **proved to fire** by deliberately
+breaking their values, and **not yet run**.
+
+### ⚠️ And do not mix the populations when you quote a percentage
+
+The same project states, correctly and in the same breath, that the new path addresses **42% of the
+shader table** and that a different figure describes the **draws** in a frame. Those are different
+populations, and neither converts into the other: a handful of shaders can draw most of a scene, and a
+large fraction of the shader table can be responsible for very little of it.
+
+**Whenever you write a coverage percentage, name what it is a percentage of** — shaders, draws,
+vertices, or frame time — because the reader's decision usually depends on the *draw* or *time*
+figure while the number that is easiest to compute is the *shader* one. This is the
+[counting events is not measuring content](#counting-events-is-not-measuring-content) rule applied to
+your own reporting rather than to the engine's.
+
+## Dating a dependency: a fix newer than your build is not evidence that you are affected
+
+`[reported 2026-09-04]` Modding frameworks move faster than the builds people run on them, so "a bug
+was fixed upstream last week" arrives regularly. It is worth knowing what that does and does not tell
+you, because the wrong reading in either direction costs something: chasing a bug you never had, or
+trusting a build that has one.
+
+**The question a commit message cannot answer** is whether a fix repairs a **long-standing** defect or
+a **recent regression**. If long-standing, a build older than the fix has the bug. If a regression
+introduced while adapting to something new, an older build never had it and upgrading would be a step
+sideways. The commit title reads identically in both cases, and short of reading the source — which
+this account does not do for other people's projects — it stays open.
+
+**What you can settle instead is the blast radius, and it is usually cheap.** Rather than resolving
+the unresolvable, ask which of *your* code touches the surface the fix concerns. On the worked case,
+a run of upstream fixes to array handling and to string-versus-number ambiguity looked alarming until
+someone checked: **none of the five scripts in the shipped release reads a managed array at all**, and
+the only iteration in the shipped set walks a plain local table. The exposure was in the **recon
+probes**, not the product `[inferred-static 2026-09-04]` — a materially different conclusion, reached
+without resolving the original question at all.
+
+**And note which half of your work the exposure lands on.** In that case it lands on
+reconnaissance — whose entire product is an answer — and a data-model bug there **returns a wrong
+value rather than an error**, which is the worst available shape and the reason the
+[silent no-op](#silent-no-ops-verification-that-cannot-see-the-failure) rules apply to research code
+as much as to a shipped hook.
+
+**The three practical habits, in the order they pay:**
+
+1. **Record the exact revision beside every finding** that depends on the framework, the way a game
+   patch version is recorded. On these families "it worked yesterday" is a statement about two
+   programs, not one, and the estate's confidence tags already have room for the clause.
+2. **Date-check before doubting your own code.** When something behaves oddly, compare your build's
+   date against the window of the known upstream regression before rewriting anything.
+3. **Know that "release or master" is a false choice.** A third state is common and easy to forget:
+   a **fork build**, taken for a feature neither upstream branch offers. Its version is a commit date
+   and nothing else — and a fork that publishes no releases will not show up in any release check you
+   run.
+
+Generalised from a modding-lane verdict on
+[`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr), 2026-09-04, answering a question
+this library had raised twice.
+
 ## Composition bugs that masquerade as handedness
 
 `[verified-numerically 2026-09-01, n=1 game]` (Dunia / Far Cry 2) When a head-tracking composition comes out
@@ -1588,6 +1682,46 @@ anywhere an inspector would look.
   normally where it went, which makes "enable the validation layer during bring-up" a structural
   precaution rather than a debugging step. This generalises past D3D11 to Vulkan's validation layers
   and to any `void` submit/execute entry point.
+
+### ⭐ The inverse: a legal-but-unnecessary call is not evidence of a mechanism
+
+The section above is about a call that looks successful and did nothing. This is its mirror, it
+misleads in the opposite direction, and it is the more flattering of the two because it arrives as a
+large number:
+
+> **A call that is permitted but unnecessary still appears in a trace, in volume, and proves nothing
+> about how the data actually got there.**
+
+A counter is evidence that a call *happens*. It is not evidence that the call is the **mechanism** —
+and the bigger the count, the more convincing the wrong conclusion feels. Instrumentation naturally
+produces the first reading and readers naturally hear the second.
+
+**The worked case** `[reported 2026-09-04, primary source]`. A Vulkan session counted **27,462**
+`vkFlushMappedMemoryRanges` calls against the memory region holding the camera copies, and flagged it
+as contradicting an earlier finding that the buffer is `HOST_COHERENT` and therefore not updated
+through the flush path. There is no contradiction. The Vulkan specification says of
+`VK_MEMORY_PROPERTY_HOST_COHERENT_BIT` that *"the host cache management commands
+`vkFlushMappedMemoryRanges` and `vkInvalidateMappedMemoryRanges` are not needed to manage availability
+and visibility on the host"*
+([Memory Allocation chapter](https://docs.vulkan.org/spec/latest/chapters/memory.html), read directly
+2026-09-04) — and **"not needed" is not "not allowed"**. Nothing forbids the call. An engine that
+flushes unconditionally, without branching on memory type, produces exactly that count while the flush
+does no work, because the write was already visible before it was made. **The count was compatible
+with both hypotheses it was being read as evidence for**, so it could not discriminate between them.
+
+**The trap is not Vulkan's.** Any API with an **optional or advisory** call has the same shape: D3D
+`Flush`, redundant state-setting, predication, state blocks re-applying values already set,
+`vkInvalidateMappedMemoryRanges` on coherent memory, and every "hint" entry point the runtime is free
+to ignore.
+
+**The discriminator is the same every time and it is usually one field.** Find the property that
+decides whether the call *could* have mattered, and read it — here, the memory type's property flags:
+coherent means the flush was ceremonial, non-coherent means the count is real evidence. That read is
+free, and it decides which of two redesigns to build.
+
+Generalised from a `/gr` research hand-off on
+[`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr), 2026-09-04; specification text is the
+Khronos Group's, read online, nothing copied.
 
 ## A D3D9 `Reset` can disarm a device hook, silently and late
 
@@ -3111,6 +3245,16 @@ carried as an unexplained disagreement between its recorded status and its survi
    cannot be bypassed this way, because a later `LoadLibrary("Something.dll")` has no resident module
    of that base name to match. The rename pattern is usually adopted for a different reason (games
    whose real DLL is a game-folder file, not a system one), and this immunity comes free with it.
+
+**⭐ The fix is confirmed live** `[verified-live 2026-09-04, n=1 launch]`. On the title above, the same
+log now shows — in **one process** — the probe load, the creation call, an unload that records itself as
+an explicit `FreeLibrary` rather than a process teardown, **a second "proxy loaded" block with the same
+process id**, and then no further unload for the rest of the session. Both the title screen and the menu
+rendered through it. **That second block in the same PID is the acceptance test**; it is unambiguous, it
+costs nothing to log, and it is what "the game found us again" looks like. For that project this was the
+central unblock: for weeks its proxy had only ever seen a throwaway probe device, and it now owns the
+device the game actually renders with. The loader-lock caveat above **did not bite on that launch** —
+one data point, not a clearance.
 
 **Audit every proxy you own, because a leak is a *latent* failure**: it works perfectly until it meets a
 game that probes-and-reloads, and then costs a session to diagnose from scratch. That audit is a grep

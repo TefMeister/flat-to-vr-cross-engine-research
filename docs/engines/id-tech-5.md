@@ -130,6 +130,16 @@ technique generalises and is now on the techniques page as
 **⇒ For this family, a stereo build must extend coverage to the per-shader `DYNAMIC` `cb0` path, not
 only the shared `DEFAULT` pool.**
 
+**And that path is now built** `[measured 2026-09-04, n=167 shaders]` · `[compile-verified
+2026-09-04]`, not run. Of the matrix-bearing shaders in the live table, **42% declare their constant
+buffer at one of the sizes the coverage test showed carrying geometry**, and every one of them already
+had a complete reflected layout on record — so they had been patchable all along and only the *buffer*
+was out of reach. The gap was never about shaders: a `DEFAULT` buffer is written through
+`UpdateSubresource` and a `DYNAMIC` one through `Map`/`Unmap`, and the pool watched only the first.
+The fix is one more shadow **source**, with the draw-time path unchanged. ⚠️ That 42% is a **shader**
+figure and does not convert into the draw figures quoted above — different populations. General form:
+[enumerate every CPU write path to a constant buffer](../techniques/README.md#enumerate-every-cpu-write-path-to-a-constant-buffer-before-believing-your-coverage).
+
 Also on this project as of 2026-09-04: every proxy knob is read from an ini beside the executable
 rather than from the environment, after three launches silently ran an experiment as an identity
 transform because a **storefront-launched game does not inherit a user shell's environment**
