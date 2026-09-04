@@ -95,6 +95,30 @@ inflate as raw deflate and are unexplained; no shader was among them. Method not
 finding: the first scan looked for zlib framing, which headerless deflate does not have, and would
 have been written up as "not zlib" — a test that could not have produced a positive.
 
+### 2026-09-04: a patch-coverage residual that was a second render path, not a ceiling
+
+`[measured 2026-09-03, n=167 shaders]` · `[verified-live 2026-09-03, n=3 scenes]` The Evil Within's
+per-draw matrix patcher leaves a fraction of draws unpatched, and that fraction was carried for a while
+as a possible hard limit on the technique — the sort of number that quietly decides whether a project
+is viable. It is not a limit. The pool the patcher matches against registers only the **large shared
+`DEFAULT` world buffer**, so a miss on a small per-shader `DYNAMIC` `cb0` is the expected outcome, not a
+failure: declared `cb0` sizes across all 167 known shaders run 0–352 bytes, none of them inside the
+pool's size window. The residual's share also **swings with scene and camera** (13% → 19%), which is
+itself the signature of a scene property rather than a fixed ceiling.
+
+**The transferable half is how long the question stayed open.** The proxy had bucketed the missed draws
+by size and usage flags for several rounds — everything needed to answer *do the missed draws carry
+world geometry?* — but printed the table **only while nothing had been patched**. The moment patching
+started working, the diagnostic disappeared. See
+[the diagnostic that is gated on the failure it was written to explain](../techniques/README.md#the-diagnostic-that-is-gated-on-the-failure-it-was-written-to-explain).
+It now prints periodically and at shutdown, with per-bucket draw sizes and vertex-shader hashes
+`[compile-verified 2026-09-04]`, not yet run.
+
+Also on this project as of 2026-09-04: every proxy knob is read from an ini beside the executable
+rather than from the environment, after three launches silently ran an experiment as an identity
+transform because a **storefront-launched game does not inherit a user shell's environment**
+([techniques](../techniques/README.md#configure-injected-code-from-a-file-it-reads-itself-not-from-environment-variables)).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "id Tech 5" row.

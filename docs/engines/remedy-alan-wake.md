@@ -66,6 +66,27 @@ construction — this family has one project on it.*
   shipped on Games for Windows Live; the installed Steam build has **zero** `xlive`/GFWL files or
   strings across the exe and all nine module DLLs. Checked specifically rather than assumed.
 
+### 2026-09-04: this game unloads and reloads D3D9 — so a proxy that never frees the real DLL is bypassed
+
+`[reported, first-party 2026-09-04]` The dynamic-resolution bullet above has a consequence nobody on
+this family should have to rediscover. Alan Wake **probes `d3d9.dll`, releases it, and loads it again**
+for the renderer. Because Windows resolves a bare module name to any module already resident under that
+base name, a proxy that loaded the system `d3d9.dll` by full path and never released it on
+`DLL_PROCESS_DETACH` **leaves the system copy resident, and the game's second load binds to that** —
+the game folder is never searched again and the proxy never runs a second time.
+
+The tell is a proxy log whose entire content per launch is load, one export call, unload within about
+100 ms, while the game reaches gameplay normally. Reads as a crash; is not one.
+
+**This is old, known, and fixed the same way once before.** ReShade carried the identical defect
+against this exact game until commit
+[`74347b91d`](https://github.com/crosire/reshade/commit/74347b91d7729a6da93040298c6587bb3b786da4)
+(2019-12-19, shipped in 4.5.2) — titled *"Fix hooking in Alan Wake"*, with the diff's own comment
+saying that freeing the reference to the module loaded for export hooks *"is necessary for Alan Wake to
+work"*. Seven years later, a from-scratch proxy on the same game met the same wall for the same reason.
+The engine-agnostic form, the loader quote and the estate audit are on the techniques page:
+[a proxy must free the real DLL on detach](../techniques/README.md#and-it-must-free-the-real-dll-on-detach-or-a-reload-walks-straight-past-it).
+
 ### §6 answered statically, 2026-09-03: projection arrives separately from view, and the camera is one global on a no-ASLR image
 
 `[inferred-static 2026-09-03]` The shipped shader bank (`shaders/build/pc/`, 62 `RFX ` containers)

@@ -1224,3 +1224,100 @@ taken.
 machine), so a script that anchors on `
 ` finds nothing; the insertion script reads with universal
 newlines and writes CRLF back, and the mojibake grep from yesterday's note ran clean before commit.
+
+---
+
+### 2026-09-04 (second sweep, afternoon, dev PC) — four drops drained, and the sweep corrected two of its own claims
+
+**Own inbox: four files, all drained by explicit name** (`grep -rn "^Supersedes:" inbox/` found none
+before draining; the inbox held exactly the four recorded, and nothing else):
+
+| Drop | From | Landed |
+| --- | --- | --- |
+| a proxy that never frees the real DLL is bypassed when the game reloads it | `/gr` on `alan-wake-vr` | new sub-section [**…and it must FREE the real DLL on detach**](./techniques/README.md#and-it-must-free-the-real-dll-on-detach-or-a-reload-walks-straight-past-it) under the proxy-export material, plus a dated section on the [Remedy page](./engines/remedy-alan-wake.md) |
+| D3D8/9 state-block recording rewrites in-place vtable patches | `/gr` on `enslaved-vr` | new section [**Recording a state block rewrites the device's method table**](./techniques/README.md#recording-a-state-block-rewrites-the-devices-method-table--and-your-in-place-vtable-patch-with-it), cross-linked from the `Reset` section it explains |
+| photo mode as a camera-constant testbed; synthetic tap length is per machine | modding (`/lm`) on `mad-max-vr` | new [**photo mode as a constants testbed**](./techniques/README.md#a-photo-mode-is-also-a-free-testbed-for-the-camera-and-projection-constants) sub-section, and [**trap 4**](./techniques/README.md#4-a-synthetic-tap-has-a-minimum-length-and-it-is-per-machine) in the synthetic-keys section |
+| photo/capture-mode FOV sliders are a projection testbed; the menus are mouse-only; read the keymap file | modding (`/lm`) on `mad-max-vr` | folded into the same photo-mode sub-section (FOV columns, aspect anchoring, mouse-only UI) and [**trap 5**](./techniques/README.md#5-read-the-games-own-keymap-file-before-guessing-which-key-does-anything); engine specifics to the [Avalanche page](./engines/avalanche.md) |
+
+**⭐ The two most useful items this sweep are corrections to text this library already carried**, both
+raised by the projects themselves within hours of the morning sweep publishing them:
+
+- **The "120–240 frames after `Reset`" latency is withdrawn.** `enslaved-vr` established that the
+  figure came from a summary counter aggregating over a fixed frame window, which cannot date an event
+  more finely than its own interval — so one healthy post-reset summary is expected even if the hook
+  died inside `Reset` itself. The [`Reset` section](./techniques/README.md#a-d3d9-reset-can-disarm-a-device-hook-silently-and-late)
+  now carries the withdrawal and the general rule; the old prime suspect (UE3 re-creating device
+  objects) is **excluded** on three checks, the decisive one being that another slot in the same table
+  kept working.
+- **"This UE3 build stripped its exec dispatch" is downgraded to `[hypothesis]`.** None of its three
+  negatives was a valid negative: one key was bound only inside a controller class that does not exist
+  in normal play, one is a cheat-manager exec that no live object owns, one is a value the chase camera
+  overwrites. Corrected on the [UE1–3 page](./engines/unreal-1-3.md), with the UE3-wide lesson — pick a
+  probe a plain `PlayerController` owns unconditionally before concluding a dispatcher is gone.
+
+**Project-repo harvest (all 22 repos in this root pulled; research-lane commits after the 08:26
+morning-sweep commit on 14, substantive on five).** Read in full: `enslaved-vr` dossier §7 and §9a plus
+its 2026-09-04 note, `XIII2003-vr` dossier's static shader read and M2 build state, `mad-max-vr`
+dossier's Capture Mode block, `the-evil-within-vr` dossier §10/§12 updates. The other nine were `/gr`
+CHECK-IN stamps and `/gs` inbox drops with no research content. No dossier moved from "not covered" to
+"covered" — delta read only.
+
+**Generalised up this sweep, beyond the inbox table:**
+
+- [**A fourth shader-compilation case: assembly TEXT in the binary**](./techniques/README.md#a-fourth-case-the-shader-is-assembly-text-and-it-ships-in-the-binary)
+  and [**if both pipelines read the same transform, per-eye stereo is one edit**](./techniques/README.md#if-both-pipelines-read-the-same-transform-per-eye-stereo-is-one-edit)
+  (`XIII2003-vr`, `[inferred-static 2026-09-04]`): a D3D8 renderer with no bytecode at all, three
+  `vs.1.0` source strings giving the constant map directly, and both upload sites composing
+  `W · V · P` from the same `SetTransform` caches the fixed-function path uses. Includes the draw-time
+  identity check that counts mismatches instead of dropping draws.
+- [**Configure injected code from a file it reads itself**](./techniques/README.md#configure-injected-code-from-a-file-it-reads-itself-not-from-environment-variables)
+  (`the-evil-within-vr`, `[verified-live 2026-09-04, n=3 launches]`): a storefront-launched game
+  inherits the storefront's environment, not a shell's, so three launches ran an experiment as an
+  identity transform in silence.
+- [**The diagnostic that is gated on the failure it was written to explain**](./techniques/README.md#the-diagnostic-that-is-gated-on-the-failure-it-was-written-to-explain)
+  (same project): a miss-bucketing table printed only while nothing had been patched, so it vanished
+  the moment the work half-succeeded.
+- Engine pages dated: [`unreal-1-3.md`](./engines/unreal-1-3.md) (two corrections, XIII's static read,
+  Enslaved's self-healing build), [`avalanche.md`](./engines/avalanche.md) (FOV slider moves only the
+  focal columns, horizontal FOV anchored, clip-z per position, mouse-only UI, alphabetical keymap
+  indices), [`remedy-alan-wake.md`](./engines/remedy-alan-wake.md) (probe-and-reload),
+  [`re-engine.md`](./engines/re-engine.md) (release v1.5.9.1 is eighteen months behind master, and the
+  September Lua array/string fixes are master-only), [`id-tech-5.md`](./engines/id-tech-5.md) (the
+  patch-coverage residual is a second render path, not a ceiling).
+
+**⚠️ One relayed claim was re-checked and came out different.** The inbox drop listed six proxies as
+leaking and three as safe. Reading all ten proxy sources directly `[inferred-static 2026-09-04]`: of
+the eight that load the real system module by path, **exactly one frees it**, and two of the apparent
+passes were the word `FreeLibrary` occurring in a *comment*. One proxy is structurally immune for a
+different reason — it loads a **renamed** original, so no resident module ever shares its base name —
+and that second fix is now written up beside the one-line one. The lesson recorded on the page: grep
+for the call, then read the line.
+
+**Web checked.** UEVR **1.05** (commits to 2026-08-30), REFramework **v1.5.9.1** — release unchanged
+since 2025-03-05 while `master` took Lua array, array-element-type and string/number fixes on
+2026-09-02…04, read from the commit list directly; OldUnreal `v227k_15`, dgVoodoo2 **v2.87.4**,
+vrframework (2026-06-05), mutars (`DebugMCP`, 2026-08-22), Vireio (dormant since 2022), geo-11 and
+Vk3DVision — all unchanged. Flat2VR Studios' news page's newest item is still 2026-07-23; nothing
+flat-to-VR-related on Road to VR or UploadVR after 2026-09-02; the Vk3DVision fix list's DOOM (2016)
+entry is unchanged (2025). The REFramework divergence was the one web finding worth curating, and it
+went to the RE Engine page rather than the landscape.
+
+**Inboxes drained: one** (our own, four files, by explicit filename). **Inboxes filled: five** — see
+the list in the commit message and the changelog entry.
+
+**New credits:** **gho** (DxWnd, the 2014 SourceForge diagnosis, read twice independently before
+quoting), **Paul Roussin** (the D3D8 newsgroup answer, surviving only on a third-party Usenet mirror
+and labelled as such), **crosire and the ReShade contributors** (commit `74347b91d`, whose title is
+*"Fix hooking in Alan Wake"* — the quoted sentence is a comment in the diff, not the commit message,
+and the page says so), and **Microsoft** for the `LoadLibraryA` and `CreateProcess` remarks. First-party
+credit extended to `enslaved-vr`, `alan-wake-vr`, `XIII2003-vr`, `mad-max-vr` and
+`the-evil-within-vr`.
+
+**Process note.** All four citations were verified against their primary sources before publication,
+and three needed correcting on the way in: the `LoadLibrary` remark lives on the `LoadLibraryA` page
+rather than `LoadLibraryEx`, the ReShade wording is a code comment rather than a commit message, and
+the Roussin post survives only on a Usenet archive mirror whose displayed date could not be
+corroborated. No public documentation was found for the storefront environment-inheritance claim, so
+that section rests on our own three-launch observation plus `CreateProcess`'s documented behaviour and
+says so. A link checker over every anchor added this sweep reported **0 broken**; the mojibake grep ran
+clean before commit.
