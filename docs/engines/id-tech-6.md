@@ -145,9 +145,16 @@ untried static angle. The `ringcam` write path remains compile-verified and neve
   located the sixty-four camera copies clustered near the start of a **different** region. Base, not
   range. The general form is on the techniques page:
   [check the base before you widen the range](../techniques/README.md#when-a-scan-finds-nothing-check-its-base-before-you-widen-its-range).
-  One loose end for this family: the region actually holding the copies reports tens of thousands of
-  flushes, which sits oddly beside this page's reading that the camera buffer is host-coherent and off
-  the flush path — worth resolving before either statement is relied on.
+  **✅ The loose end that entry raised is closed the same day, and the answer is a reasoning error
+  rather than a fact about the engine.** The region holding the copies reported tens of thousands of
+  `vkFlushMappedMemoryRanges` calls, which looked like it contradicted this page's reading that the
+  camera buffer is host-coherent and therefore not updated through the flush path. It does not. The
+  Vulkan specification says those cache-management commands **are not needed** on coherent memory, and
+  *not needed* is not *not allowed* — an engine that flushes unconditionally, without branching on
+  memory type, produces exactly that count while the flush does no work `[reported 2026-09-04]`. **The
+  count was compatible with both readings, so it was never evidence for either.** The discriminator is
+  one field, the memory type's property flags. General form:
+  [a legal-but-unnecessary call is not evidence of a mechanism](../techniques/README.md#-the-inverse-a-legal-but-unnecessary-call-is-not-evidence-of-a-mechanism).
 
 ## See also
 

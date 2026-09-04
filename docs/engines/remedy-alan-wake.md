@@ -97,6 +97,16 @@ against this exact game until commit
 (2019-12-19, shipped in 4.5.2) — titled *"Fix hooking in Alan Wake"*, with the diff's own comment
 saying that freeing the reference to the module loaded for export hooks *"is necessary for Alan Wake to
 work"*. Seven years later, a from-scratch proxy on the same game met the same wall for the same reason.
+**✅ FIXED AND CONFIRMED LIVE 2026-09-04** `[verified-live 2026-09-04, n=1 launch]`. Releasing the
+system module on detach — guarded so it only happens on a real `FreeLibrary` and not during process
+teardown — put the proxy back in the chain: one process id now shows the probe load, the creation call,
+an explicit-`FreeLibrary` unload, **a second "proxy loaded" block with the same process id**, and then
+no further unload for the session, with the title screen and menu both rendering through it. **For this
+project that is the central unblock** — for weeks the proxy had only ever seen the throwaway probe
+device, and it now owns the device the game actually renders with, so device-level interception is
+finally reachable. The loader-lock caveat that comes with calling `FreeLibrary` from `DllMain` did not
+bite on that launch, which is one data point rather than a clearance.
+
 The engine-agnostic form, the loader quote and the estate audit are on the techniques page:
 [a proxy must free the real DLL on detach](../techniques/README.md#and-it-must-free-the-real-dll-on-detach-or-a-reload-walks-straight-past-it).
 

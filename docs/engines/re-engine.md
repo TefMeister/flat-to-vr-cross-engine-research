@@ -145,17 +145,40 @@ managed-string creation fixes made while adapting to a newer RE Engine title —
 release. The `on_pre_gui_draw_element` fix in the section above (PR #1809, 2026-08-28) is in the same
 category.
 
-**Two practical consequences, opposite in direction:**
+**⚠️ Corrected 2026-09-04 — "release or master" is a false choice, and the third state is the common
+one here.** A project on this family answered the question and its build is **neither**: it runs a
+**fork** build taken for a feature no upstream branch offers, and that fork **publishes no releases at
+all**, so every release check ever run against it returns nothing `[verified-live 2026-09-04]`. **A
+fork build's version is a commit date and nothing else.** Ask for the date, not the tag.
 
-- **On a release build**, a Lua script that mishandles an array element or confuses a numeric string is
-  hitting known, already-fixed framework behaviour. Check the framework revision before rewriting your
-  own script — this family's scripts sit on a moving platform.
-- **On a master build**, you get those fixes and also any regression of the week. The 2026-08 GUI
+**Three practical consequences, and the third is the one that gets missed:**
+
+- **On a release build**, a script that mishandles an array element or confuses a numeric string may be
+  hitting known, already-fixed framework behaviour. Check the revision before rewriting your own code.
+- **On a master build**, you get those fixes and also any regression of the week — the 2026-08 GUI
   callback break lived on master for nine days.
+- **On a fork or pinned build, a fix newer than your build is not evidence you have the bug.** Whether
+  an upstream fix repairs a long-standing defect or a **recent regression** decides whether an older
+  build is affected at all, and a commit title cannot tell you which. The project above is pinned to a
+  build from **March 2026**, months before the GUI regression window, so the one fix that would have
+  argued for upgrading was one it never needed — and its standing rule against upgrading stands
+  unopposed as a result.
+
+**What to do instead of resolving the unresolvable: bound the exposure.** That project could not settle
+whether September's array fixes applied to a March build, so it checked which of its own code touches
+the surface — **none of the five scripts in its shipped release reads a managed array**; the exposure
+is entirely in the **recon probes**, where a data-model bug returns a **wrong answer rather than an
+error** `[inferred-static 2026-09-04]`. That is a materially different conclusion, reached without
+answering the original question.
 
 **So record the exact REFramework revision beside every Lua result you write down**, the same way you
-would record a game patch version. On this family, "it worked yesterday" is a statement about two
-programs, not one.
+would record a game patch version — and especially beside any result that came from iterating an
+engine collection. On this family, "it worked yesterday" is a statement about two programs, not one.
+The general form is on the techniques page as
+[dating a dependency](../techniques/README.md#dating-a-dependency-a-fix-newer-than-your-build-is-not-evidence-that-you-are-affected).
+⚠️ **The sibling project on this family has no revision recorded anywhere** — its Lua results are dated
+but the program underneath them is not, which is a cheap, no-launch gap for whichever lane next touches
+it.
 
 ### Custom animation and locomotion levers, cross-title
 

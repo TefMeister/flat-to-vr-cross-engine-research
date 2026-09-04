@@ -304,6 +304,10 @@ Each under its own license:
 - **nlohmann/json** — <https://github.com/nlohmann/json>
 - **OpenVR** (Valve) — <https://github.com/ValveSoftware/openvr>
 - **OpenXR SDK** (Khronos) — <https://github.com/KhronosGroup/OpenXR-SDK>
+- **The Vulkan specification** (Khronos) — the Memory Allocation chapter, cited for what
+  `VK_MEMORY_PROPERTY_HOST_COHERENT_BIT` means for the host cache-management commands, which is what
+  settles [a legal-but-unnecessary call is not evidence of a mechanism](./docs/techniques/README.md#-the-inverse-a-legal-but-unnecessary-call-is-not-evidence-of-a-mechanism).
+  <https://docs.vulkan.org/spec/latest/chapters/memory.html>
 - **DirectXTK12** (Microsoft) — <https://github.com/microsoft/DirectXTK12>
 - **CommonLibSF** (Starfield Reverse Engineering) — **GPL-3.0** (copyleft; archived) —
   <https://github.com/Starfield-Reverse-Engineering/CommonLibSF>
@@ -538,6 +542,19 @@ per-eye edit, which a project showed would have desynchronised its two shader st
 on other people's public work — Microsoft's `DllMain` and loader documentation, NVIDIA's published
 3D Vision Automatic material, and ReShade's Alan Wake fix — that work is credited above and was read
 online only.
+
+The [legal-but-unnecessary call](./docs/techniques/README.md#-the-inverse-a-legal-but-unnecessary-call-is-not-evidence-of-a-mechanism),
+[enumerate every CPU write path](./docs/techniques/README.md#enumerate-every-cpu-write-path-to-a-constant-buffer-before-believing-your-coverage)
+and [dating a dependency](./docs/techniques/README.md#dating-a-dependency-a-fix-newer-than-your-build-is-not-evidence-that-you-are-affected)
+sections were generalised on 2026-09-04 out of legitimately-owned copies of **DOOM (2016)**, **The
+Evil Within** and **Resident Evil 2**:
+[`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr) ·
+[`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr) ·
+[`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr). The first rests on the Khronos
+Group's published Vulkan specification, credited above and read online. The same day,
+[`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) confirmed the free-the-real-DLL fix live,
+which is why that section now carries a `[verified-live]` tag and a named acceptance test rather than
+prior art alone.
 
 The [control rules](./docs/techniques/README.md#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one),
 the [write-combined memory section](./docs/techniques/README.md#never-cpu-scan-mapped-gpu-memory-in-place--it-is-write-combined)

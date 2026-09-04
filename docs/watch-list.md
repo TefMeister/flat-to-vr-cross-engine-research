@@ -1496,3 +1496,80 @@ written down — including, twice, something this library published **the same d
 inbox-and-verdict loop working as designed, and it is worth saying plainly: the fastest way this
 library gets things wrong is publishing a technique's advantages without the condition that bounds it.
 Link checker over every anchor added: **0 broken**; mojibake grep clean.
+
+---
+
+### 2026-09-04 (fifth sweep, late evening, dev PC) — three questions this library left open were answered by the projects, and one by a specification
+
+**Own inbox: one file, drained by explicit name** (`grep -rn "^Supersedes:" inbox/` found none):
+
+| Drop | From | Landed |
+| --- | --- | --- |
+| a legal-but-unnecessary API call is not evidence of a mechanism | `/gr` on `doom-2016-vr` | new sub-section [**the inverse: a legal-but-unnecessary call is not evidence of a mechanism**](./techniques/README.md#-the-inverse-a-legal-but-unnecessary-call-is-not-evidence-of-a-mechanism), placed as the stated mirror of the silent no-op, with the Vulkan specification text **re-read firsthand** before publication |
+
+**⭐ This sweep is unusual in that almost everything it added closes a question a previous sweep
+opened, mostly the same day.**
+
+- **The flush loose end is closed, and the answer is a reasoning error rather than a fact about the
+  engine.** Yesterday evening this library recorded, on the [id Tech 6 page](./engines/id-tech-6.md),
+  that a memory region reporting tens of thousands of flushes "sits oddly" against the reading that the
+  camera buffer is host-coherent. There was never a tension: the specification says those
+  cache-management commands are **not needed** on coherent memory, and *not needed* is not *not
+  allowed*, so an engine that flushes unconditionally produces exactly that count while the flush does
+  no work. **The count was compatible with both hypotheses, so it was never evidence for either** — and
+  the discriminator is one field, read for free.
+- **⭐ The free-the-real-DLL fix is confirmed live** `[verified-live 2026-09-04, n=1 launch]`. The
+  section that began this morning as prior art and became a measurement this afternoon now has a
+  working fix and a named acceptance test: **a second "proxy loaded" block with the same process id**,
+  after an unload that records itself as an explicit `FreeLibrary`. That was `alan-wake-vr`'s central
+  unblock — for weeks its proxy had only ever seen a throwaway probe device, and it now owns the device
+  the game renders with. The loader-lock caveat did not bite, which is one data point and not a
+  clearance.
+- **The Evil Within's coverage gap has a second interception path.** New section:
+  [enumerate every CPU write path to a constant buffer](./techniques/README.md#enumerate-every-cpu-write-path-to-a-constant-buffer-before-believing-your-coverage).
+  A `DEFAULT` buffer is written through `UpdateSubresource` and a `DYNAMIC` one through `Map`/`Unmap`,
+  and the patcher watched only the first. **The filter that hid the second population was correct for
+  its own purpose and wrong as a definition of coverage**, and nothing in the logs could say so, because
+  a buffer nobody watches generates no events. Of the matrix-bearing shaders, 42% sit on the newly
+  reachable path and **all of them already had complete reflected layouts**, so they had been patchable
+  all along. Carries a pointer-width caution — a 32-bit interlocked compare-exchange on a 64-bit
+  resource pointer, caught before it shipped — and a sub-section on **not mixing populations** when
+  quoting a coverage percentage: shaders are not draws.
+- **A question this library asked twice came back answered, and corrected the framing.** New section:
+  [dating a dependency](./techniques/README.md#dating-a-dependency-a-fix-newer-than-your-build-is-not-evidence-that-you-are-affected).
+  "Release or master" is a **false choice** — the project runs a **fork** build, taken for a feature
+  neither upstream branch offers, which publishes no releases at all, so every release check ever run
+  against it returned nothing. A fork build's version is a commit date. And a fix newer than your build
+  is not evidence you have the bug: whether it repairs a long-standing defect or a **recent regression**
+  decides that, and a commit title cannot say which. **What they did instead of resolving the
+  unresolvable was bound the blast radius** — none of the five shipped scripts reads a managed array at
+  all, so the exposure is in the recon probes, where such a bug returns a wrong answer rather than an
+  error. The [RE Engine page](./engines/re-engine.md) is corrected accordingly.
+
+**Project-repo harvest (all 22 repos pulled; research-lane commits after 19:00 on four, one of them
+this sweep's own drop landing).** Read in full: `alan-wake-vr`'s §4 confirmation, `the-evil-within-vr`'s
+new §7b, `visceral-re2-vr`'s revision topic, `doom-2016-vr`'s flush topic. No dossier moved from "not
+covered" to "covered".
+
+**Web.** A full watch-list pass ran three hours ago with nothing changed on any source, so this sweep
+did not repeat it; what it did do was **verify the one new citation firsthand** (the Khronos Vulkan
+specification's Memory Allocation chapter, read directly rather than taken from the inbox drop) and
+re-check the single fastest-moving source — REFramework's `master`, unchanged since this morning's
+three Lua commits, release still **v1.5.9.1**. The next sweep should treat a full pass as due.
+
+**Inboxes drained: one** (our own, one file, by explicit filename). **Inboxes filled: none** — every
+finding this sweep either belonged in the library or was already written down by the project that
+found it. Two loops from earlier today closed on their own: `/gr` filed the missing-revision gap to
+`re-village-scope-vr` after our drop raised it, and `visceral-re2-vr` answered the revision question
+directly.
+
+**New credits:** **the Khronos Group** extended from the OpenXR SDK to the **Vulkan specification**.
+First-party credit extended to `doom-2016-vr`, `the-evil-within-vr` and `visceral-re2-vr`, and
+`alan-wake-vr`'s entry upgraded to a live confirmation.
+
+**Process note.** Four of the last five sweep entries have contained a correction to something this
+library published within the previous day. That is not a sign of instability — it is the inbox loop
+working at the speed the projects are moving — but it does argue for the habit these entries keep
+demonstrating: **publish the condition with the technique, and the tag with the claim**, because the
+correction usually arrives before the reader does. Link checker over every anchor added: **0 broken**;
+mojibake grep clean.
