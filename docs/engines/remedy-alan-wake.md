@@ -40,12 +40,24 @@ construction — this family has one project on it.*
   [a proxy DLL must export everything the target actually imports](../techniques/#a-proxy-dll-must-export-everything-the-target-actually-imports).
 - **A from-scratch `d3d9.dll` proxy is live-verified on this engine.** `[verified-live 2026-08-25,
   n=1]` The game runs cleanly with it and needs **no compatibility flag** of any kind.
-- **⚠️ A plain `IDirect3D9::CreateDevice` vtable hook (slot 16) reliably breaks startup here, cause
-  unknown.** `[verified-live 2026-08-25, n=1]` The same hook pattern works on sibling D3D9 projects in
-  this account, so this is specific to this engine or title. It cost a full diagnostic detour, since
-  the hook had been added *to investigate* an earlier crash and became the crash. Do not re-enable
-  such a hook on this family without understanding it first — and see
-  [the instrument can be the bug](../techniques/#the-instrument-can-be-the-bug).
+- **⚠️ A plain `IDirect3D9::CreateDevice` vtable hook (slot 16) reliably breaks startup here** —
+  `[verified-live 2026-08-25, n=1]`, and the **"cause unknown"** that stood beside it for ten days is
+  now `[disproved 2026-09-04]`. The cause is mechanical and needed no experiment, only a careful read
+  of a lifetime: the hook wrote an address **inside the proxy DLL** into slot 16 and **nothing ever
+  restored the original**, while this game unloads the proxy about **6 ms** after the creation call
+  (below). A D3D9 vtable is shared per interface class, so the patch outlived every object it was
+  reached through, and the next `CreateDevice` jumped into unmapped memory — precisely the reported
+  access violation, every time. **Nothing about this engine or title is special**, which is the part
+  worth carrying: the same pattern works elsewhere in this account only because those proxies are not
+  unloaded mid-run. An unhook path now exists and runs before the module is released; the hook stays
+  **deliberately disabled** until a launch of its own tests it. The general form is on the techniques
+  page as
+  [a vtable patch is a lifetime commitment](../techniques/README.md#a-vtable-patch-is-a-lifetime-commitment--restore-it-before-anything-can-unload-you).
+  The original detour is still instructive — the hook had been added *to investigate* an earlier crash
+  and became the crash; see
+  [the instrument can be the bug](../techniques/#the-instrument-can-be-the-bug). ⚠️ **A "confirmed
+  broken, cause unknown" verdict on a standard technique should read as an open question**; labelling
+  it a mystery is what kept anyone from looking for ten days.
 - **Remedy shipped real developer tools in the retail build.** `[reported 2026-08-25]` `-freecamera`
   (a genuine free camera, toggled with the right thumbstick — controller only, no confirmed
   keyboard equivalent) and `-developermenu` (episode/difficulty/ammo; **not** confirmed to include
@@ -68,9 +80,10 @@ construction — this family has one project on it.*
 
 ### 2026-09-04: this game unloads and reloads D3D9 — so a proxy that never frees the real DLL is bypassed
 
-`[reported, first-party 2026-09-04]` The dynamic-resolution bullet above has a consequence nobody on
-this family should have to rediscover. Alan Wake **probes `d3d9.dll`, releases it, and loads it again**
-for the renderer. Because Windows resolves a bare module name to any module already resident under that
+`[measured 2026-09-04, n=3 launches]` The dynamic-resolution bullet above has a consequence nobody on
+this family should have to rediscover. Alan Wake loads `d3d9.dll`, calls the creation export **once**,
+unloads it about **6 ms** later, and then loads `"d3d9.dll"` a **second** time for the device it
+actually renders with. Because Windows resolves a bare module name to any module already resident under that
 base name, a proxy that loaded the system `d3d9.dll` by full path and never released it on
 `DLL_PROCESS_DETACH` **leaves the system copy resident, and the game's second load binds to that** —
 the game folder is never searched again and the proxy never runs a second time.

@@ -111,8 +111,24 @@ by size and usage flags for several rounds — everything needed to answer *do t
 world geometry?* — but printed the table **only while nothing had been patched**. The moment patching
 started working, the diagnostic disappeared. See
 [the diagnostic that is gated on the failure it was written to explain](../techniques/README.md#the-diagnostic-that-is-gated-on-the-failure-it-was-written-to-explain).
-It now prints periodically and at shutdown, with per-bucket draw sizes and vertex-shader hashes
-`[compile-verified 2026-09-04]`, not yet run.
+It now prints periodically and at shutdown, with per-bucket draw sizes and vertex-shader hashes — and
+**it has now run** `[verified-live 2026-09-04, n=1 launch]`.
+
+**⚠️ The answer sharpens the paragraph above rather than confirming it: the residual is not a ceiling,
+but it is not harmless either — the missed draws carry real world geometry.** Against roughly 590,000
+patched draws per five seconds, the skipped ones are a single category, and several of the per-shader
+`DYNAMIC` `cb0` buckets carry substantial indexed and non-indexed geometry with vertex counts up to six
+figures. These are matrix-bearing draws whose constant buffer the shared-pool patch never intercepts —
+not draws without a transform.
+
+**The confirmation was visual and took one launch.** With a deliberate 90° yaw applied to every draw the
+patch reached, the game's opening scene rendered radically transformed **with unrotated fragments
+through it** and an upright, detached character head — the uncovered geometry, rendering in place. That
+technique generalises and is now on the techniques page as
+[the cheapest coverage test is an absurd transform](../techniques/README.md#-the-cheapest-coverage-test-is-an-absurd-transform-and-it-is-a-picture).
+
+**⇒ For this family, a stereo build must extend coverage to the per-shader `DYNAMIC` `cb0` path, not
+only the shared `DEFAULT` pool.**
 
 Also on this project as of 2026-09-04: every proxy knob is read from an ini beside the executable
 rather than from the environment, after three launches silently ran an experiment as an identity

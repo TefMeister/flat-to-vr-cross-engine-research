@@ -41,6 +41,29 @@ construction.*
   second while leaving it wrong. See
   [composition bugs that masquerade as handedness](../techniques/#composition-bugs-that-masquerade-as-handedness).
 
+### 2026-09-04: the AER submission path is built, and its load-bearing part is parity
+
+`[compile-verified 2026-09-04]` · `[verified-numerically 2026-09-04, 22 assertions]`, **never run.**
+The bridge previously submitted one mono texture to **both** eyes while the override drew alternate
+frames from alternate eyes — half the stereo discarded and each eye shown the wrong view half the time.
+It now keeps a texture per eye, writes each frame into the one for the eye it was drawn with, and
+submits both every frame.
+
+- **The hazard worth knowing before writing this on any engine** is that the eye is chosen and the
+  frame is captured in different places inside one `Present` hook, with the flip to the next eye
+  between them — so reading the live eye state at capture time is **off by one and swaps the eyes**.
+  The fix is to latch the completed frame's eye before flipping. Swapped eyes look like working stereo
+  with inverted depth, not like a bug, which is what makes it worth a section of its own:
+  [latch the eye with the frame](../techniques/README.md#alternate-eye-rendering-latch-the-eye-with-the-frame-or-you-silently-swap-them).
+- **One shared pose for both eyes is forced here, not chosen.** OpenVR cannot express two poses in one
+  frame (issue #1253, opened 2019-11-23, still open, no Valve reply); OpenXR's projection layer can,
+  but SteamVR ships no 32-bit OpenXR runtime and this is a 32-bit process. Re-read 2026-09-04, with the
+  detail that a partial fix was reported for one driver only:
+  [OpenXR carries a pose per view](../techniques/README.md#openxr-carries-a-pose-per-view-where-openvr-collapses-to-one).
+- **A test-hygiene note from the same work**, now generalised: the parity test's first version passed
+  while asserting nothing, because its sample matrix was not classified as perspective and every
+  comparison reduced to `0 == 0`. It now asserts non-vacuity first.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Ubisoft Dunia" and "CryEngine" rows, including the
