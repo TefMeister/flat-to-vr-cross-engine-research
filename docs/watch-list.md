@@ -1408,3 +1408,91 @@ measured input route; first-party credit extended to `mad-max-vr`, `alice-madnes
 itself corrected earlier today: its slug rule kept em-dashes, which GitHub strips, so it had reported
 twenty-eight false positives on pre-existing links. A checker that has never been shown to pass on
 known-good input is not evidence — the same rule this library applies to game instrumentation.
+
+---
+
+### 2026-09-04 (fourth sweep, evening, dev PC) — a verdict came back and qualified this library's own advice
+
+**Own inbox: one file, drained by explicit name** (`grep -rn "^Supersedes:" inbox/` found none):
+
+| Drop | From | Landed |
+| --- | --- | --- |
+| the one-element edit needs a condition — where a second stage implements the two-parameter form | modding (`/pd`) on `alice-madness-returns-vr` | a new sub-section under the technique it qualifies, [**it is a DIFFERENT stereo, not a shorter way to write the same one**](./techniques/README.md#-it-is-a-different-stereo-not-a-shorter-way-to-write-the-same-one--and-one-condition-on-preferring-it), plus the constraint on the [UE1–3 page](./engines/unreal-1-3.md) |
+
+**⭐ That drop is the most valuable thing this sweep handled, because it corrected advice this library
+published four hours earlier.** The one-element per-eye edit is right, and it transferred cleanly to a
+second engine's column-major layout — but **"prefer it" needed a condition**. Measured against the
+NVIDIA-style shear across six vertices from 12 to 8,000 units of depth, the two forms differ by exactly
+a constant, which makes the one-element edit the **on-axis (parallel) stereo** and the shear the
+**off-axis** one with convergence. It is a simpler, *different* stereo, not a shorter way to write the
+same one. And where a game's own shipped pixel shaders already implement
+`x + separation · (w − convergence)` — **28,017 of them on that title, against zero vertex shaders** —
+the vertex stage must match, or geometry moves while every screen-space effect stays put. The web half
+then found the vendor documentation for that convention, so the check now has a name to search for: do
+the shipped shaders sample a **stereo-parameter texture**?
+
+**Generalised up this sweep, all from the same evening's project work:**
+
+- [**A vtable patch is a LIFETIME commitment**](./techniques/README.md#a-vtable-patch-is-a-lifetime-commitment--restore-it-before-anything-can-unload-you)
+  (`alan-wake-vr`, `[inferred-static 2026-09-04]`) — the companion hazard to the state-block rewrite
+  added this morning. A patch writes an address inside your DLL into a **shared** interface table; if
+  anything unloads you before you restore it, the next call jumps into unmapped memory. This
+  **disproved a "confirmed broken, cause unknown" verdict** that had stood on the
+  [Remedy page](./engines/remedy-alan-wake.md) for ten days, and the correction cost a careful read of
+  a lifetime rather than an experiment. The claim-hygiene half is recorded with it: labelling something
+  a mystery is what stops anyone looking.
+- [**Alternate-eye rendering: latch the eye WITH the frame**](./techniques/README.md#alternate-eye-rendering-latch-the-eye-with-the-frame-or-you-silently-swap-them)
+  (`far-cry-2-vr`) — the eye is chosen and the frame captured in different places inside one `Present`
+  hook, so reading live state at capture time is off by one and **swaps the eyes**, which looks like
+  working stereo with inverted depth rather than like a bug.
+- [**The cheapest coverage test is an absurd transform, and it is a picture**](./techniques/README.md#-the-cheapest-coverage-test-is-an-absurd-transform-and-it-is-a-picture)
+  (`the-evil-within-vr`, `[verified-live 2026-09-04]`) — apply a 90° yaw to every draw your patch
+  reaches and look at what stays upright. It answered in one launch what counter-reading had left open
+  for days, and the answer **corrects this library's own text from this morning**: that project's
+  patch-coverage residual is not a ceiling, but it is **not harmless either** — the missed draws carry
+  real world geometry, so a stereo build must cover the per-shader dynamic constant-buffer path too.
+- **A test satisfiable by "nothing happened"** — folded into the mutation-check section, from a parity
+  test that passed while every assertion reduced to `0 == 0` because its sample matrix was never
+  classified as perspective. Assert non-vacuity first, then mutation-check.
+- The [configure-from-a-file section](./techniques/README.md#configure-injected-code-from-a-file-it-reads-itself-not-from-environment-variables)
+  is upgraded: the file-based arming is now **confirmed working through the storefront launch** that had
+  been swallowing the environment variables.
+
+**Web sweep — the half the previous entry left due, and it paid.** Nothing changed on any watch-list
+source: UEVR **1.05** (commits to 2026-08-30), REFramework **v1.5.9.1** with master at 2026-09-04,
+OldUnreal **v227k_15**, dgVoodoo2 **v2.87.4**, vrframework (2026-06-05), mutars (`DebugMCP`,
+2026-08-22), Vireio, geo-11 and Vk3DVision all dormant. *(Small observation for whoever next reads
+those: for OldUnreal and dgVoodoo2 the release date is newer than the newest commit their public
+default branch shows, so the commit list is not a reliable freshness proxy for either — use the
+releases API.)* **Three targeted questions, driven by the in-house delta, all answered from primary
+sources and read firsthand:**
+
+1. **NVIDIA documents the two-parameter convention itself**, both the expression and the
+   stereo-parameter texture that carries separation and convergence to shaders. Those two archived
+   GameWorks pages were already cited here for the clip-space footer; what is new is applying them to
+   the *game-implemented* case, which is what constrains a vertex-stage edit.
+2. **OpenVR #1253 re-read.** Still open, still no Valve reply — but **last activity is 2020-04-22, not
+   the 2019 creation date** one project's dossier recorded, and the thread carries a report that the
+   underlying bug was fixed in a beta **for the lighthouse driver only**, undocumented publicly. That
+   makes a single-headset test capable of misleading, which is worse than a clean no.
+3. **Microsoft documents the `FreeLibrary`-in-`DllMain` rule** and the exact meaning of the third
+   parameter on detach, so this library's one-line proxy fix now carries its guard and its citation
+   rather than an unqualified "one line".
+
+**Project-repo harvest (all 22 repos pulled; research-lane commits after 17:00 on four).** Read in
+full: `alan-wake-vr`'s new §4 block, `the-evil-within-vr`'s §6 update, `far-cry-2-vr`'s AER block,
+`alice-madness-returns-vr`'s 2026-09-04c entry. No dossier moved from "not covered" to "covered".
+
+**Inboxes drained: one** (our own, one file, by explicit filename). **Inboxes filled: one** —
+`far-cry-2-vr/external-research/inbox/`, correcting the #1253 last-activity date and adding the
+lighthouse-only partial fix with the caution it implies.
+
+**New credits:** **Microsoft**'s entry extended to the `DllMain` and library-best-practices remarks;
+NVIDIA's existing credit now also carries the game-implemented case. First-party credit extended to
+`alan-wake-vr`, `far-cry-2-vr`, `the-evil-within-vr` and `alice-madness-returns-vr`.
+
+**Process note.** Three of this sweep's entries exist because a project overturned something already
+written down — including, twice, something this library published **the same day**. That is the
+inbox-and-verdict loop working as designed, and it is worth saying plainly: the fastest way this
+library gets things wrong is publishing a technique's advantages without the condition that bounds it.
+Link checker over every anchor added: **0 broken**; mojibake grep clean.

@@ -448,9 +448,13 @@ Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every
 
 - **Microsoft** — Win32 API documentation, cited directly where a rule of the platform decides a
   technique: the `LoadLibraryA` remark that a bare module name resolves to an already-resident module
-  of the same base name, and `CreateProcess`'s environment-inheritance behaviour.
+  of the same base name; `CreateProcess`'s environment-inheritance behaviour; and the `DllMain`
+  remarks that an entry point must not call `FreeLibrary` during process termination, together with
+  the rule that distinguishes the two detach cases by the third parameter.
   <https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya> ·
-  <https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw>
+  <https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw> ·
+  <https://learn.microsoft.com/en-us/windows/win32/dlls/dllmain> ·
+  <https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices>
 ### Our own first-party research
 
 The [read the shipped files](./docs/techniques/README.md#read-the-shipped-files-before-you-attach-anything),
@@ -516,6 +520,24 @@ project **corrected itself**: an "inconclusive" stereo run that turned out to be
 rather than a negative result, and a scan fix that was real but was not the cause of the symptom it was
 made to explain. The virtual-pad route rests on **Nefarius's ViGEmBus**, credited above; no code was
 taken from it.
+
+The [vtable-patch lifetime](./docs/techniques/README.md#a-vtable-patch-is-a-lifetime-commitment--restore-it-before-anything-can-unload-you),
+[alternate-eye parity](./docs/techniques/README.md#alternate-eye-rendering-latch-the-eye-with-the-frame-or-you-silently-swap-them),
+[the absurd-transform coverage test](./docs/techniques/README.md#-the-cheapest-coverage-test-is-an-absurd-transform-and-it-is-a-picture)
+and the [condition on the one-element edit](./docs/techniques/README.md#-it-is-a-different-stereo-not-a-shorter-way-to-write-the-same-one--and-one-condition-on-preferring-it)
+were generalised on 2026-09-04 out of legitimately-owned copies of **Alan Wake**, **Far Cry 2**, **The
+Evil Within** and **Alice: Madness Returns**:
+[`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) ·
+[`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr) ·
+[`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr) ·
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr). Three of those
+entries exist because a project **overturned something already written down**: a "confirmed broken,
+cause unknown" hook verdict that turned out to be an ordinary dangling pointer, a residual assumed
+harmless that was carrying world geometry, and this library's own advice to prefer the one-element
+per-eye edit, which a project showed would have desynchronised its two shader stages. Where they rest
+on other people's public work — Microsoft's `DllMain` and loader documentation, NVIDIA's published
+3D Vision Automatic material, and ReShade's Alan Wake fix — that work is credited above and was read
+online only.
 
 The [control rules](./docs/techniques/README.md#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one),
 the [write-combined memory section](./docs/techniques/README.md#never-cpu-scan-mapped-gpu-memory-in-place--it-is-write-combined)

@@ -300,9 +300,25 @@ technique itself is engine-agnostic.
 render) wants to hand the runtime two independent poses, one per eye, in the same frame. On
 **OpenVR**, [issue #1253](https://github.com/ValveSoftware/openvr/issues/1253) — filed by
 **LukeRoss00**, the author of the AER technique this library already documents, describing exactly
-this wall — has sat open for seven years with no Valve response: `IVRCompositor::Submit` is called
-once per eye, and SteamVR keeps only the pose from the **last** call, discarding the first. A
-same-frame two-eye submission over OpenVR therefore cannot carry two different poses at all.
+this wall — is **still open**: `IVRCompositor::Submit` is called once per eye, and SteamVR keeps only
+the pose from the **last** call, discarding the first. A same-frame two-eye submission over OpenVR
+therefore cannot carry two different poses at all.
+
+**Re-read 2026-09-04** `[reported 2026-09-04]`: opened 2019-11-23, **last activity 2020-04-22** (a
+community request for a team update), eight comments, **not one from anyone at Valve**. Two details
+worth carrying that a one-line "still open" hides:
+
+- **A partial fix was reported and never documented.** The filer reported in the thread that the
+  underlying bug had been fixed in a SteamVR beta **for the lighthouse driver only**, not for the
+  Oculus or WMR backends, and not mentioned in any public changelog. So "OpenVR cannot do this" is
+  right as a portable design constraint and **may be wrong on one specific driver** — which is worse
+  than a clean no, because it means a test on one headset can pass and mislead.
+- **No workaround for the general case exists in the thread.** Nobody has posted a way to submit two
+  distinct per-eye poses that works across runtimes.
+
+The design consequence is unchanged and firm: **treat one shared pose per frame as a constraint of the
+OpenVR submission path**, not as a shortcut you chose, and do not infer from a passing test on one
+driver that the constraint has lifted.
 
 **OpenXR's projection layer does not have the same shape.** Reading the SDK header directly rather
 than reasoning about it: `XrCompositionLayerProjectionView` carries its **own `pose`** and its **own
@@ -389,6 +405,38 @@ Sources, read online: LukeRoss00's report on the
 Relevant right now to `XIII2003-vr` (which has a projection-layer submission path built and a
 deliberate-offset test compiled in) and to `far-cry-2-vr` (blocked on the identical question for its
 AER submission); a pointer went into both projects.
+
+## Alternate-eye rendering: latch the eye WITH the frame, or you silently swap them
+
+`[verified-numerically 2026-09-04, n=1 project, 22 assertions]` Alternating eyes across frames — the
+AER pattern — has one hazard that is worth knowing before you write it, because it produces a picture
+that looks fine.
+
+**The shape of the bug.** The eye is chosen in one place and the finished image is captured in
+another, and in a single `Present` hook those two places are separated by the flip to the next eye.
+Frame *N* is drawn with eye `E_N`; the hook flips the state to `E_(N+1)`; only then does the
+submission path capture frame *N*. **Reading "the current eye" at capture time therefore reads the
+wrong one, every frame** — the images are correct and the labels are off by one, so the left eye is
+handed the right image and vice versa.
+
+**⚠️ What makes it dangerous is that swapped eyes are not obviously broken.** Both eyes get a real,
+correctly-rendered view; the disparity is the right magnitude and the wrong sign. It reads as **working
+stereo with inverted depth** — a comfort complaint, a "the scale feels odd" note, something you might
+attribute to IPD or world scale and spend a session tuning. Nothing errors, nothing is missing, and no
+frame counter is wrong.
+
+**The fix is a latch, not a re-read.** When the frame completes, record the eye it was **drawn** with
+before flipping, and have the submission path read that latched value rather than the live state.
+Treat "no per-eye offset was applied to this frame" as an explicit third value meaning mono, so an
+un-offset frame is not silently attributed to an eye.
+
+**And test it against the picture, not against the intent** — the useful assertion is that the latched
+eye matches **the sign of the offset actually written into the matrix** for that frame, which catches a
+sign convention flipped anywhere in the chain rather than just confirming your own bookkeeping agrees
+with itself.
+
+Generalised from [`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr), 2026-09-04, where the
+per-eye submission path is built and self-tested and **has not been run**.
 
 ## Temporal effects under AFR
 
@@ -1351,6 +1399,58 @@ object's stereo separation by its own size. Cache `w` from the camera's own tran
 argument lands on the transposed element, so establish the storage class first rather than trying
 both. And the algebra being proven is not the picture being right — the project above has the
 derivation, the write path and 63 self-test assertions, and **has not yet rendered a frame with it**.
+
+#### ⚠️ It is a DIFFERENT stereo, not a shorter way to write the same one — and one condition on preferring it
+
+`[verified-numerically 2026-09-04, n=2 projects]` A second project re-derived the above for its own
+column-major layout, confirmed it reproduces exactly, and then found the more important thing: **the
+one-element edit was already sitting in its shipped code as the constant term of a two-line shear.**
+Comparing the two forms across six vertices from 12 to 8,000 units of depth, they differ in NDC x by
+**exactly a constant**, and not at all in `y` or in `clip.w`. So:
+
+```
+NVIDIA-style shear  =  the one-element edit  +  a constant NDC shift
+                    =  a parallel eye translation  +  convergence re-centring
+                    =  off-axis (asymmetric-frustum) stereo
+```
+
+**Say that in those words, because "the edit is one element" reads as a simplification of the same
+stereo when it is actually a simpler, DIFFERENT stereo** — the on-axis or parallel case, without
+convergence. On a flat screen that difference is the entire comfort story. For an HMD it usually does
+not matter, because the runtime's own per-eye frusta supply the asymmetry — but know which situation
+you are in before choosing, rather than discovering it from the picture.
+
+**⚠️ And prefer the one-element form only where nothing downstream already implements the
+two-parameter form.** If the engine ships a pixel or post stage that applies
+`x + separation · (w − convergence)` itself, reading both parameters out of a stereo-parameter
+texture, **your vertex stage is not free to choose its formula**: it must match, or the two disagree
+by a constant. That failure mode is a nasty one — **the geometry moves and every screen-space effect
+stays put.** On the project that raised this, **28,017 shipped pixel shaders implement that form and
+no vertex shader does** `[inferred-static 2026-09-04]`, an asymmetry that is deliberate in
+3D Vision-era titles and cannot be edited away, because the bytecode is not ours to change.
+
+**⭐ This is the same expression this library already documents as
+[the clip-space stereo footer](#the-clip-space-stereo-footer-geometry-stereo-without-ever-finding-the-camera)** —
+NVIDIA's own convention, which its documentation describes the driver appending to every vertex shader
+it saw. What the Alice result adds is the half that page does not lead with: **a game can implement the
+same formula in its own shipped shaders**, and where it does, the driver's absence does not remove it.
+The companion NVIDIA page describes how those shaders are handed the two values — a small
+**stereo-parameter texture** whose first texel carries the final separation in one channel and the
+convergence in another
+([stereoscopic issues](https://archive.docs.nvidia.com/gameworks/content/technologies/desktop/nv3dva_stereoscopic_issues.htm),
+re-read 2026-09-04; both pages were already cited by this library for the footer itself). `[reported]`
+from a vendor source; nothing was copied from either page.
+
+**So the check to run first is cheap, static, and now has a name to search for:** do the shipped
+shaders sample a **stereo-parameter texture**, or read a separation/convergence pair from a constant? A
+game whose pixel shaders do this was built against 3D Vision Automatic and is correcting its own
+screen-space work — and since that bytecode is not yours to change, your vertex stage has to speak the
+same language. Where nothing downstream corrects, which is the case on the project the technique came
+from, the one-element form is exactly right and every advantage above stands.
+
+Verdict returned by the modding lane on
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr), 2026-09-04,
+against its own 54-configuration harness.
 
 Generalised from [`mad-max-vr`](https://github.com/TefMeister/mad-max-vr) (`engine-research/` §7a,
 2026-09-04), where it is proven against independently multiplied `W`, `V` and `P` for ordinary,
@@ -2540,6 +2640,9 @@ Evidence:
 experiment being run — from environment variables. Three consecutive launches ran the experiment as an
 **identity transform**, silently, and were written up as three uninformative results before the cause
 was found: the launcher script that set the variables was not the thing that started the process.
+**The file-based replacement is confirmed working on a storefront launch** `[verified-live 2026-09-04]`
+— the same knobs armed correctly through the client that had been swallowing them, and the effect they
+enable was visible on screen in that run.
 
 **The mechanism is ordinary and easy to forget.** A child process inherits the environment of *its
 parent*, unless the parent supplies a different block
@@ -2980,11 +3083,29 @@ game until commit
 written as a comment in the diff itself — freeing the reference to the module loaded for export hooks
 *"is necessary for Alan Wake to work"*. The same game, the same one line, seven years apart.
 
+**⭐ Confirmed on a real title, 2026-09-04.** The project this came from went back to its own logs and
+found the game loads `d3d9.dll`, calls the creation export once, unloads it about **6 ms** later, and
+then loads `"d3d9.dll"` a **second** time for the device it actually renders with `[measured
+2026-09-04, n=3 launches]`. Its proxy held the system module the whole time, so that second load
+matched the resident copy by base name and the game folder was never searched again. **That is the
+entire explanation for a proxy that "only ever sees one short-lived call"** — a symptom the project had
+carried as an unexplained disagreement between its recorded status and its surviving evidence.
+
 **There are two fixes, and the second one is better.**
 
-1. **Release the real module in `DLL_PROCESS_DETACH`.** One line. It restores the intended behaviour:
-   nothing of that base name is resident, so the next load searches the application directory and finds
-   you again.
+1. **Release the real module in `DLL_PROCESS_DETACH`** — but with a guard, and knowing the trade.
+   **Microsoft documents both halves of this.** The entry point *"must not call the **FreeLibrary**
+   function (or a function that calls **FreeLibrary**) during process termination, because this can
+   result in a DLL being used after the system has executed its termination code"* — and the way to
+   tell the two cases apart is the third parameter: on `DLL_PROCESS_DETACH` it is **NULL if
+   `FreeLibrary` has been called** and **non-NULL if the process is terminating**
+   ([`DllMain` remarks](https://learn.microsoft.com/en-us/windows/win32/dlls/dllmain), and the same
+   guidance in [dynamic-link library best practices](https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-best-practices)).
+   So: **free the real module only when that parameter is NULL.** Even then you are calling
+   `FreeLibrary` from inside `DllMain`, which the same guidance discourages in general; it is done here
+   because the unload is the only moment the reference can be released, and because ReShade ships the
+   same call for the same reason. **If a launch later hangs at exit or on the second load, this is the
+   first suspect.**
 2. **Or never load a module under the same base name at all.** A proxy that loads a *renamed* copy of
    the original — `Something_Original.dll` beside the game rather than the system `Something.dll` —
    cannot be bypassed this way, because a later `LoadLibrary("Something.dll")` has no resident module
@@ -3001,6 +3122,50 @@ then read the line. The one proxy that was structurally safe was safe by fix 2, 
 renamed original.
 
 Generalised from a `/gr` research hand-off on
+[`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr), 2026-09-04.
+
+## A vtable patch is a LIFETIME commitment — restore it before anything can unload you
+
+`[inferred-static 2026-09-04, n=1 title]` The companion hazard to the state-block rewrite above, and
+between them they cover most of the ways an in-place vtable patch fails without saying so.
+
+**The mechanism.** You write a pointer to your own function into slot *n* of a COM interface's method
+table. That pointer is an address **inside your DLL**. If your DLL is then unloaded while the patch is
+still installed, the slot holds an address in **unmapped memory**, and the next call through it is an
+access violation with a stack that points at nothing recognisable. **A D3D9 vtable is shared per
+interface class, not per object**, so the patch outlives every object you saw it through — releasing
+the interface does not unwind it, and neither does the game creating a fresh one.
+
+**The worked case is instructive because the wrong conclusion survived for ten days.** A project
+hooked `IDirect3D9::CreateDevice` in place, the game crashed, and the hook was marked *confirmed
+broken — something about how this patch applies to this game's vtable, not yet understood*. Every
+part of that is wrong except the crash. The game **unloads the proxy about 6 ms after the creation
+call** (see the section above), nothing ever restored slot 16, and the next call jumped into the hole
+where the DLL had been. Mechanical, reproducible and not specific to the game at all — and the
+"cause unknown" label is what stopped anyone looking, since a mystery invites avoidance rather than
+five minutes of reading.
+
+**What to do, in order:**
+
+- **Write the unhook when you write the hook**, not when you need it. Restore the runtime's own
+  original pointer, and **refuse to touch the slot if it no longer holds yours** — a later hook may
+  own it now, and stamping your "original" over that breaks somebody else's mod.
+- **Unhook BEFORE releasing the real module.** The vtable usually lives in the system module's own
+  data; once you have freed your reference to it, writing there is a race at best.
+- **Assume you can be unloaded at any time.** A capability probe, a renderer restart or an options
+  change can unload a graphics proxy mid-session — this is the same reload behaviour that bypasses a
+  proxy which never frees the real DLL, seen from the other side.
+- **Beware the dead-code trap when the hook is behind a compile-time switch.** With the hook disabled,
+  an optimiser will strip the unhook path too, so the shipped binary contains neither. That is
+  correct, but it means the unhook is **unverified** until something builds it in. The project above
+  proved theirs compiles by building a scratch copy with the hook enabled, confirming its log strings
+  appear, and discarding that build — a cheap habit worth copying for any code that only exists in a
+  configuration you do not ship.
+
+**And the claim-hygiene half:** a verdict of "confirmed broken, cause unknown" on a standard technique
+should read as an open question, not a closed one. This library's own
+[Remedy engine page](../engines/remedy-alan-wake.md) carried the mystery version for ten days, and the
+correction cost one careful read of a lifetime, not an experiment. Generalised from
 [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr), 2026-09-04.
 
 ## The instrument can be the bug
@@ -3339,6 +3504,20 @@ expects (per-eye poses are translations; the asymmetric frusta come from the run
 later). On a flat 3D display that puts everything "in front of the screen" — fine for a proof, not a
 display tuning, and worth saying so nobody tunes it.
 
+**⚠️ The sibling failure: a test that passes because it tested nothing.** Mutation-checking asks *can
+this test fail?* There is a cheaper and more common failure it does not always catch — a test whose
+assertions never execute, or execute on values that are all zero. One project's first parity test
+passed cleanly while asserting nothing at all: its sample matrix was not classified as a perspective
+matrix, so the code path under test skipped every comparison and each assertion reduced to `0 == 0`
+`[verified-numerically 2026-09-04]`.
+
+**A test satisfiable by "nothing happened" is worse than no test**, because it is counted as evidence.
+The fix is one assertion, placed first: **assert non-vacuity** — that the classification succeeded,
+that the loop ran a non-zero number of times, that the value under test is not the neutral one. Then
+the mutation check has something to break. This is the same shape as the
+[silent no-op](#silent-no-ops-verification-that-cannot-see-the-failure) one level up, in the harness
+rather than in the mod.
+
 Generalised from [`unreal-gold-vr/modding-notes/`](https://github.com/TefMeister/unreal-gold-vr/tree/main/modding-notes)
 (`2026-09-02-m2-stereo-proof-built-verified-deployed.md`); the test output and mutation record are in
 that repo's `dev-archive/recon/`.
@@ -3500,6 +3679,36 @@ And one instrument trap: a bounded matrix-dump budget (`N` dumps per run) was **
 menu** — every dump carried the same pre-gameplay frame number, so no gameplay matrix was captured
 while the per-interval counters were fine. Gate dump budgets on a frame threshold or a key, not on
 "first N".
+
+### ⭐ The cheapest coverage test is an ABSURD transform, and it is a picture
+
+`[verified-live 2026-09-04, n=1 game]` Everything above measures coverage in counters. There is a
+test that measures it with your eyes, needs no new instrumentation, and is unambiguous: **apply a
+deliberately ridiculous transform — a 90° yaw is ideal — to every draw your patch reaches, and look at
+what stays still.**
+
+Whatever remains upright and un-rotated is exactly the geometry your patch does not cover, rendered in
+place, at its real size, in its real proportion of the frame. On the worked case the opening scene came
+back radically transformed with unrotated fragments through it and a detached, upright character head —
+which settled in one launch a question a whole session of counter-reading had left open: **the missed
+draws carry real world geometry.** They were not skinning, not effects and not decals, and the
+residual was therefore not harmless.
+
+**Why it beats the counter it replaces.** A per-draw patch reports "patched" and "skipped" totals, and
+the skipped total is compatible with two completely different worlds — a large number of tiny
+irrelevant draws, or a small number of draws carrying the level. Counts cannot separate those; a
+picture does it instantly, and it also shows you *what kind* of thing is missing, which no counter
+does.
+
+**Three practical notes.** Use a rotation rather than a translation — a rotated world is
+unmistakable where a shifted one can read as camera motion. Pick a scene with recognisable large
+geometry rather than a corridor. And keep the absurd mode as a permanent, hotkeyed diagnostic rather
+than a temporary hack, because it answers "did my coverage change?" after every extension of the patch,
+which is the question you will ask most often.
+
+Generalised from [`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr), 2026-09-04,
+where it also confirmed that per-shader dynamic constant buffers — not just the shared pool — must be
+covered before a stereo build is worth judging.
 
 ## Turn off the post-processes that re-derive the view before judging a stereo run
 

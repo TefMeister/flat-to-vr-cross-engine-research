@@ -481,6 +481,35 @@ session — the second of which needed no rebuild.
 **Still open on this title:** whether HUD and screen-space elements follow the shear (the pixel-stage
 concern this page raises for the family), and true two-eye rendering rather than a single sheared view.
 
+### ⭐ 2026-09-04c: on a 3D Vision-era UE3 title the SHIPPED PIXEL SHADERS do the stereo correction, and that constrains your vertex edit
+
+`[inferred-static 2026-09-04]` The most important thing learned on this family today is a constraint,
+not a capability, and it applies to every licensee build that shipped with the NVIDIA stereo patch this
+page already documents.
+
+**28,017 of one title's shipped pixel shaders implement NVIDIA's two-parameter correction themselves** —
+the vertex output's x gaining `separation × (w − convergence)`, with both values read from a
+stereo-parameter texture — and **no vertex shader does (0 of 2,807)**. That asymmetry is by design: the
+driver supplied the vertex-side footer, so the game only had to correct its own screen-space work.
+
+**The consequence for a VR patch is direct.** Your vertex-stage per-eye edit is **not free to choose
+its formula**. It must use the same one the pixel stage uses, because that bytecode is not yours to
+change, and a mismatch of a constant term produces the ugliest failure available on this family: **the
+geometry moves and every screen-space effect stays put.** In particular the
+[one-element per-eye edit](../techniques/README.md#-and-then-the-edit-itself-is-one-element-not-a-rebuilt-matrix)
+— elegant, cheaper and correct in general — is the **wrong choice here**, because it is the on-axis
+form and the shipped pixel stage implements the off-axis one.
+
+**So the check to run on any title in this family, before writing the per-eye maths:** do the shipped
+shaders sample a stereo-parameter texture? On a title that shipped with 3D Vision support the answer is
+likely yes, and it decides your formula.
+
+Related on the same day: this title's two-eye path is built and its shear is
+[confirmed to reach the screen](#2026-09-04b--on-ue3-a-per-eye-shear-written-to-vertex-c0-reaches-the-screen),
+and the one-element form turned out to be **already present in its code** as the constant term of the
+shear it had been using all along — the two forms differ by exactly a constant NDC shift, measured
+across six vertices from 12 to 8,000 units of depth `[verified-numerically 2026-09-04]`.
+
 ### 2026-09-04: XIII's shaders are assembly TEXT in the DLL, and UE2's two pipelines share one transform
 
 Two static results from XIII (UE2 / D3D8), read out of the shipped renderer DLL with nothing running
