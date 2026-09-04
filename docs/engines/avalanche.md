@@ -80,6 +80,31 @@ constant-within-frame filter cannot see a per-pass camera — are on the techniq
 [per-pass filter](../techniques/README.md#-a-constant-across-every-draw-in-the-frame-filter-excludes-a-per-pass-camera-by-design)).
 Tool: `dxbc-usage.py` in `flat-to-vr-RE-toolkit`, beside `dxbc-reflect.py`.
 
+**Update 2026-09-04c (static, `/pd`) — the per-object path has no separable world matrix, and the
+per-eye edit collapses to one float.** `[inferred-static 2026-09-04, n=113 + 188 shaders]`
+
+- The board's open question was whether the per-object buffer carries a world or world-view matrix, so
+  that `WVP_eye = W · VP_eye` could be computed per draw. **It does not.** Slots 0..3 are the full
+  object→clip 4×4 (112 of 112 shaders); slots 4..15 are four repeated three-slot falloff groups;
+  18..21 are a 3×4 affine applied to a *camera-relative* position and written to a **texcoord**, not
+  the object's world transform. The complete per-object position path is the clip matrix plus a
+  pre-translation living in slot 3 of a separate 64-byte block, read by all 112. So that path has to be
+  reached at its CPU-side fill.
+- **⭐ And it does not need a world matrix anyway.** For row-vector storage the whole per-eye edit is
+  `M[3][0] += d · w`, with `w` the horizontal focal term taken from the **shared** matrix — proven
+  numerically against ordinary, reversed-Z-infinite and off-centre projections
+  `[verified-numerically 2026-09-04]`. It touches nothing depth-related, so this family's unexplained
+  per-position clip-z constant and its unconfirmed reversed-Z shape cannot affect it, and it applies
+  unchanged to the per-object path. Full derivation:
+  [the per-eye edit is one element](../techniques/README.md#-and-then-the-edit-itself-is-one-element-not-a-rebuilt-matrix).
+  Built and self-tested on this project, **never run**.
+- **⚠️ A correction that reaches back into this page.** The slot census above was produced by our own
+  `dxbc-usage.py`, whose walk back from `SV_Position` ignored program order and therefore
+  over-reported by thirty-four rows. Its other sections re-ran **byte-for-byte identical**, so the
+  2026-09-03c conclusions on this page stand; but the tool's position-path output before 2026-09-04
+  should not be. See
+  [the program-order correction](../techniques/README.md#reflection-gets-you-to-n-unnamed-slots-disassembly-names-them-by-use).
+
 **Update 2026-09-04b — the shipped photo mode measured the projection, and the projection alone.**
 Mad Max's pause-menu Capture Mode writes the same shared slots gameplay writes, which makes it a free
 instrument for this family; the engine-agnostic form is

@@ -1328,3 +1328,83 @@ corroborated. No public documentation was found for the storefront environment-i
 that section rests on our own three-launch observation plus `CreateProcess`'s documented behaviour and
 says so. A link checker over every anchor added this sweep reported **0 broken**; the mojibake grep ran
 clean before commit.
+
+---
+
+### 2026-09-04 (third sweep, late afternoon, dev PC) — the per-eye edit turns out to be one float, and two projects corrected themselves
+
+**Own inbox: one file, drained by explicit name** (`grep -rn "^Supersedes:" inbox/` found none):
+
+| Drop | From | Landed |
+| --- | --- | --- |
+| a ViGEm virtual XInput pad drives an XInput game's move and look, with no in-process hook | modding (`/lm`) on `doom-2016-vr` | the [known-input-routes](./techniques/README.md#known-input-routes-by-engine-family) section, where the virtual pad was previously a `[hypothesis]` closing paragraph and is now the measured strongest route for an XInput title, with its precondition and its untested limit; plus a dated entry on the [id Tech 6 page](./engines/id-tech-6.md) |
+
+**⭐ The headline is `mad-max-vr`'s, and it is the most economical result this library holds on per-eye
+rendering.** For row-vector storage the entire per-eye camera edit is **one element**:
+`M[3][0] += d · w`, with `w` the horizontal focal term from the shared matrix
+`[verified-numerically 2026-09-04, n=33 Python cases + 26 C assertions]`. The derivation is short and
+general — `(V·T − V)` has a single non-zero entry, any affine `W` preserves that shape, and row 0 of a
+perspective projection is `[w,0,0,0]` for symmetric and off-centre frusta alike. What makes it matter
+is what it *avoids*: it reads and writes nothing depth-related, so a reversed-Z reading that is still
+`[hypothesis]`, an unexplained per-position clip-z constant, and every clip-convention question simply
+cannot affect it. It also applies unchanged to the per-object path. Filed as a sub-section of the fused
+-matrix material it sharpens, with the object-scale trap restated and the honest caveat that the
+project has proven the algebra and **not yet rendered a frame** with it.
+
+**Two projects corrected themselves within hours, and both corrections are the transferable part:**
+
+- **`alice-madness-returns-vr`: an "inconclusive" stereo run was instrumentation, not evidence** — the
+  statistics line fired before the enabling hotkey, the write counter sat behind the enabled flag, and
+  the hotkey sampled at the toggle instant, so its "not seen yet" was produced by construction.
+  Recording that as a negative would have written off a working lever. **The escape needed no rebuild:
+  toggle twice and read the second line**, which turned the same session's inconclusive into
+  ⭐ **a confirmed result — the vertex-`c0` shear reaches the screen, proportionally and reversibly.**
+  Folded into the gated-diagnostic section (now `n=2` projects) and the [UE1–3 page](./engines/unreal-1-3.md).
+- **`doom-2016-vr`: a real fix was not the cause.** A camera-copy scan found zero; its window was
+  genuinely 6.6× too small and was genuinely fixed; the widened scan **still** found zero, because it
+  was scanning the process's largest mapping while the copies sat in a different region. New section:
+  [check the scan's base before you widen its range](./techniques/README.md#when-a-scan-finds-nothing-check-its-base-before-you-widen-its-range),
+  including the claim-hygiene half — a defect found while diagnosing a symptom is not thereby its
+  cause, and a fix verified only by compilation explains nothing until the failing path runs again.
+
+**Also generalised up:**
+
+- [**Prove an effect by reversing it, not by scoring it**](./techniques/README.md#prove-an-effect-by-reversing-it-not-by-scoring-it)
+  — two projects reached the same discrimination the same day, one in rendering and one in input.
+  Scene animation, drift and autoexposure can all produce a difference score; none can produce a
+  proportional, signed, reversible response to a parameter you control.
+- **⚠️ A correction to one of our own tools, which the library cites.** `dxbc-usage.py`'s walk back from
+  `SV_Position` ignored **program order** and therefore over-reported a position path by thirty-four
+  rows, listing a falloff block and a projector space written to a texcoord as if they fed the position.
+  That is this library's own "shape is not meaning" trap occurring inside the tool built to avoid it.
+  Recorded in place, with the re-audit that lets the earlier conclusions stand: the tool's unaffected
+  sections re-ran **byte-for-byte identical**.
+
+**Project-repo harvest (all 22 repos pulled; research-lane commits after this session's 14:05 cutoff on
+nine, six of which were this sweep's own inbox drops landing).** Read in full: `alice-madness-returns-vr`
+dossier §4/§9 and both 2026-09-04 blocks, `doom-2016-vr` dossier's ring-scan correction, `mad-max-vr`
+dossier §6b/§7a. `alan-wake-vr` and `psychonauts-vr` were `/gs` housekeeping folds with no research
+content. No dossier moved from "not covered" to "covered" — delta read only.
+
+**Feedback loop worth recording:** this morning's drop to `alice-madness-returns-vr` about a proxy that
+never frees the real DLL was drained into that dossier within forty minutes and used as **the
+interpretation key for one of its launch outcomes** — and the launch then showed the trap did **not**
+bite there, the proxy staying resident through the settings screens. Exposed and failing are different
+states, and the page now says so.
+
+**Web: not re-swept.** The full watch-list pass ran earlier today (second sweep, afternoon) and found no
+release changed anywhere; nothing in this delta pointed at a web question, so the session went to the
+in-house material instead. The next sweep should treat the web half as due.
+
+**Inboxes drained: one** (our own, one file, by explicit filename). **Inboxes filled: one** —
+`alice-madness-returns-vr/engine-research/inbox/`, carrying the one-element edit with the warning that
+its build stores matrices as **columns**, so the element is the transposed one.
+
+**New credits:** **Nefarius** (ViGEmBus) extended from a landscape mention to the driver behind a
+measured input route; first-party credit extended to `mad-max-vr`, `alice-madness-returns-vr` and
+`doom-2016-vr` for the sections above.
+
+**Process note.** The link checker over every anchor added this sweep reported **0 broken**, and it was
+itself corrected earlier today: its slug rule kept em-dashes, which GitHub strips, so it had reported
+twenty-eight false positives on pre-existing links. A checker that has never been shown to pass on
+known-good input is not evidence — the same rule this library applies to game instrumentation.

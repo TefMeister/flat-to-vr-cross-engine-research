@@ -195,7 +195,10 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
 - **dgVoodoo2** (dege-diosg) — wraps legacy DirectX (Glide/DX1–9) onto D3D11/12; the bridge that
   lets D3D9-and-older games reach geo-11 / 3Dmigoto. <https://github.com/dege-diosg/dgVoodoo2>
 - **ViGEmBus** (Nefarius) — virtual gamepad driver used by some adapters for controller
-  emulation. <https://github.com/nefarius/ViGEmBus>
+  emulation, and the driver behind this library's
+  [measured virtual-pad input route](./docs/techniques/README.md#known-input-routes-by-engine-family):
+  a virtual Xbox 360 pad it creates is bound by an XInput game as a genuine controller, focus-
+  independently and with nothing injected. <https://github.com/nefarius/ViGEmBus>
 - **ZNix** and the OpenComposite community forks — **OpenComposite / OpenOVR** (**GPL-3.0**),
   the OpenVR→OpenXR reimplementation. <https://gitlab.com/znixian/OpenOVR>
 - **Matthieu Bucchianeri (mbucchia)** — **OpenXR Toolkit** (**MIT**; development ended,
@@ -499,6 +502,20 @@ kept in place here, because knowing why a measurement was wrong transfers furthe
 would have. Where these rest on other people's public work — Microsoft's Win32 documentation, gho's
 DxWnd diagnosis, Paul Roussin's newsgroup answer and ReShade's Alan Wake fix — that work is credited
 above and was read online only; no code was taken from any of it.
+
+The [one-element per-eye edit](./docs/techniques/README.md#-and-then-the-edit-itself-is-one-element-not-a-rebuilt-matrix),
+[prove an effect by reversing it](./docs/techniques/README.md#prove-an-effect-by-reversing-it-not-by-scoring-it),
+[check the scan's base before its range](./docs/techniques/README.md#when-a-scan-finds-nothing-check-its-base-before-you-widen-its-range),
+the measured **virtual-pad input route**, and the program-order correction to our own `dxbc-usage.py`
+census were generalised on 2026-09-04 out of legitimately-owned copies of **Mad Max**, **Alice:
+Madness Returns** and **DOOM (2016)**:
+[`mad-max-vr`](https://github.com/TefMeister/mad-max-vr) ·
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr) ·
+[`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr). Two of those entries exist because a
+project **corrected itself**: an "inconclusive" stereo run that turned out to be gated instrumentation
+rather than a negative result, and a scan fix that was real but was not the cause of the symptom it was
+made to explain. The virtual-pad route rests on **Nefarius's ViGEmBus**, credited above; no code was
+taken from it.
 
 The [control rules](./docs/techniques/README.md#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one),
 the [write-combined memory section](./docs/techniques/README.md#never-cpu-scan-mapped-gpu-memory-in-place--it-is-write-combined)
