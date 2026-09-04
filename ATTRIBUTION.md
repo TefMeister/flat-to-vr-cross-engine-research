@@ -267,6 +267,24 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   in our own binary; nothing copied. <https://framedsc.com/GameGuides/Alan_Wake.htm>
 - **Neovad** — the Helix Mod Alan Wake 3D Vision fix, whose comment thread documents v1.06's
   FOV-dependent shadows. <https://helixmod.blogspot.com/2014/08/alan-wake.html>
+- **gho** — **DxWnd** (windowed-mode wrapper for fullscreen games, SourceForge). The public
+  diagnosis, in a 2014 thread on D3D9 device-`Reset` trouble, that `BeginStateBlock` restores the
+  device's COM method pointers and thereby invalidates in-place hook patching — and that hooking that
+  method is the fix. The primary witness behind our
+  [state-block section](./docs/techniques/README.md#recording-a-state-block-rewrites-the-devices-method-table--and-your-in-place-vtable-patch-with-it).
+  <https://sourceforge.net/p/dxwnd/discussion/general/thread/9b1c8171/> · project:
+  <https://sourceforge.net/projects/dxwnd/>
+- **Paul Roussin** — the corroborating D3D8-era statement, on Microsoft's now-retired DirectX graphics
+  newsgroup, that `BeginStateBlock` resets the device table and a vtable hook must re-apply its
+  addresses afterwards. Survives only on a third-party Usenet archive, whose displayed date we could
+  not corroborate; cited as an archived public post, not a vendor source.
+  <https://microsoft.public.win32.programmer.directx.graphics.narkive.com/PbJcO31s/hooking-d3device8-by-replacing-the-vtable-fails-info-needed>
+- **crosire** and the ReShade contributors — additionally credited for **ReShade commit `74347b91d`**
+  (2019-12-19, shipped in 4.5.2), *"Fix hooking in Alan Wake"*, whose diff comment records that freeing
+  the module reference taken for export hooks is what makes that game work. Prior art for our
+  [free-the-real-DLL section](./docs/techniques/README.md#and-it-must-free-the-real-dll-on-detach-or-a-reload-walks-straight-past-it);
+  read online only, no code taken.
+  <https://github.com/crosire/reshade/commit/74347b91d7729a6da93040298c6587bb3b786da4>
 ## Open-source libraries commonly used by these projects
 
 Each under its own license:
@@ -425,6 +443,11 @@ Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every
   <https://www.oldunreal.com/phpBB3/viewtopic.php?t=3938> ·
   <https://beyondunrealwiki.github.io/pages/customising-the-player-view.html>
 
+- **Microsoft** — Win32 API documentation, cited directly where a rule of the platform decides a
+  technique: the `LoadLibraryA` remark that a bare module name resolves to an already-resident module
+  of the same base name, and `CreateProcess`'s environment-inheritance behaviour.
+  <https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya> ·
+  <https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw>
 ### Our own first-party research
 
 The [read the shipped files](./docs/techniques/README.md#read-the-shipped-files-before-you-attach-anything),
@@ -454,6 +477,28 @@ those sections mention is ours, in
 [`flat-to-vr-RE-toolkit`](https://github.com/TefMeister/flat-to-vr-RE-toolkit). Where they rest on
 someone else's public work — Microsoft's D3D11 documentation and `fxc`, Hajime Uchimura's published
 GT tonemap — that work is credited above and was read online only.
+
+The [state-block vtable rewrite](./docs/techniques/README.md#recording-a-state-block-rewrites-the-devices-method-table--and-your-in-place-vtable-patch-with-it),
+[free the real DLL on detach](./docs/techniques/README.md#and-it-must-free-the-real-dll-on-detach-or-a-reload-walks-straight-past-it),
+[shader assembly text in the binary](./docs/techniques/README.md#a-fourth-case-the-shader-is-assembly-text-and-it-ships-in-the-binary),
+[one edit for both pipelines](./docs/techniques/README.md#if-both-pipelines-read-the-same-transform-per-eye-stereo-is-one-edit),
+[photo mode as a constants testbed](./docs/techniques/README.md#a-photo-mode-is-also-a-free-testbed-for-the-camera-and-projection-constants),
+[synthetic tap length and reading the keymap file](./docs/techniques/README.md#4-a-synthetic-tap-has-a-minimum-length-and-it-is-per-machine),
+[configure from a file, not the environment](./docs/techniques/README.md#configure-injected-code-from-a-file-it-reads-itself-not-from-environment-variables)
+and [the gated diagnostic](./docs/techniques/README.md#the-diagnostic-that-is-gated-on-the-failure-it-was-written-to-explain)
+sections were generalised on 2026-09-04 out of our own work on legitimately-owned copies of
+**Enslaved: Odyssey to the West**, **Alan Wake**, **XIII (2003)**, **Mad Max** and **The Evil Within**:
+[`enslaved-vr`](https://github.com/TefMeister/enslaved-vr) ·
+[`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) ·
+[`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr) ·
+[`mad-max-vr`](https://github.com/TefMeister/mad-max-vr) ·
+[`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr). Two of them also record a
+**withdrawal** — the "120–240 frames after `Reset`" latency and the "this UE3 build stripped its exec
+dispatch" reading, both retracted by the projects themselves on 2026-09-04 — and those corrections are
+kept in place here, because knowing why a measurement was wrong transfers further than the measurement
+would have. Where these rest on other people's public work — Microsoft's Win32 documentation, gho's
+DxWnd diagnosis, Paul Roussin's newsgroup answer and ReShade's Alan Wake fix — that work is credited
+above and was read online only; no code was taken from any of it.
 
 The [control rules](./docs/techniques/README.md#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one),
 the [write-combined memory section](./docs/techniques/README.md#never-cpu-scan-mapped-gpu-memory-in-place--it-is-write-combined)

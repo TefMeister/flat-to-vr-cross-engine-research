@@ -387,8 +387,20 @@ Two same-day findings from the UE3 pair, both with an engine-agnostic form on th
   chord]` Tilde/Tab/F10 open no console; shipped and added key bindings for `shot`, `FOV`,
   `ToggleDebugCamera` dispatch nowhere (a developer's own `F9 = shot` binding was the control);
   the debug-camera controller chord through a virtual XInput pad also did nothing, while the same pad
-  moved the character. The coherent reading is a shipping UE3 build with the console / cheat-manager
-  **exec dispatch compiled out** but its input maps left in. Remaining command channels are in-process
+  moved the character.
+  **⚠️ Corrected 2026-09-04 — the reading was wrong, and the correction is a UE3-wide lesson.** "This
+  build compiled out its exec dispatch" wore a `[verified-live]` tag; it is now `[hypothesis]`, because
+  **none of the three negatives was a valid negative** and each failed for a cheaper, UE3-structural
+  reason: the `shot` binding lives only inside the debug-camera controller's own input class, which
+  does not exist in normal play, so that test could never have gone positive; `ToggleDebugCamera` is a
+  **cheat-manager** exec, and a `CheatManager` is only constructed when `AddCheats()` runs behind
+  `AllowCheats()`, with UE3's bound-command chain returning false **silently** when no live object owns
+  the name — dispatch fully alive; and the `FOV` exec is a one-shot the chase camera can overwrite each
+  tick. **Generalise this before testing any UE3 title's console:** a bound exec that does nothing tells
+  you no *object* owns that name right now, which is a different and much weaker statement than "the
+  dispatcher is gone". Pick a probe that a plain `PlayerController` owns unconditionally and whose
+  effect is unmistakable — `Pause` is the good one — before concluding anything.
+  Remaining command channels are in-process
   exec from the proxy (static work) or the pad for pad-gated features. Also measured: shadows pass a
   matched-depth stereo test exactly (no swim), and the D3D9Ex `MANAGED` trap is
   [solved prior art](../techniques/README.md#d3d9-to-a-modern-vr-compositor-the-shared-handle-bridge-and-its-two-traps),
@@ -405,9 +417,16 @@ techniques page as [a D3D9 `Reset` can disarm a device hook](../techniques/READM
 
 - **After any `Reset`, `SetVertexShaderConstantF` is never seen again** `[verified-live 2026-09-03,
   n=2 resets]` — one from a resolution change, one from an ordinary checkpoint restart. `Present`,
-  the `Reset` hook and the forced-window logic all keep working; the failure lands 120–240 frames
-  *after* the reset returns, which points at UE3 re-creating its RHI/device objects post-reset onto a
-  path the vtable patch no longer covers `[hypothesis]`, a static check. A relaunch always restores it.
+  the `Reset` hook and the forced-window logic all keep working. A relaunch always restores it.
+  ~~The failure lands 120–240 frames *after* the reset returns, which points at UE3 re-creating its
+  RHI/device objects post-reset onto a path the vtable patch no longer covers.~~ **⚠️ Both halves
+  withdrawn 2026-09-04.** The delay was an artefact of a per-interval summary counter, which cannot
+  date an event more finely than its own window; and the RHI-recreation suspect is excluded, because
+  D3D9 vtables are shared per runtime class, no second `CreateDevice` was ever logged, and **another
+  slot in the same table kept working**. The current leading explanation is
+  [a recorded state block restoring the runtime's own method table](../techniques/README.md#recording-a-state-block-rewrites-the-devices-method-table--and-your-in-place-vtable-patch-with-it)
+  — `[reported]` as a D3D8/D3D9 mechanism, `[hypothesis]` for this title until a run says so, and UE3's
+  own D3D9 RHI records no state blocks, so the recorder would be another resident of the process.
   **Read the `offset` counter in the log before trusting any stereo observation on this title.**
 - **The build ignores its own saved resolution at startup** `[verified-live 2026-09-03, n=2
   launches]`: `MonkeyEngine.ini` says 1280×720, `CreateDevice` asks for the desktop size, the options
@@ -428,6 +447,46 @@ techniques page as [a D3D9 `Reset` can disarm a device hook](../techniques/READM
   acts on it** — at one second the scan returned a flat score curve that read as "the camera will not
   turn". An impatient route, not a dead one; the same shape as
   [saturate first, then tune down](../techniques/README.md#saturate-first-then-tune-down--a-too-small-injection-reads-exactly-like-failure).
+
+### 2026-09-04: XIII's shaders are assembly TEXT in the DLL, and UE2's two pipelines share one transform
+
+Two static results from XIII (UE2 / D3D8), read out of the shipped renderer DLL with nothing running
+`[inferred-static 2026-09-04, n=1 binary]`. Both have engine-agnostic forms on the techniques page
+([shader assembly text](../techniques/README.md#a-fourth-case-the-shader-is-assembly-text-and-it-ships-in-the-binary),
+[one edit for both pipelines](../techniques/README.md#if-both-pipelines-read-the-same-transform-per-eye-stereo-is-one-edit)).
+
+- **This build ships no shader bytecode at all** — the renderer holds three `vs.1.0` **assembly source
+  strings** and assembles them at device-init, producing the six handles the earlier live run counted.
+  Reading the text gave the constant map outright: the transform at `c0..c3` in row-vector order, a
+  flat colour at `c4`, two lookup vectors at `c5`/`c6`. One of the three is identifiably the cel-shade
+  **outline** pass — position pushed along the normal, flat colour — which upgrades a 2026-09-03
+  `[hypothesis]` to fact. Six Xbox-format pixel-shader strings also ship and **cannot be assembled by
+  the PC path**; console-port leftovers, and a reminder that a shipped string is not a shipped feature.
+- **⭐ Both upload sites build `c0..c3` as `World × View × Projection` from the renderer's own
+  `SetTransform` caches.** That is the same `V` and `P` the fixed-function path receives, so on this
+  build **per-eye stereo is one operation for both pipelines**: substitute the per-eye `V` and `P`
+  through `SetTransform` for fixed-function draws, and recompose the register block for programmable
+  ones. It also disproves the earlier "two stacked matrices" reading of the `c0 ×8` upload — one matrix
+  plus four parameter registers.
+- **Status:** the per-eye stereo build exists, is `[compile-verified 2026-09-04]` and its maths
+  `[verified-numerically 2026-09-04, 9,209 checks, 5 deliberate mutations all caught]`, and **has never
+  rendered a frame**. Its draw path checks the uploaded block against the shadowed product at draw time
+  and, on a mismatch, draws the geometry unmodified and counts it rather than dropping it.
+
+### 2026-09-04: Enslaved's vtable patch now heals itself, and the estate-wide UE3 lesson
+
+`[compile-verified 2026-09-04]`, not run. The proxy re-checks its patched device slots every `Present`
+and re-applies any that have reverted **to the runtime's own original pointer** — the one unambiguous
+case; a foreign pointer is logged with its module and left alone, because it may be a later hook that
+chains onward. `BeginStateBlock`/`EndStateBlock` are hooked purely to log who records and whether the
+constants slot survived, and the slot's state is now stamped the instant `Reset` returns rather than
+inferred from a periodic summary. Whether re-arming yields a *working* stereo is the next launch's
+question, not a claim.
+
+**For any UE3 title in this estate** (Enslaved and Alice today): if you patch a D3D9 device vtable in
+place, assume the state-block rewrite applies to you until a log says otherwise, and put the armed
+check in before the next stereo observation — a disarmed stereo mod renders a perfectly good mono
+frame and says nothing.
 
 ## See also
 

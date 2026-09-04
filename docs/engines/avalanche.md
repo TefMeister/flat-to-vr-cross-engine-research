@@ -80,6 +80,31 @@ constant-within-frame filter cannot see a per-pass camera — are on the techniq
 [per-pass filter](../techniques/README.md#-a-constant-across-every-draw-in-the-frame-filter-excludes-a-per-pass-camera-by-design)).
 Tool: `dxbc-usage.py` in `flat-to-vr-RE-toolkit`, beside `dxbc-reflect.py`.
 
+**Update 2026-09-04b — the shipped photo mode measured the projection, and the projection alone.**
+Mad Max's pause-menu Capture Mode writes the same shared slots gameplay writes, which makes it a free
+instrument for this family; the engine-agnostic form is
+[a photo mode is also a free testbed for the camera and projection constants](../techniques/README.md#a-photo-mode-is-also-a-free-testbed-for-the-camera-and-projection-constants).
+
+- **Its FIELD OF VIEW slider moves only the two focal columns** of the shared view-projection —
+  horizontal FOV **58.3° … 116.9°**, default 80.5°, about 3° per click near the default — leaving the
+  eye position, the forward column and the clip-z row untouched `[measured 2026-09-04, n=6 dumps, 5
+  slider positions]`. Leaving Capture Mode with `Esc` restores the default at once, so the slider does
+  not carry into gameplay by that route `[verified-live 2026-09-04, n=1]`.
+- **The engine anchors the HORIZONTAL FOV and derives the vertical from the window aspect** — the same
+  80.5° horizontal at 16:9 and at 1.40:1, with vertical moving from 50.9° to 62.4°
+  `[measured 2026-09-04, n=2 aspects]`. A per-eye projection patch on this family must scale
+  accordingly.
+- **The clip-z constant is per POSITION, not per frame** — two values at two garage positions, then
+  stable across thirteen dumps over ten minutes at one of them `[measured 2026-09-04, n=2 positions]`.
+  Its meaning is `[hypothesis]`; what matters here is that a "constant" verified by repeated sampling at
+  one spot is not thereby a frame constant. The cadence family again.
+- **Practical:** the Capture Mode tabs and sliders are **mouse-only** — clicks on the tab label, the row
+  label, and the `<` / `>` arrows; keys, bar clicks and knob drags do nothing `[verified-live
+  2026-09-04]`. And the game's `settings.ini` stores key bindings as alphabetical indices (A=0…Z=25),
+  which named the first-person-driving and enter-vehicle keys before either was pressed
+  `[inferred-static 2026-09-04]`. The in-car first-person camera is still `[reported]` — pressed on
+  foot with no effect, as expected, and the in-car press needs a save with a drivable car.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" row.

@@ -133,6 +133,30 @@ draws the element anyway.** If a HUD-hiding script "does nothing", check the fra
 before debugging your own code. The cause generalises — see
 [techniques → silent no-ops](../techniques/README.md#silent-no-ops-verification-that-cannot-see-the-failure).
 
+### The framework's release is eighteen months behind its master, and the Lua fixes are on master
+
+`[reported 2026-09-04]` REFramework's newest tagged release is still **v1.5.9.1 (2025-03-05)**, while
+`master` is committed to daily — read from the GitHub releases API and the commit list on 2026-09-04.
+That gap is not a curiosity for anyone writing Lua on this family; it decides which bugs you have.
+
+The first days of September 2026 alone carried a run of **Lua data-model fixes** on master — array
+element setting, array element **type confusion**, and string/number ambiguity, plus managed-array and
+managed-string creation fixes made while adapting to a newer RE Engine title — none of which is in any
+release. The `on_pre_gui_draw_element` fix in the section above (PR #1809, 2026-08-28) is in the same
+category.
+
+**Two practical consequences, opposite in direction:**
+
+- **On a release build**, a Lua script that mishandles an array element or confuses a numeric string is
+  hitting known, already-fixed framework behaviour. Check the framework revision before rewriting your
+  own script — this family's scripts sit on a moving platform.
+- **On a master build**, you get those fixes and also any regression of the week. The 2026-08 GUI
+  callback break lived on master for nine days.
+
+**So record the exact REFramework revision beside every Lua result you write down**, the same way you
+would record a game patch version. On this family, "it worked yesterday" is a statement about two
+programs, not one.
+
 ### Custom animation and locomotion levers, cross-title
 
 `[reported]` The motion system is engine-level rather than per-game, so these public techniques

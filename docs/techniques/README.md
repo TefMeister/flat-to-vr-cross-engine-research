@@ -979,6 +979,67 @@ covered elsewhere on this page: an *absent* capability is not proof either when 
 the call is resolved by string.) The third row therefore currently has **no worked case in this
 estate**; it stays as a real possibility, not an observed one.
 
+#### A fourth case: the shader is ASSEMBLY TEXT, and it ships in the binary
+
+The table above has three rows because those were the three cases seen. A D3D8-era title added a
+fourth `[inferred-static 2026-09-04, n=1 binary]`: its renderer DLL contains **no shader bytecode at
+all** — no version tokens anywhere in the file — but does contain three `vs.1.0` **assembly source
+strings**, which the game hands to the runtime assembler at device-init time. Six shader handles came
+from those three sources.
+
+That is the friendliest case of the four, and it is easy to miss precisely because a bytecode scan
+comes back empty and reads as "this game ships no shaders":
+
+- **The register semantics are written out.** Reading the text gave the constant map directly — the
+  transform occupying `c0..c3` in row-vector order, a colour in `c4`, two lookup vectors in `c5`/`c6`
+  — with no disassembler, no reflection block and nothing running.
+- **It tells you what each shader is *for*.** One source pushes the position along the normal by a
+  scalar and emits a flat colour: that is an outline pass, identified by reading it rather than by
+  elimination from a frame capture.
+- **⚠️ And it carries the usual trap: not every shipped string is reachable.** The same DLL holds six
+  **Xbox-format** pixel-shader strings the PC assembler cannot accept — console-port leftovers. Same
+  rule as everywhere else on this page: presence in the binary is evidence about the build, not about
+  what runs. Match the strings to the call sites that reference them before believing any of them.
+
+**How to check for this case:** search the binary for the assembly-language mnemonics themselves
+(`vs.1.0`, `vs.1.1`, `ps.1.`, `dcl_`, `mov r`, `dp4`) as plain ASCII, not for bytecode signatures. It
+costs one grep, and on a fixed-function-era title it is worth doing **before** planning any runtime
+capture.
+
+#### If both pipelines read the same transform, per-eye stereo is one edit
+
+The more valuable half of that same static read was not the shader text but where its constants came
+from `[inferred-static 2026-09-04]`. Both upload sites composed the register block by multiplying
+**the three transforms the fixed-function path was already being given** — world, view and projection,
+each cached by the renderer's own `SetTransform` handler — and uploading the product.
+
+That collapses a problem this library usually treats as two. A mixed-era engine draws some geometry
+through the fixed-function pipeline and some through shaders, and the reflex is to plan two separate
+per-eye interventions. But if the programmable path is uploading `W · V · P` built from the same
+cached `V` and `P`, then **replacing `V` and `P` with their per-eye versions covers both pipelines**:
+the fixed-function draws through the API's own transform setter, the programmable draws by
+recomposing the same product. No matrix inversion, no shader patching, nothing to defeat.
+
+**So the question to ask of any such engine is narrow and static:** *where does the constant block
+come from?* Follow the upload call backwards to its arguments. If it is composed from cached
+transforms, you have one lever; if it arrives from somewhere else entirely, you have two problems and
+should know that before writing either.
+
+**And verify the identity at the point of use, rather than assuming it.** What is established
+statically is that the code *composes* the product; whether the value in the register at draw time
+still equals your shadowed `W · V · P` is a separate question — another pass, a later upload, or a
+path you have not read can break it. The pattern that project shipped is worth copying: at draw time
+compare the uploaded block against the shadow, rewrite per-eye **only on a match**, and on a mismatch
+**draw the geometry unmodified and increment a counter**. Never drop the draw. That way a wrong
+assumption costs a mono object and a number in the log, rather than a hole in the world and a
+mystery — the [silent no-op](#silent-no-ops-verification-that-cannot-see-the-failure) inverted into a
+loud one.
+
+Generalised from [`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr) (`engine-research/`,
+2026-09-04), whose per-eye maths was itself
+[mutation-checked](#prove-the-test-can-fail-mutation-check-a-numerical-verification-before-trusting-it)
+before any launch.
+
 #### The register is not fixed: a skinning palette displaces the camera constants
 
 `[inferred-static 2026-09-03, n=2 engines]` Two unrelated D3D9 engines, read the same day, put the
@@ -1335,11 +1396,22 @@ Three details make this worth a section rather than a bug report:
 - **Both kinds of reset trigger it.** One came from changing resolution in the options menu; the other
   from an ordinary **checkpoint restart** that nobody asked for. Forcing a fixed window makes resets
   rare, which is why the symptom had gone unexplained for a session — rarity hid it.
-- **It is not instantaneous.** One more healthy per-frame summary printed *after* the reset, and only
+- ~~**It is not instantaneous.** One more healthy per-frame summary printed *after* the reset, and only
   the next was dead — so whatever removes the hook runs roughly 120–240 frames later, not inside the
-  `Reset` call. The prime suspect is the engine re-creating its device-side objects after the reset
-  onto a path the hook no longer covers; that is `[hypothesis]`, checkable statically, and on that
-  project queued as a no-launch task.
+  `Reset` call.~~ **⚠️ WITHDRAWN 2026-09-04, and the withdrawal is the more useful finding.** The
+  summary line that produced that figure counts events *since the previous summary*, over a fixed
+  frame window. One healthy summary after the reset is therefore exactly what you would see **even if
+  the hook died inside `Reset` itself** — the window, not the mechanism, produced the latency
+  `[inferred-static 2026-09-04]`. **A periodic aggregate cannot date an event more precisely than its
+  own interval**, and reading a timing claim out of one is a measurement error that looks like a
+  result. If you need the moment, stamp the moment: that project's next build logs the slot's state
+  the instant `Reset` returns. Filed beside [the instrument can be the
+  bug](#the-instrument-can-be-the-bug).
+- **The original prime suspect is now excluded.** "The engine re-creates its device-side objects onto
+  a path the hook no longer covers" fails on three checks: D3D9 vtables are shared per runtime class,
+  a second `CreateDevice` would have been logged by the proxy's own hook, and **another slot in the
+  same table kept working** — only the one state-setting slot was rewritten `[inferred-static
+  2026-09-04]`. That last detail is what points at the real candidate: [a recorded state block restoring the runtime’s own method table](#recording-a-state-block-rewrites-the-devices-method-table--and-your-in-place-vtable-patch-with-it), immediately below.
 - **The control is clean.** Same DLL, same machine, minutes apart: a fresh launch reads healthy every
   time. Relaunch is the only recovery known so far.
 
@@ -1363,6 +1435,74 @@ neighbours" survives it).
 Generalised from [`enslaved-vr/modding-notes/`](https://github.com/TefMeister/enslaved-vr/tree/main/modding-notes)
 (`2026-09-03d-reset-kills-the-stereo-and-glancing-water-measures-clean.md`); the full proxy log of the
 run that reset is in that repo's `dev-archive/recon/`.
+
+## Recording a state block rewrites the device's method table — and your in-place vtable patch with it
+
+`[reported]` for the mechanism in general; `[hypothesis]` for the one title where it is currently the
+leading explanation. **This is the strongest available candidate for the previous section's symptom**,
+and it is worth knowing on its own because it explains a whole class of "my hooks died and nothing
+said so" on D3D8 and D3D9.
+
+**The mechanism.** `IDirect3DDevice9::BeginStateBlock` puts the runtime into recording mode by
+swapping the device's **state-setting** methods — `SetRenderState`, `SetTexture`,
+`SetVertexShaderConstantF` and their neighbours — for recording variants, and `EndStateBlock` writes
+the runtime's **own originals** back. Any third-party function pointer sitting in one of those slots
+is overwritten by that restore and never comes back. Methods that do not set state — `Present`,
+`Reset`, the creation calls — are untouched.
+
+**So the signature is unmistakable once you know it:** *some* of your hooks keep working forever and
+*others* die permanently, in the same table, with no error, no crash and nothing on screen. A proxy
+that patched five slots finds it still owns four. That is not a partial failure of your patching
+code; it is the runtime restoring a specific subset.
+
+**Two independent public witnesses, one on D3D9 and one on D3D8:**
+
+- **gho**, the author of **DxWnd**, on SourceForge (2014-06-02), diagnosing exactly this while chasing
+  D3D9 device-`Reset` trouble in a shipped game: *"D3DDevice9::BeginStateBlock recover all COM method
+  pointers invalidating the hook patching."* — and the fix he then shipped: *"It's sufficient to hook
+  this method to restore back the DxWnd routines and the trick is done!"*
+  ([thread](https://sourceforge.net/p/dxwnd/discussion/general/thread/9b1c8171/); read twice,
+  independently, before quoting here).
+- **Paul Roussin**, on the Microsoft DirectX graphics newsgroup, answering someone whose D3D8 vtable
+  hook had failed: *"If you are going to hook the D3D device table that way then you will have to hook
+  calls like BeginStateBlock and EndStateBlock. BeginStateblock will reset the device table so you
+  have to make the code return control back to you so you can reset your modified addresses."*
+  ([archived thread](https://microsoft.public.win32.programmer.directx.graphics.narkive.com/PbJcO31s/hooking-d3device8-by-replacing-the-vtable-fails-info-needed);
+  Microsoft's own newsgroups are long gone, so this survives only on a third-party Usenet mirror and
+  the displayed date could not be corroborated — treat it as a findable archived post, not a primary
+  vendor source.)
+
+**Why it presents as "the reset killed my hook".** You are usually not the one recording. The caller
+is another resident of the process — a Steam or driver overlay, anything built on `ID3DXSprite` or
+`ID3DXFont`, an engine that records state blocks of its own — and those residents most often
+(re)initialise **after a device reset**, which is precisely when the symptom appears. The reset is
+the occasion, not the cause. On the worked title the engine's own renderer records no state blocks at
+all, so the recorder must be a third party.
+
+**The remedies, cheapest first:**
+
+1. **Detect it.** Every `Present`, compare each patched slot against your own function pointers and
+   log the first mismatch with the new value and the module it belongs to. This costs nothing and
+   turns an invisible failure into a line in a log.
+2. **Re-arm after the fact.** Hook `BeginStateBlock`/`EndStateBlock` and re-apply your patches when
+   recording ends — what DxWnd shipped. **Re-arm only a slot that has reverted to the runtime's own
+   original pointer**, which is the one unambiguous case; a *foreign* pointer may be a later hook
+   that chains to you, and blindly overwriting it breaks somebody else's mod. Log those once and
+   leave them alone.
+3. **Do not patch the table at all for state-setting methods.** A code hook on the runtime function
+   body (MinHook-style) is immune by construction, because nothing about state-block recording
+   rewrites the function's first instructions.
+4. **Wrap the device** in your own object with your own vtable once you need more than a few methods.
+   Wrappers are immune to this entirely — the runtime restores *its* table, and yours is not it.
+
+**Exposure is a one-line grep of your own estate**: any proxy that writes function pointers into a
+D3D8/D3D9 device vtable in place is exposed; any proxy that wraps the device object is not
+`[inferred-static 2026-09-04]`.
+
+Generalised from a `/gr` research hand-off on
+[`enslaved-vr`](https://github.com/TefMeister/enslaved-vr) (2026-09-04), where the self-healing build
+described in remedy 2 is written and compiled but **not yet run** — so the mechanism's confirmation on
+that title is still owed, and the tags above say so.
 
 ## Hook to acquire a handle the API will not give you
 
@@ -1742,6 +1882,45 @@ unit, so its pre- and post-state match and it is safe to call repeatedly.
 Generalised from `doom-2016-vr` modding-session hand-offs, 2026-09-01, including that session's own
 same-day correction of its first write-up.
 
+### 4. A synthetic tap has a minimum length, and it is per machine
+
+`[verified-live 2026-09-04]` The same harness (Win32 `SendInput`, scancodes, no virtual keys) that
+had driven a game's menus with **70 ms** taps on one machine was **silently ignored by the same game
+on another** — two `Esc` presses, screen unchanged, the game rendering normally and holding focus.
+**250–300 ms holds registered every time**, across about twenty presses. Nothing in between was
+tested, so the threshold itself is unmeasured; what is established is that the working length is not
+a constant of the game.
+
+The likely cause is ordinary and unfixable from outside: an engine that samples input once per frame,
+or debounces it, needs the key down across at least one sample, and frame time differs per machine
+and per resolution. **The point is the failure shape, not the mechanism** — a too-short tap and an
+unbound key are indistinguishable, and both look like "this game ignores the keyboard", which sends
+you to rewrite an input backend that works. Same family as the extended-key flag on the arrow keys,
+and as [a too-small injected mouse motion](#saturate-first-then-tune-down--a-too-small-injection-reads-exactly-like-failure):
+the stimulus was below threshold, not absent.
+
+**Rule: before concluding a binding is wrong, lengthen the hold to about 0.3 s.** Then record the
+working hold length in that game's control profile, **per machine** — it is machine state, not game
+knowledge.
+
+### 5. Read the game's own keymap file before guessing which key does anything
+
+Guessing keys is the most expensive habit in this area, and community-reported keys are only slightly
+cheaper: they are usually right for a different build or a different layout. **Many games ship their
+bindings in plain text** and will simply tell you.
+
+The worked case stores its actions in an ini as **alphabetical indices** — `A`=0 through `Z`=25 — so a
+row reading `12` is `M`. Decoding that file named the first-person-driving key and the enter-vehicle
+key before either had been pressed `[inferred-static 2026-09-04]`. **Config-backed beats
+community-reported, and both beat guessing** — and a config-backed key that then does nothing is a
+much more informative negative, because the binding is no longer in doubt.
+
+Carry the standing caveat with it: [a binding surviving in a shipped config is not evidence the
+feature is live](#and-check-that-the-shipped-switch-still-dispatches--a-binding-in-a-config-is-a-lead-not-a-feature).
+The file tells you which key, not whether anything is listening.
+
+Items 4 and 5 generalised from `mad-max-vr` modding-session hand-offs, 2026-09-04.
+
 ## Before you build it, check whether the game shipped it
 
 Two habits, both cheap, both of which turned out to matter more than the work they replaced.
@@ -1817,6 +1996,47 @@ Those restrictions limit their use as a *development instrument* but do not dimi
 existence tells you about the engine.
 
 Generalised from a `/gr doom-2016-vr` research hand-off, 2026-09-01.
+
+### A photo mode is also a free testbed for the camera and projection *constants*
+
+The section above is about what a shipped photo mode tells you. This one is about using it as an
+instrument, which turned out to be worth more.
+
+**First, check that the photo camera writes the same constants gameplay writes.** On one D3D11
+title the pause-menu capture camera drives **exactly the shared constant-buffer slots the gameplay
+camera drives** — the camera-position slot and the per-pass clip matrix `[verified-live 2026-09-04,
+n=1 game]`. That is not guaranteed; a photo mode could plausibly run its own path. The test is one
+launch: dump the slots in gameplay, enter the photo mode, move the camera a known way, dump again,
+and see whether the same slots moved by the expected vector.
+
+Where it holds, you have gained the cheapest per-eye rig available: **the scene is frozen, the
+camera is still and steerable, the HUD is gone, and an A/B of a rewritten constant is a screenshot
+pair with no timing pressure.** Animation noise — which otherwise contaminates every two-dump
+comparison — is simply absent.
+
+**Second, an FOV slider hands you the projection at several known angles, for free.** On the same
+title the slider moved **only the two focal columns** of the shared view-projection, sweeping
+horizontal FOV from 58° to 117° while the eye position and forward vector stayed put
+`[measured 2026-09-04, n=6 dumps, 5 slider positions]`. For anyone about to write a per-eye
+projection rewrite that is a built-in reference implementation: set a known angle, read the columns,
+compare against your own maths. It also localises the projection inside a fused matrix without a
+single memory write.
+
+**Third, two window aspects tell you which FOV the engine anchors.** Running the same slider value
+at 16:9 and at 1.40:1 gave the same horizontal FOV and a different vertical one — so that engine
+anchors the horizontal and derives the vertical `[measured 2026-09-04, n=2 aspects]`. One extra
+launch answers it for any game, and it decides which column a VR patch must scale.
+
+**Fourth — the practical trap — photo-mode UIs are often mouse-only.** Two sessions on that game
+spent keypresses on `E`, `Tab` and the arrow keys trying to change tab; a mouse click on the tab
+label worked first time, and slider values moved only on clicks to the `<` / `>` arrows at the ends
+of the bar — not bar clicks, not knob drags `[verified-live 2026-09-04]`. **When an in-game UI
+shows a mouse glyph in its hint row, drive it with absolute clicks before spending any more
+keypresses**, and record the working click coordinates with their window size, since they are
+resolution-dependent.
+
+Generalised from `mad-max-vr` modding-session hand-offs, 2026-09-04
+([notes](https://github.com/TefMeister/mad-max-vr/tree/main/modding-notes)).
 
 ### And check whether the *community* already built it — then check it does not collide with your proxy
 
@@ -2142,6 +2362,46 @@ the live file always vanish. Worked example on the
 Evidence:
 [manhunt-2003-vr](https://github.com/TefMeister/manhunt-2003-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
 §4a.
+
+## Configure injected code from a file it reads itself, not from environment variables
+
+`[verified-live 2026-09-04, n=3 launches]` A proxy took its knobs — including the one that enabled the
+experiment being run — from environment variables. Three consecutive launches ran the experiment as an
+**identity transform**, silently, and were written up as three uninformative results before the cause
+was found: the launcher script that set the variables was not the thing that started the process.
+
+**The mechanism is ordinary and easy to forget.** A child process inherits the environment of *its
+parent*, unless the parent supplies a different block
+([`CreateProcess`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw)
+`lpEnvironment`). When a game is started **through a storefront client**, the parent is that client —
+not your shell, not your script, not the terminal you exported the variable in. Nothing in the chain
+reports a problem: your variable simply is not there, your code takes its default, and the default is
+usually "do nothing". *(That a storefront client does not forward a user shell's environment is our own
+observation and standard process behaviour, not something the vendor documents; treat it as the
+expected case rather than a quirk.)*
+
+**It is a silent no-op with an extra step**, and worse than most, because the missing configuration
+also disables the very instrumentation that would have reported it.
+
+**The rule: anything you must be able to set is read by your own code, from a file your own code
+locates.** That project now reads an ini beside the executable, then a per-user path, with the
+environment kept only as an override for the rare case where it genuinely is inherited. Three details
+make it work:
+
+- **Log where every value came from** — file path, environment, or built-in default — on the line where
+  you log the value. Then a mis-set knob is visible in the first ten lines of the log rather than after
+  three launches.
+- **Put the file where the process will be, not where you are.** Beside the executable is the reliable
+  location; the working directory of a storefront-launched game is not yours to predict.
+- **Parse it with tests, not with confidence.** An ini parser is fifty lines and every one of them can
+  swallow a value in silence. That project's is
+  `[verified-numerically 2026-09-04, n=14 checks]` against a table of inputs, which is cheap insurance
+  for something every future run depends on.
+
+The wider principle this belongs to: **a launcher script is not a mechanism.** Anything that has to be
+true at run time should be established by code inside the process, at the moment it is needed, and
+recorded in the log — not arranged outside and assumed to have arrived. Generalised from
+[`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr), 2026-09-04.
 
 ## Make one launch answer many questions
 
@@ -2516,6 +2776,62 @@ table; if it produces a tidy error message, suspect your logic.**
 the only D3D9 export referenced across all ten of its module binaries — a check performed
 specifically because of the Alice result. That is the re-audit habit working as intended.
 
+### …and it must FREE the real DLL on detach, or a reload walks straight past it
+
+A second, quieter way to lose the same foothold, and the failure looks nothing like a bug in your code
+`[reported, first-party 2026-09-04]`.
+
+**The loader rule that causes it** is in Microsoft's own `LoadLibrary` remarks: *"When no path is
+specified, the function searches for loaded modules whose base name matches the base name of the
+module to be loaded. If the name matches, the load succeeds. Otherwise, the function searches for the
+file."*
+([LoadLibraryA](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya)
+— the remark is on that page specifically, not on `LoadLibraryEx`.) A bare module name resolves to
+**whatever is already resident under that name**, and the search path is never consulted.
+
+**How that removes your proxy.** Your game-folder `d3d9.dll` loads the real one from the system
+directory by full path — correct, and the standard pattern. If the game then `FreeLibrary`s *your*
+proxy — a capability probe at startup, a renderer restart, an options change — and your `DllMain`
+never released the system copy on `DLL_PROCESS_DETACH`, the system copy stays resident under the base
+name `d3d9.dll`. The game's next `LoadLibrary("d3d9.dll")` matches it by name and succeeds
+immediately. **The application directory is never searched, your proxy is never loaded again, and the
+game runs perfectly without you for the rest of the process.**
+
+**The log signature, which is the useful part.** Per launch, the proxy log contains a load, one or two
+export calls, and an unload within about a hundred milliseconds — and then nothing, while the game
+visibly reaches gameplay. That reads as "the game crashed my mod" or "this game must use a different
+graphics API". It means neither. It means **you were reloaded past.**
+
+**Prior art confirms both the failure and the fix.** ReShade carried this bug against one specific
+game until commit
+[`74347b91d`](https://github.com/crosire/reshade/commit/74347b91d7729a6da93040298c6587bb3b786da4)
+(2019-12-19, shipped in 4.5.2), whose title is simply *"Fix hooking in Alan Wake"*; the reason is
+written as a comment in the diff itself — freeing the reference to the module loaded for export hooks
+*"is necessary for Alan Wake to work"*. The same game, the same one line, seven years apart.
+
+**There are two fixes, and the second one is better.**
+
+1. **Release the real module in `DLL_PROCESS_DETACH`.** One line. It restores the intended behaviour:
+   nothing of that base name is resident, so the next load searches the application directory and finds
+   you again.
+2. **Or never load a module under the same base name at all.** A proxy that loads a *renamed* copy of
+   the original — `Something_Original.dll` beside the game rather than the system `Something.dll` —
+   cannot be bypassed this way, because a later `LoadLibrary("Something.dll")` has no resident module
+   of that base name to match. The rename pattern is usually adopted for a different reason (games
+   whose real DLL is a game-folder file, not a system one), and this immunity comes free with it.
+
+**Audit every proxy you own, because a leak is a *latent* failure**: it works perfectly until it meets a
+game that probes-and-reloads, and then costs a session to diagnose from scratch. That audit is a grep
+for `FreeLibrary` in each proxy's `DllMain`, and it is worth actually running rather than assuming.
+Doing it across one estate `[inferred-static 2026-09-04, n=10 proxies read]` found that **of the eight
+proxies that load the real system module by path, exactly one released it**; two apparent passes turned
+out to be the word `FreeLibrary` appearing in a *comment*, which is a reminder to grep for the call and
+then read the line. The one proxy that was structurally safe was safe by fix 2, not fix 1 — it loads a
+renamed original.
+
+Generalised from a `/gr` research hand-off on
+[`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr), 2026-09-04.
+
 ## The instrument can be the bug
 
 `[verified-live 2026-08-25, n=1]` A single well-documented case, recorded because the shape is
@@ -2551,6 +2867,20 @@ Three transferable habits:
   a deleted mystery for them to rediscover.
 
 Generalised from [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr).
+
+### The diagnostic that is gated on the failure it was written to explain
+
+A related and very cheap mistake, from a different project the same week. A proxy bucketed the draws
+its patcher had missed — sizes, usage flags, shader hashes, everything needed to answer *do the
+missed draws carry world geometry?* — and printed the table **only while the patched count was
+zero**. Once patching started working, which was the whole point of the session before it, the table
+stopped printing. The instrumentation existed, the data existed, and the question sat open for a day
+behind one `if` `[compile-verified 2026-09-04]`.
+
+**When you gate a diagnostic on a failure condition, you delete it at the moment the thing half
+works** — which is exactly the state in which its answer is most interesting. Print periodically and
+at shutdown instead, and let volume be managed by the interval rather than by a predicate on
+success. Generalised from [`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr).
 
 ## Counting callers separates what a binary *links* from what it *uses*
 
