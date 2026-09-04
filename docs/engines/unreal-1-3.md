@@ -398,6 +398,37 @@ Two same-day findings from the UE3 pair, both with an engine-agnostic form on th
   defaults; the project's hardcoded 2.0 was `[disproved 2026-09-03]` from the SDK's own source. Stock
   DX9 mode swaps the green and blue exponents. Record `GammaMode` and `Brightness` before any A/B.
 
+### UE3 / D3D9, 2026-09-03d: a device `Reset` disarms the constants hook, and the stereo now has a measured surface table
+
+Third autonomous session on Enslaved, first on the home machine; the engine-agnostic form is on the
+techniques page as [a D3D9 `Reset` can disarm a device hook](../techniques/README.md#a-d3d9-reset-can-disarm-a-device-hook-silently-and-late).
+
+- **After any `Reset`, `SetVertexShaderConstantF` is never seen again** `[verified-live 2026-09-03,
+  n=2 resets]` — one from a resolution change, one from an ordinary checkpoint restart. `Present`,
+  the `Reset` hook and the forced-window logic all keep working; the failure lands 120–240 frames
+  *after* the reset returns, which points at UE3 re-creating its RHI/device objects post-reset onto a
+  path the vtable patch no longer covers `[hypothesis]`, a static check. A relaunch always restores it.
+  **Read the `offset` counter in the log before trusting any stereo observation on this title.**
+- **The build ignores its own saved resolution at startup** `[verified-live 2026-09-03, n=2
+  launches]`: `MonkeyEngine.ini` says 1280×720, `CreateDevice` asks for the desktop size, the options
+  menu shows a third value, and only the `Reset` applies the stored one — so until the reset problem is
+  solved, a matched-resolution backbuffer and a live stereo are mutually exclusive.
+- **Stereo correctness, measured by surface** (phase-correlation on opposite-eye pairs, instrument
+  validated on 7/7 synthetic shifts and refusing to report when the stereo was dead): depth-parallax
+  monotonic with distance `[measured 2026-09-03, n=2 scenes]`; HUD/ortho exactly 0 by design; shadows
+  track the depth gradient; wet floor and caustics clean `[n=4 eye-pairs]`; **reflective water at a
+  glancing angle clean — the largest parallax in the frame** `[measured 2026-09-03, n=16 eye-pairs,
+  1 scene]`, with the caveat that the magnitude on a strongly periodic texture is soft even where the
+  sign and ordering are not. **Decals are untested**, because identifying a true projected decal by
+  eye is the hard part. The two tiles that read exactly zero were both HUD — the ortho fix working,
+  and the second time on this project that "check what is behind a probe region" has paid.
+- **Input on this build:** no keyboard camera binding at all (mouse-look `[disproved 2026-09-03]`;
+  `A`/`D` turn the character and the chase-cam trails). A virtual XInput pad drives the camera on both
+  machines `[verified-live 2026-09-03]`, and **needs about two seconds after creation before the game
+  acts on it** — at one second the scan returned a flat score curve that read as "the camera will not
+  turn". An impatient route, not a dead one; the same shape as
+  [saturate first, then tune down](../techniques/README.md#saturate-first-then-tune-down--a-too-small-injection-reads-exactly-like-failure).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Unreal Engine 2 / 3" row.

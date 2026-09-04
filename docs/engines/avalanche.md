@@ -53,6 +53,33 @@ decides — and has **never been run against the game**. The detector design cam
 `enslaved-vr` project via a `/gr` pass, which is the estate's first case of one project's validated
 probe being ported to another's renderer.
 
+**Update 2026-09-04 (from the 2026-09-03c disassembly pass).** The "very likely the shadow-pass
+variant" reading above is `[disproved 2026-09-03c]`: the two `GlobalConstants` sizes are the two
+**stages** — all 186 512-byte declarations are vertex shaders, all 465 2,352-byte ones pixel shaders
+`[inferred-static 2026-09-03, n=651 shaders]`. Disassembling rather than reflecting settled the
+camera question the probe had been designed around:
+
+- **The shared clip transform is at vertex-side slots 0..3, written per PASS** (~10 writes per frame
+  `[verified-live 2026-09-03b]`), consumed as `pos.x·M[0] + pos.y·M[1] + pos.z·M[2] + M[3]` — row-vector
+  storage, translation in slot 3. Slot 4 is a per-pass view origin, slot 9 the frame-constant camera
+  position that 146 vertex shaders subtract; slots 12/13 are packed fog and fade. The 4×4-shaped run at
+  16..19 that the first live probe flagged is **not a matrix** (`[disproved 2026-09-03c]`: two slots
+  unread by any shader).
+- **Most vertex shaders do not use the shared matrix for their position.** On the chain feeding
+  `SV_Position`: `InstanceConsts` b1 slots 0..3 (the per-object `WorldViewProjMatrix`) in 109 shaders,
+  `cbInstanceConsts` b1 in about 35, `GlobalConstants` b0 in 15. **A VR patch on this family has two
+  delivery paths to cover**, and the per-object one needs its WVP re-derived per draw — whether a
+  separable world matrix exists in `InstanceConsts` slots 4..15 is the queued static question.
+- The **3,136-byte** buffer the live run saw in lockstep with the 512-byte one is declared by no
+  shipped shader; read as the pixel-side allocation exceeding the 2,352 bytes its shaders declare
+  (ordinary D3D11 behaviour), `[hypothesis]` until the extended probe's bind census runs.
+
+The two engine-agnostic lessons — a same-name cbuffer at two sizes is two stages, and a
+constant-within-frame filter cannot see a per-pass camera — are on the techniques page
+([reflection → disassembly](../techniques/README.md#reflection-gets-you-to-n-unnamed-slots-disassembly-names-them-by-use),
+[per-pass filter](../techniques/README.md#-a-constant-across-every-draw-in-the-frame-filter-excludes-a-per-pass-camera-by-design)).
+Tool: `dxbc-usage.py` in `flat-to-vr-RE-toolkit`, beside `dxbc-reflect.py`.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" row.

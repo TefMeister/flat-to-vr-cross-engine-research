@@ -97,6 +97,31 @@ from a bright exterior to a dark interior over roughly a second and a half. Anyt
 yourself — a scope image, a picture-in-picture, an overlay — can scale its exposure from that number
 instead of being tuned once and then being wrong in every other lighting condition.
 
+### The game's tone curve is a published one, and its parameters are readable
+
+`[measured 2026-08-30]` for the values, `[inferred-static 2026-09-03]` for the identification, `n=1
+game (RE Village)`. `via.render.ToneMapping` on the main camera exposes a *triple-section* tonemap
+whose fields — a linear section given as **begin + length**, a toe, a shoulder to a white point, a
+contrast — carry the live values 0.22 / 0.40 / 1.33 / 1.0. That vocabulary and those numbers are
+**Hajime Uchimura's GT tonemap** (Polyphony Digital, CEDEC 2017) at its published defaults to the
+digit. The engine's own algebra has not been read, and several fields (`SDRToe`/`HDRToe`,
+`WhiteRange`, `TonemapRange`) do not map one-to-one onto the published parameter list, so this is a
+strong fingerprint rather than a proof; nothing built on it depends on the identification, only on the
+measured shape. Two consequences for anyone compositing into this family:
+
+- **The white-point fields move with the zone** (`MinWhitePoint` 5.6 → 8.0 and `WhiteRange` 0.9 → 0.8
+  going indoors, same session), so a custom pass that copies the curve should read them live, as the
+  exposure section above already does — the scope plugin now samples the component at ~2 Hz.
+- **In GT the straight section spans `m .. m + (P − m)·l / a`**, 0.22 → 0.532 at these values, **not**
+  `m .. m + l` `[verified-numerically 2026-09-03]` for our implementation of the published formula;
+  the game's own span is inferred. The "length" is a fraction of the headroom.
+
+The curve was built as *one file compiled twice* so it could be checked with no launch — the method is
+on the techniques page as
+[test a runtime-compiled shader without the game](../techniques/README.md#test-a-runtime-compiled-shader-without-the-game-one-file-two-compilers).
+Source: [`re-village-scope-vr/engine-research/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/engine-research)
+(dossier §7) and `modding-notes/2026-09-03-tone-curve-gt-shoulder.md`.
+
 ### A Lua GUI callback's `false` return was broken for nine days in 2026
 
 `[reported]` `on_pre_gui_draw_element` returning `false` is the documented way to stop an element
