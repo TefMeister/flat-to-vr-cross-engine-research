@@ -1302,8 +1302,15 @@ flat-to-VR-related on Road to VR or UploadVR after 2026-09-02; the Vk3DVision fi
 entry is unchanged (2025). The REFramework divergence was the one web finding worth curating, and it
 went to the RE Engine page rather than the landscape.
 
-**Inboxes drained: one** (our own, four files, by explicit filename). **Inboxes filled: five** — see
-the list in the commit message and the changelog entry.
+**Inboxes drained: one** (our own, four files, by explicit filename). **Inboxes filled: six**, all
+create-only, all named `2026-09-04-sr-…`: `XIII2003-vr/engine-research/inbox/` (its stereo build patches
+`SetTransform` in place and has never run — the state-block mechanism, the detection to add, and a note
+that its renamed-original proxy is immune to the reload trap), `manhunt-2003-vr/engine-research/inbox/`
+(both traps: its `d3d8.dll` proxy never frees the real module, and the state-block exposure arrives with
+its first device state-setting patch), `alice-madness-returns-vr/`, `prince-of-persia-2008-vr/` and
+`mad-max-vr/engine-research/inbox/` (each proxy verified to hold no `FreeLibrary` at all), and
+`visceral-re2-vr/external-research/inbox/` for `/gr` (the REFramework release-versus-master divergence,
+which applies to `re-village-scope-vr` too and is filed once).
 
 **New credits:** **gho** (DxWnd, the 2014 SourceForge diagnosis, read twice independently before
 quoting), **Paul Roussin** (the D3D8 newsgroup answer, surviving only on a third-party Usenet mirror
