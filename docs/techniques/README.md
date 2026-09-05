@@ -1191,6 +1191,66 @@ inferring the format from byte patterns:
 Generalised from `prince-of-persia-2008-vr`'s static `.forge`/Scimitar decoding session, 2026-09-02
 (no launch); engine-specific layout detail stays in that project's own dossier.
 
+### ⭐ A reflection table often carries the developers' own doc comments — search THOSE, not the names
+
+`[verified-numerically 2026-09-05, n=57,214 field records]` The best single recon result of the
+2026-09-05 sweep, and it is one grep away in any engine that ships reflection metadata.
+
+The question was whether a 2016 engine's view structure carries a per-eye field — the thing every
+stereo conversion needs to find or replace. Enumerating the whole reflection database gave a clean,
+near-exhaustive **negative on names**: of 57,214 field records, **zero** contain `stereo`, and all 59
+occurrences of `eye` are gameplay, AI or animation fields. Every candidate view class was enumerated
+in full and none of them has a per-eye member. On names alone, that is where the trail stops.
+
+**But the database also stores the engine programmers' own comments**, and searching *those* for the
+same word returned exactly six hits, five of them renderer, and they answered the question outright:
+the eye selector is an **index on a per-view object** (*"determines which viewColor image will be
+rendered to, and which view from world will be used"*), the frame info holds a **fixed-capacity list
+of two** world views (*"two identical ones in stereo-3D"*), and the single surviving per-view stereo
+scalar is a **GUI** offset (*"for stereo 3D, the guis can be offset differently in each screenView"*)
+with no world-camera counterpart. That last one is the structural reason a per-eye camera field was
+never going to be found — the design puts the eye in *which view you are rendering*, not in a field
+on the view.
+
+**Why it generalises.** Reflection metadata exists to drive editors, serialisation and script
+binding, and the comment strings are there because a tooltip in the editor needed them. They are
+written by the people who built the thing, in the vocabulary of the feature rather than the
+vocabulary of the code, and **a feature that has been renamed, half-removed, or folded into another
+concept usually still says so in a comment** long after the identifier stopped mentioning it. Any
+engine with a reflection or property system is a candidate: id Tech's field tables, Unreal's
+`UProperty` metadata, a managed type database, an editor schema shipped alongside the game.
+
+**Two disciplines to keep it honest, both learned here:**
+
+- **Scope the negative to the population you actually enumerated.** These tables list *reflected*
+  members only — one class showed 35 reflected fields inside 5,616 bytes — so the result is exact
+  for *"is there a reflected eye field"* and merely strong for *"is there an eye field"*. Say which
+  one you mean; they are different claims and only the first was measured. Same rule as
+  [not mixing populations](#-and-do-not-mix-the-populations-when-you-quote-a-percentage).
+- **Run a positive control on the enumerator.** The same scan re-found, unprompted, every field the
+  project already knew by other means — the view origin and axis, the field-of-view pair, the
+  explicit-projection-matrix override and its boolean — which is what makes the zero-hit result a
+  measurement rather than a silence. And widening the validator changed the record count by **+0**,
+  which bounds how much the parse could have been missing.
+
+**The second prize is a struct signature you can verify a memory hit with.** Once the layout is
+known, a value scan that finds one field also knows what must sit around it — a plausible
+field-of-view pair at one negative offset, 0-or-1 booleans at two others, an orthonormal axis at
+another. A hit can then be **confirmed** as the struct you wanted instead of assumed, which is the
+difference between a candidate address and an anchor. It also makes any *other* field of that struct
+directly addressable for the first time, including ones a project has been calling its highest-value
+live test for weeks.
+
+**One caution that came with it.** These particular tables turned out to have **no code references
+at all** — neither absolute nor RIP-relative, checked at five addresses with a scanner that can see
+both (see [the ModRM hole](#-a-cross-reference-scanner-that-does-not-decode-modrm-is-blind-on-x64--and-every-no-xrefs-result-it-produced-is-suspect)).
+So a reflection database can be a complete map of the data and give you **no static entry into the
+code that uses it**. Those are separate wins; getting the first does not imply the second.
+
+Generalised from [`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr), 2026-09-05 (static
+only, nothing launched); the engine-specific offsets stay on the
+[id Tech 6 page](../engines/id-tech-6.md) and in that project's dossier.
+
 ## Counting events is not measuring content
 
 A failure shape that has now produced two wrong published conclusions on two unrelated engines, and
@@ -1303,6 +1363,61 @@ figure while the number that is easiest to compute is the *shader* one. This is 
 [counting events is not measuring content](#counting-events-is-not-measuring-content) rule applied to
 your own reporting rather than to the engine's.
 
+### 🚨 And an in-flight map's identity is `(context, resource)` — never the resource alone
+
+`[verified-numerically 2026-09-05]` The first attempt at the `Map`/`Unmap` path above failed
+completely on its first live run — **zero** shadow writes against **2,787,733** table overflows — and
+the reason is a rule worth stating flatly, because it is the natural design and it is wrong.
+
+To patch a buffer written through `Map`/`Unmap`, you must remember, between the two calls, which
+pointer belongs to which buffer. The obvious table is keyed on the **resource pointer**: claim a slot
+at `Map`, find it again at `Unmap` by scanning for that pointer. That works exactly as long as one
+buffer can only be mapped once at a time — and in a deferred-context renderer it cannot.
+
+**`WRITE_DISCARD` renames per context.** Several deferred contexts may legally hold an outstanding
+map of the *same* `ID3D11Buffer` simultaneously; that is the whole point of the mechanism. With
+around six deferred workers plus the immediate context and a few dozen registered buffers, the same
+buffer holds several in-flight maps at once — so a scan keyed on the buffer matches somebody else's
+entry, the table saturates, and it never drains again. The failure is total rather than partial,
+which is at least an honest symptom.
+
+**The key that is unique by construction is the pair.** The API permits one context only one
+outstanding map of a given subresource, so `(context, resource)` identifies an in-flight map
+exactly. A fixed open-addressed table hashed on both halves, linear-probed with a bounded probe
+budget, replaced the linear scan.
+
+Two details that matter if you write one, both about a lock-free table being read while it is
+written:
+
+- **Claim in one order and release in the other.** Claim by compare-and-swapping the resource field
+  first and publishing the context field **last**; free by scrubbing context and data first and
+  releasing the resource field **last**. A prober that matches on *both* fields can then never
+  match a half-written entry, in either direction.
+- **Check the pointer width of what you compare-and-swap.** A 32-bit interlocked compare-exchange on
+  a 64-bit resource pointer compiles, runs, and aliases two different buffers whenever their low
+  words coincide. Caught here before it shipped, which was luck rather than process.
+
+**The verification method is the transferable half, and it needed no game.** The test harness
+`#include`s the *shipped* hash and table header rather than a transcription of it, and — the part
+worth copying — it **replays the old design and reproduces the original failure**: 32 slots placed,
+346 of 378 maps overflowed, one buffer holding seven entries at once. Only then does it run the new
+one: all 378 placed, worst probe depth six, one buffer hashing from seven contexts into seven
+distinct buckets, every `Unmap` paired to its own pointer, and the table draining to empty over
+20,000 rounds. **A fix whose harness cannot reproduce the bug has not been shown to fix anything** —
+it has been shown to pass a test, which is a different and much weaker statement.
+
+**What was explicitly *not* claimed**, and is the right way to leave it: the shadow copy behind the
+table still holds one window per buffer, so two contexts writing the same buffer at once still
+cannot both be represented. That limitation is unchanged, and its counter only starts meaning
+anything now that writes reach it at all. There is also a live possibility the counters cannot yet
+distinguish — `Map`/`Unmap` were hooked **once, on the immediate context, and never late-hooked**,
+while a neighbouring entry point was; deferred contexts come from a different vtable, so "fixed" and
+"our hook never sees these calls" look identical until a counter separates them. That counter was
+added in the same change, which is the correct order.
+
+Generalised from [`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr), 2026-09-05.
+See also [deferred-context renderers](#deferred-context-renderers-finding-the-world-and-patching-it-once-per-eye).
+
 ## Dating a dependency: a fix newer than your build is not evidence that you are affected
 
 `[reported 2026-09-04]` Modding frameworks move faster than the builds people run on them, so "a bug
@@ -1345,6 +1460,47 @@ as much as to a shipped hook.
 Generalised from a modding-lane verdict on
 [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr), 2026-09-04, answering a question
 this library had raised twice.
+
+### 🚨 The version that moves is usually the GAME's — and a moved struct field crashes with your framework nowhere in the stack
+
+`[reported 2026-09-05]` — read directly from the merged pull request and the repository API, not from
+a summary. The section above is about *your build* of a framework going stale. This is the more
+common and much nastier direction: **the framework is fine, your build is fine, and the game shipped
+a patch that moved a field the framework reads by hard-coded offset.**
+
+A worked public example, merged upstream on 2026-09-05:
+[REFramework PR #1822](https://github.com/praydog/REFramework/pull/1822) by **porlock2**. A March
+2026 update to one RE Engine title re-laid-out its `via.render.Texture` object to match a sibling
+title's layout — the description field moved to a different base, and the graphics-API resource
+container moved by 0x18 bytes. The framework kept reading the old offsets. Four lines of change fixed
+it (a per-title branch selecting the new values), and the contributor states the offsets were
+**measured rather than estimated**, which is the right standard for a number of that kind.
+
+**The symptom is the transferable part, because it actively points away from the cause.** The crash
+happened at the publisher logo during startup, on **game worker threads, with no framework frame
+anywhere in the call stack**, whether or not the framework's optional features were enabled. Nothing
+about it says "a mod is reading a struct at the wrong offset". Everything about it says "this game is
+broken" or "this driver is broken".
+
+**Four things to take from it:**
+
+- **A framework's offset table is a per-title, per-game-version assumption**, not a property of the
+  engine. Two titles on the same engine can disagree, and one title can disagree with itself across a
+  patch. Treat "engine X support" as "engine X, these titles, these versions".
+- **When a game updates and something starts crashing, check the framework's offset accessors before
+  you debug your own code.** That is a one-file read and it is upstream of every other hypothesis.
+- **A crash with none of your frames in the stack is not evidence that none of your code is
+  involved** — a bad pointer computed from a wrong offset is dereferenced by whoever uses it next,
+  which is usually the engine, on its own thread. This is the crash-time sibling of the
+  [co-occurring log line](#a-log-line-that-co-occurs-with-a-failure-is-not-an-explanation-of-it):
+  where the fault surfaces says little about where it originates.
+- **Know which side of a game patch your framework build sits on.** A fork build whose date precedes
+  a title's layout change carries the pre-change path by definition, and no release check will say
+  so. Combined with the fork rule above, the version question is properly three-sided: your build,
+  upstream, **and the game**.
+
+Credit: **porlock2** (the fix and its measurements) and **praydog** (REFramework). Surfaced by the
+2026-09-05 `/sr` web sweep; no code was copied and nothing was installed to check it.
 
 ## Composition bugs that masquerade as handedness
 
@@ -2086,6 +2242,44 @@ this one case: whenever a negative on a specific target would be recorded as a f
 identical search for something that certainly must be there — if that also comes back empty, the
 method is wrong, not the target.**
 
+### 1b. The static-search version: three controls turn an exhaustive negative into evidence
+
+`[verified-numerically 2026-09-05, n=2,464 blocks, 0 hits]` Everything in §1 is about live tests. The
+same discipline has a *static* form, and it is what separates a searched-and-not-found result that
+closes a line of work from one that merely records an absence of skill.
+
+The case: a game's debug menus were believed to be wired up through a particular kind of data block,
+of which the shipped data contains 2,464 across 18 archives (9.28 GB decompressed). The search found
+**zero** references to either debug-menu id, in either byte order, and none to any of the 19 ordinary
+menu ids used as controls. That negative is now strong enough to close the hypothesis and be written
+into the dead-ends list — but only because three separate controls were run alongside it, and each
+one rules out a different way of being wrong:
+
+1. **A population control — does an independent count agree?** The 2,464 figure matched a
+   type census produced three days earlier by unrelated tooling, exactly. This rules out *"the
+   extractor is missing most of the data"*, which is the failure that makes an exhaustive search
+   non-exhaustive without ever saying so.
+2. **A detector control — does the scan find the class of thing it is looking for?** 99.0% of those
+   blocks (2,439 of 2,464) were shown by the *same* scan to carry other blocks' raw ids. So the
+   detector demonstrably finds embedded ids; it simply did not find these. This rules out *"the
+   matcher is broken"*.
+3. **An encoding control — could the thing be written a way you did not search?** The ids were
+   searched as little-endian words, as big-endian words, **and** as ASCII text — and the text sweep
+   found two other known ids 274 and 2,390 times respectively. This rules out *"it is there in a
+   representation I never looked for"*, which on a game's data files is the single likeliest way to
+   manufacture a false negative.
+
+**And the negative earned its keep by being paired with a structural reason.** Decoding the 39 menu
+handler blocks showed each is nothing but *{own id, type hash, UI-file id, name length, screen
+name}* — a binding of a name to a UI file, **with no field capable of holding an action list at
+all**. A negative search says *"not found here"*; a layout says *"could not be here"*. When you can
+get both, the conclusion stops depending on the quality of your search, and the hypothesis is
+genuinely closed rather than merely unproven.
+
+The cost of skipping this is not the wasted search — it is that an unqualified "we searched and
+found nothing" gets re-searched by the next session, or worse, believed. Generalised from
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr), 2026-09-05.
+
 ### 2. Before recording a POSITIVE as an *attribution*, confirm the mechanism alone does nothing
 
 `[verified-live 2026-09-01]` The other half, and the newer one. "I wrote a displaced value into this
@@ -2192,6 +2386,39 @@ produced it.
 
 Generalised from [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr)
 and [`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr), both 2026-09-04.
+
+### And the sweep that changes *nothing* is a positive result about where the cause is not
+
+`[verified-live 2026-09-04, n=2 outdoor locations]` The mirror image of the rule above, and worth
+naming because it is routinely thrown away as a failed experiment.
+
+A compositor was blowing snow to flat white. Exposure was the obvious suspect, so it was swept across
+a **20× range** — and the output did not change. That looks like a wasted afternoon. It is not: a
+parameter that moves 20× while the symptom sits still is **not the parameter driving the symptom**,
+and that is a conclusion, obtained without needing to understand the thing that *is*.
+
+Two supporting reads then localised it in minutes rather than hours. A probe showed the *source*
+values were finite and unremarkable (well inside range) while the compositor's own output peaked
+below one — so the saturation was being introduced between the two, not inherited from the input.
+Switching off one optional processing package made the snow go dark immediately. Cause located,
+package retired, and the problem it had originally been built to solve turned out to be already
+solved by a simpler change made for other reasons.
+
+**Three habits fall out of it:**
+
+- **Sweep wide before sweeping fine.** A 20× sweep answers *"is this the knob?"*; a 10% sweep only
+  ever answers *"what does this knob do near here"*, and if the answer is "nothing" you cannot tell
+  a wrong knob from a small effect.
+- **Bracket the pipeline, not just the output.** One reading at the input and one at the output of
+  the stage you suspect converts *"it looks wrong"* into *"it goes wrong between here and here"*.
+- **Say plainly when you have not explained it.** The write-up records that *why* the offending
+  package reached that content is still not understood, tagged as a hypothesis, rather than
+  inventing a mechanism to go with a working fix. Removing a symptom is not explaining it: a fix
+  that also stops the failing path from being exercised has proved nothing about the cause, however
+  well it works.
+
+Generalised from [`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr),
+2026-09-04.
 
 ## Never CPU-scan mapped GPU memory in place — it is write-combined
 
@@ -2578,6 +2805,53 @@ browser, a search engine's cached text, a mirror, or the project's own source re
 as evidence about what the document contains. Same family as the client-side-rendered page above: the
 tool's limitation gets read as the world's.
 
+### ⚠️ A cross-reference scanner that does not decode ModRM is blind on x64 — and every "no xrefs" result it produced is suspect
+
+`[verified-numerically 2026-09-05]` The worst member of this family found so far, because the tool is
+**correct on one architecture and near-useless on the other**, and nothing in its output says which
+one you are on.
+
+This account's own `static-disasm.py` (in
+[`flat-to-vr-RE-toolkit`](https://github.com/TefMeister/flat-to-vr-RE-toolkit)) finds references to an
+address by matching exactly two things: the address as a whole little-endian pointer anywhere in the
+image, and `E8`/`E9` rel32 call/jump displacements in executable sections. It never decodes ModRM, so
+**it cannot see a RIP-relative operand** — `lea rax, [rip+disp32]`, `mov rax, [rip+disp32]` and the
+rest of that family.
+
+**Why that is an architecture-shaped hole rather than a bug.** On x86-32 the compiler addresses data
+by absolute immediate, so a whole-pointer scan catches nearly every data reference and an empty result
+is decent evidence of absence. On x64 the compiler emits **RIP-relative addressing for most data
+references**, and an absolute pointer survives only where something stored one in memory. The same
+command that was near-conclusive on a 32-bit target is close to meaningless as a negative on a 64-bit
+one — and this account's estate splits roughly in half, with both halves having used the same command.
+
+**The consequence for anything already written down.** Any past conclusion of the shape *"X is not
+referenced anywhere, so it is dead / generic / unused"*, drawn from a cross-reference scan of a 64-bit
+image, **is not the negative it looks like** and should be re-checked before it is relied on. No such
+audit has been run; this is a flag over a class of claims, not a finding about any one of them.
+
+**What closes the gap.** A scanner that decodes the RIP-relative forms and resolves
+`next_instruction + disp32`. One exists and is committed — `riprefs.py`, in
+[`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr)'s
+`dev-archive/recon/2026-09-05-reflection-eye-field-hunt/tools/` — though at the time of writing it has
+been exercised against exactly one image, so treat it as working rather than hardened. Folding it into
+the shared tool as a mode was deliberately *not* done in the session that found the hole: it changes a
+shared tool's interface on the strength of `n=1`. The interim mitigation shipped instead is worth
+copying — the tool now **prints a warning on the zero-hit path only when the image is 64-bit**, so the
+one output that can lie says so, and the 32-bit case stays quiet.
+
+**The generalisable habit, which is the reason this is here rather than in one project's notes.** The
+hole was not found by auditing the tool. It was found because a project noticed that a table it
+believed was referenced reported *zero* references, wrote a second scanner to check, and only then
+discovered the first could not have seen them either way. **When a negative is load-bearing,
+re-derive it with an independently written detector.** Note the outcome: the second scanner *agreed*
+— the tables genuinely have no code references — so the conclusion survived while the reasoning
+behind it did not. That is the ordinary result, and it is still worth the hour, because the next
+negative from the same command would not have survived.
+
+Generalised from a `/pd` hand-off out of [`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr),
+2026-09-05.
+
 ### What to do
 
 - **Normalise at the comparison site, in the script — not in the file.** Re-saving a file with the
@@ -2896,6 +3170,92 @@ failure beats a script that dies on line one leaving a missing log line as its o
 Evidence:
 [visceral-re2-vr](https://github.com/TefMeister/visceral-re2-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
 §4, §5 and §9.
+
+## ⭐ When every setter is a dead end, own the GETTER the solver reads
+
+`[verified-live 2026-09-05, n=1 launch per weapon, 2 weapons]` The single most useful method result
+of the 2026-09-05 sweep, and it generalises well beyond the engine it came from: **the way into a
+system that refuses to be driven from the outside is often the value it reads from the inside.**
+
+**The shape of the wall.** A game places a character's support hand on a weapon. Every *setter* the
+engine's IK controller exposed was a dead end, in four different ways: one accepted a target every
+frame and moved nothing (the game rewrote it from its own source before the solve); one solver kind
+could not be enabled at all, by either the direct-ABI route or the reflective invoke route, with the
+enabled flag reading back zero on every frame after; one target setter threw an internal exception on
+every index; and two candidate solver objects were simply null at every read. Four negatives, all
+correctly recorded, none of them progress.
+
+**The move that worked was the opposite direction.** Instead of pushing a value into the solver,
+find the **read path the solver consumes and override what it returns.** Concretely, a getter
+returning the anchor's world matrix was post-hooked, and the returned translation edited. The wrist
+went where the edited value said.
+
+### The four steps, in the order that keeps each one cheap
+
+1. **Locate the getter chain statically first.** Decompiling the "update constraint" routine showed
+   it reading a *different* field than assumed — the weapon-to-right-hand attach, not the support
+   hand — while the "get target" getter did nothing but return a joint's world matrix. That reframed
+   the joint from a *follower* to an **anchor**, and named the thing to hook, before any launch.
+   `[inferred-static 2026-09-05]`
+2. **Prove the read path live with call counts, before building anything on it.** Post-hook the
+   candidate getters and count calls per second next to the frame counter. Here both ran at exactly
+   one call per frame (~345/s at ~350 fps) and the two counts were always **equal** — which, with
+   step 3, also showed that one getter calls the other. **Zero calls would have been the whole
+   answer**: it means the consumer reads natively and the hook must move down a level. This is the
+   one question raw event counting answers well — see
+   [counting events is not measuring content](#counting-events-is-not-measuring-content) for the
+   many it does not.
+3. **Override the return value and measure the effect end to end.** Add a known offset — 10 cm —
+   and measure the *consumer*, not the hook: the skeleton's wrist joint moved 10 cm, joint-to-joint,
+   read through a path with no hook in it. Shifting **both** getters in the chain moved it 20 cm,
+   which is a two-line proof that they nest. Switching the override off returned the distance to
+   0.000, including under the game's own aim state.
+4. **Ask whether the consumer blends or snaps**, with a trace across the toggle edge. Here it
+   snapped inside one 100 ms sample — so any "smooth, not jarring" requirement is the mod's to
+   provide, by blending the value it returns. That is trivial when the hook already produces a
+   fresh value every frame, and it is much less trivial if you discover it after shipping.
+
+### 🚨 The trap that cost two launches: the value is read in a *pre-update* pose, and the consumer applies your DELTA
+
+`[verified-numerically 2026-09-05, n=6 samples, fitted to ≤2 mm]` This is the part that does not
+appear until the override is already working, and it is the reason a hook that measurably moves the
+right thing can still land in the wrong place.
+
+The getter is called at **one specific point in the frame**, and the quantity it returns is that
+quantity *as it is at that point* — not as it will be when the frame is finished. Measured here, the
+gap was **0.18–0.20 m and about 48°** between the value the game's own per-frame call returned and
+the same joint's final pose (18° on a second weapon — so the gap is per-weapon and per-stance, not a
+constant you can hard-code). A read taken from a late, pre-render hook returned the final pose; the
+getter did not.
+
+**And the consumer carried the offset, not the value.** The solver applied the *difference* between
+what the getter returned and what it would naturally have returned, transported into final space —
+so an absolute target expressed in final space missed by exactly that gap, every frame, while still
+producing a convincing 10-cm response to a 10-cm test edit. **A relative test cannot distinguish a
+relative consumer from an absolute one**, which is why step 3 above looks like a complete success and
+is not.
+
+The general rule to carry: **before writing an absolute value into a hooked getter, establish which
+space and which moment the value lives in**, by reading the same quantity a second way — a different
+hook point, or the engine's own accessor for the same object — and comparing. If the two disagree,
+you have both the mapping between them and the knowledge that you need one. Here that mapping was a
+single matrix recomputed live every frame from the un-hooked value and the object's own accessor, so
+the fix was *blend in final space, then map back* — not a constant, and not a guess.
+
+### Two smaller traps from the same work, both cheap to inherit
+
+- **A post-hook may hand you a pointer to the register holding the hidden return-buffer pointer, not
+  to the struct.** Dereference once, then check the nullable's `HasValue` byte before touching the
+  payload. Silent nonsense otherwise.
+- **Your own reads of the getter go through your own hook.** Useful as a self-check that the edit
+  lands; actively misleading if you do not subtract them from the call count (here about 1/s of
+  plugin traffic against the game's ~345/s), and it explains a genuinely confusing earlier result —
+  the getter had been recorded as *"returns no value"* on one weapon, when what had actually been
+  sampled was the plugin's own dump-time call, not the engine's per-frame one.
+
+Generalised from [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) (RE Engine via a
+REFramework C++ plugin), whose §8c carries the engine-specific detail; the method needs none of it.
+See also the [RE Engine page](../engines/re-engine.md).
 
 ## A flat game's "scope" is a fullscreen FOV zoom, and VR cannot use it
 
@@ -3268,6 +3628,41 @@ renamed original.
 Generalised from a `/gr` research hand-off on
 [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr), 2026-09-04.
 
+#### 🚨 …and the reload the fix enables has a race of its own: the slot you chain into may not be the engine's
+
+`[verified-live 2026-09-05, n=1 crash, n=3 clean launches]` Found the day after the fix above, on the
+same title, and it is the fix's own consequence rather than a separate problem — **so read this
+section as the second half of the one above, not as an unrelated caution.**
+
+A proxy that is loaded, unloaded and loaded again now installs its vtable patch **twice**, and the
+second install reads the current slot contents as "the real function" to chain into. That is correct
+only if nothing else patched the slot in between. Here it was not: at the first unload the slot held a
+**foreign pointer** — a third-party overlay is the likely owner — so the unhook correctly stood down
+rather than clobbering someone else's work, and then the second load captured *that* pointer as its
+"real" one. The two patches chained into each other and the hooked function recursed **1,669 times in
+one millisecond**.
+
+The distinguishing evidence that it is a race and not a design error: the first proxy block lived
+**700 ms** on the launch that crashed and **16 ms** on the three that did not. Same binary, same
+machine, four launches.
+
+**The rules that fall out of it, none of which cost anything:**
+
+- **Record the pointer you replaced, and on re-install compare the slot against what you left there.**
+  If it differs, someone else owns the slot now — do not capture their pointer as the original.
+- **Never chain into a pointer you did not verify came from the module you expect.** A slot value that
+  resolves outside the graphics runtime's own module range is a foreign patch, and that check is one
+  `VirtualQuery` or one module-range comparison.
+- **Guard against self-recursion at the call site anyway**, with a per-thread depth counter that bails
+  above one. It is three lines, it converts an unrecoverable stack overflow into a logged anomaly, and
+  it is worth having even when you believe the chain is clean.
+- **The correct behaviour on unhook — stand down when the slot is not yours — is what creates the
+  window.** It is still the correct behaviour. The bug is not in the unhook; it is in the *next*
+  install trusting a slot that the unhook already knew was compromised. Those two decisions are
+  usually in different functions written weeks apart, which is exactly why this shape survives review.
+
+Generalised from [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr), 2026-09-05.
+
 ## A vtable patch is a LIFETIME commitment — restore it before anything can unload you
 
 `[inferred-static 2026-09-04, n=1 title]` The companion hazard to the state-block rewrite above, and
@@ -3378,6 +3773,67 @@ samples at the moment you flip something, flipping twice is the free fix** — a
 before rebuilding the instrumentation, because it costs one launch you were having anyway.
 Generalised from [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr),
 2026-09-04.
+
+### An instrument that tests one convention can only ever report "neither convention"
+
+`[verified-live 2026-09-05, n=1 launch]` The third shape in this family, and the most quietly
+expensive, because it produces a *stable, plausible, repeatable* answer that is wrong by
+construction.
+
+A dump was built to answer one question: is the engine's view-to-clip matrix left- or right-handed?
+It ran, it logged, and for two launches it reported that the uploaded matrices matched **neither**
+handedness. Two independent defects, either of which alone would have been enough:
+
+- **It searched at the wrong granularity.** The engine uploads shader constants in **whole
+  128-register blocks**, thousands of times a second, and the dump looked for an upload whose start
+  register equalled the register of interest. That condition never fires. Every block was attributed
+  to register zero, and what got printed was whatever happened to sit at the head of the block — a
+  flat 2D matrix, at around 500,000 uploads a second, which is a very convincing-looking wrong
+  answer.
+- **It tested the storage convention the project had already ruled out.** It checked for the
+  telltale ±1 at the array index implied by one matrix convention. The project's own notes had
+  settled two days earlier that this engine uses the other one, where that entry lives at a
+  different index. So the test could return "neither" and nothing else, **forever**, no matter what
+  the engine did.
+
+**The two habits that would have caught it, both cheaper than the launches it cost:**
+
+- **Make the instrument print the population it is searching, not just its verdict.** A histogram of
+  every `(start, count)` upload range — which is what the replacement does — states in one line that
+  the traffic is 128-register blocks, and the granularity bug is then unmissable. A search that
+  reports only hits cannot distinguish *"the thing is not there"* from *"I was not looking at the
+  shape of thing that exists"*.
+- **Scan for every convention you have not disproved, not for the one you expect.** The replacement
+  slides a four-register window across each block and tests **both** signatures. That is a few more
+  lines and it removes the entire failure mode — and when it ran, the answer arrived on the first
+  launch, from three separate projections at once, agreeing with each other.
+
+This is the same family as the two sub-sections above and worth naming separately because the
+symptom differs: a gated diagnostic goes *silent*, and a convention-blind one stays *loud and
+negative*. A confident, repeated negative from your own instrument deserves the same suspicion as a
+crash. Generalised from [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr), 2026-09-05.
+
+### A log line that co-occurs with a failure is not an explanation of it
+
+`[disproved 2026-09-05]` The cheapest mistake in this whole section, and it cost a design decision
+rather than a launch.
+
+A diagnostic block printed three counters together: a pairing table reporting **zero** successful
+writes, the same table reporting **2.8 million** overflows, and — in the same block — a line reading
+*"thread-ring pool exhausted (8 distinct threads seen)"*. The obvious reading was that a
+thread-indexed pool sized for eight threads had run out, and the obvious fix was to make it bigger.
+
+**The line belonged to a different subsystem entirely** — an unrelated pool of draw-time scratch
+buffers — and its own message text went on to say that the patch stays correct through that
+condition. Sizing the pool would have changed nothing at all, and the real cause (a table keyed on
+the wrong identity) would have survived the fix and been that much harder to see afterwards.
+
+**The guard is one question, asked before the reasoning starts: which code emits this line?** In a
+proxy or a hook that carries several independent subsystems, one diagnostic block is a *place*, not
+a *story*, and adjacency in a log is not causation. Two small habits make the question answerable in
+seconds — **prefix every log line with its subsystem tag**, and **read the emitting site, not the
+message**, because a message written for one context reads as an explanation in another. Generalised
+from [`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr), 2026-09-05.
 
 ## Counting callers separates what a binary *links* from what it *uses*
 

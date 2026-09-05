@@ -134,7 +134,29 @@ The two drivers above cover D3D9 and D3D11. For **Vulkan** titles the equivalent
 by **Helifax** (Octavian Vasilov) — a dedicated Vulkan stereoscopic-3D driver, and the spiritual
 successor to his earlier **OGL3DVision** (an OpenGL wrapper for the now-dead NVIDIA 3D Vision
 ecosystem). It advertises output to VR headsets, 3D Vision, and side-by-side / top-bottom /
-interleaved 3D-TV formats, and is maintained through a per-game fix list.
+interleaved 3D-TV formats, and was maintained through a per-game fix list.
+
+> ### ⚠️ FROZEN: the public repository was archived by its owner on 2026-03-05
+>
+> `[reported 2026-09-05]` — re-confirmed firsthand this date from the GitHub repository API
+> (`archived: true`, last push **2026-03-05**), after the archive was first noticed on 2026-09-01.
+> The per-game fix list's newest per-title stamps are **2025-08-30** and its page footer reads
+> *2020-2025*. **Read everything below as prior art on a finished project, not as a live option to
+> recommend or to expect fixes from.** A Vulkan title with no fix on that list today is unlikely to
+> get one.
+>
+> **This matters beyond one tool.** With Vk3DVision archived, the geo-11 GitHub mirror dormant since
+> 2024 (its real distribution is off-GitHub, so that is a weak signal) and Vireio Perception
+> untouched since 2022, **there is no evidence of an actively maintained generic stereo driver for
+> Vulkan today.** The fallback layer that exists for D3D9 and D3D11 has no visible working equivalent
+> on Vulkan. For an id Tech 6 or similar Vulkan target, that removes *"there is a generic driver if
+> the bespoke route fails"* from the plan.
+>
+> **One loose end, recorded rather than resolved:** the repository's GitHub licence metadata reports
+> **BSD 3-Clause**, which sits oddly against the closed-source description below. The repo hosts
+> compiled releases, so the licence plausibly covers something other than the driver itself. Not
+> settled here, and it changes nothing in practice — this library links and learns rather than
+> reading anyone's implementation either way.
 
 **Why it earns a place here:** it is public evidence that **per-eye override at the Vulkan level
 works on real, closed, modern commercial games** — including a maintained DOOM (2016) fix and a more

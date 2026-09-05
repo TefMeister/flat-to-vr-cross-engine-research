@@ -117,7 +117,7 @@ tried at all, and remains the fallback rather than the plan.
 
 **Status: partly answered, and the answer is instructive.** A live console session on the retail
 build established that these cvars are **never registered at runtime** — see
-[the gating section](#the-gate-a-dormant-path-can-be-real-and-still-unreachable) below. Strings prove
+[the gating section](#the-gate-a-dormant-path-can-be-real-and-unreachable) below. Strings prove
 the code was *compiled in*; they prove nothing about whether it is *reachable*.
 
 ---

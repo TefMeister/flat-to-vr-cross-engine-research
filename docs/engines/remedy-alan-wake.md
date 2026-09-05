@@ -137,6 +137,40 @@ and [the shipped-compiler correction](../techniques/README.md#when-a-game-compil
 Also settled: the game is a 3D Vision **Automatic** consumer, and
 [3D Vision itself is discontinued](../generic-drivers/README.md#-3d-vision-itself-is-discontinued--what-that-means-for-a-games-native-stereo-toggle).
 
+### ⭐⭐ 2026-09-05: the handedness question is answered LIVE, and the constant traffic has a shape worth knowing
+
+`[verified-live 2026-09-05, n=1 launch, 10 five-second windows per register]` The assumption the
+entire static line above rested on — that `g_mViewToClip` is **left-handed with `clip.w = +view.z`**
+— is now measured rather than assumed. Three true projections were seen uploaded during the
+in-engine intro, all three with the w-from-`z` entry at **+1**, at the storage index implied by the
+`MATRIX_ROWS` convention the shader metadata had already settled. The per-eye maths written against
+that assumption stands unchanged, which is the good outcome and not the interesting one.
+
+**Two things of engine-shaped value came out of the same launches:**
+
+- **This engine uploads shader constants in whole 128-register blocks.** Roughly 6,000 uploads each
+  of `c0+128` and `c128+128` per second in a 3D scene, plus tiny `c0+4` / `c0+5` uploads for the
+  video quad and UI. **Any per-eye edit must locate its matrix by offset *inside* a block** — a hook
+  that waits for an upload whose start register equals the register of interest will never fire, and
+  a candidate loop that stops at the first spanned register will only ever see `c0`. Both registers
+  this engine puts the projection in (`c0` or `c192`, per the skinning-palette displacement above)
+  land mid-block. The three projections seen were the main camera at `c192` (16:9, near 0.2 / far
+  1000, horizontal FOV 79.2°, vertical 50.0°), the same lens at `c7` on a far depth slice
+  (1068 … 10000, distant scenery and sky), and a square 90° shadow or cubemap-face projection at
+  `c0`.
+- **Both hooks survive real frames**, through the intro and out to a clean menu quit, unhooked in
+  order — but one launch in four **crashed on a layered-hook race** created by this game's
+  probe-and-reload behaviour documented above. Detail and the rules that prevent it:
+  [the slot you chain into may not be the engine's](../techniques/README.md#-and-the-reload-the-fix-enables-has-a-race-of-its-own-the-slot-you-chain-into-may-not-be-the-engines).
+  The two findings are directly connected — freeing the real DLL is what lets the game load the proxy
+  a second time, and the second load is where the race lives.
+
+The instrument built the day before could not have seen any of this, for two reasons worth reading if
+you are writing one:
+[an instrument that tests one convention can only ever report "neither"](../techniques/README.md#an-instrument-that-tests-one-convention-can-only-ever-report-neither-convention).
+Still open on this engine: which unit the eye separation should be expressed in, and whether a second
+path rewrites those registers after a proxy does.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" row.

@@ -123,6 +123,12 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   regression introduced in [PR #1503](https://github.com/praydog/REFramework/pull/1503). Cited in the
   same section, and as a live warning on the
   [RE Engine family page](./docs/engines/re-engine.md).
+- **porlock2** — [REFramework PR #1822](https://github.com/praydog/REFramework/pull/1822) (merged
+  2026-09-05), fixing a VR multipass startup crash caused by a March 2026 game patch re-laying-out
+  `via.render.Texture`, with the new offsets measured rather than estimated. Cited as the worked
+  public example in
+  [techniques → the version that moves is usually the game's](./docs/techniques/README.md#-the-version-that-moves-is-usually-the-games--and-a-moved-struct-field-crashes-with-your-framework-nowhere-in-the-stack)
+  and on the [RE Engine family page](./docs/engines/re-engine.md).
 - **prideslayer** and contributors — **VRIK Player Avatar** (Skyrim VR). Cited only to draw the
   distinction between the well-known VR floor-calibration/height-offset problem it addresses and the
   pose-dependent, animation-driven body float documented in
@@ -555,6 +561,32 @@ Group's published Vulkan specification, credited above and read online. The same
 [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) confirmed the free-the-real-DLL fix live,
 which is why that section now carries a `[verified-live]` tag and a named acceptance test rather than
 prior art alone.
+
+The [own the getter the solver reads](./docs/techniques/README.md#-when-every-setter-is-a-dead-end-own-the-getter-the-solver-reads),
+[search a reflection table's doc comments](./docs/techniques/README.md#-a-reflection-table-often-carries-the-developers-own-doc-comments--search-those-not-the-names),
+[`(context, resource)` map pairing](./docs/techniques/README.md#-and-an-in-flight-maps-identity-is-context-resource--never-the-resource-alone),
+[the reload race on a foreign vtable slot](./docs/techniques/README.md#-and-the-reload-the-fix-enables-has-a-race-of-its-own-the-slot-you-chain-into-may-not-be-the-engines),
+[the convention-blind instrument](./docs/techniques/README.md#an-instrument-that-tests-one-convention-can-only-ever-report-neither-convention),
+[the co-occurring log line](./docs/techniques/README.md#a-log-line-that-co-occurs-with-a-failure-is-not-an-explanation-of-it),
+[three controls for an exhaustive static negative](./docs/techniques/README.md#1b-the-static-search-version-three-controls-turn-an-exhaustive-negative-into-evidence),
+[the sweep that changes nothing](./docs/techniques/README.md#and-the-sweep-that-changes-nothing-is-a-positive-result-about-where-the-cause-is-not)
+and [the ModRM hole in a cross-reference scanner](./docs/techniques/README.md#-a-cross-reference-scanner-that-does-not-decode-modrm-is-blind-on-x64--and-every-no-xrefs-result-it-produced-is-suspect)
+sections were generalised on 2026-09-05 out of our own work on legitimately-owned copies of
+**Resident Evil 2**, **DOOM (2016)**, **The Evil Within**, **Alan Wake**, **Prince of Persia (2008)**
+and **Resident Evil Village**:
+[`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) ·
+[`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr) ·
+[`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr) ·
+[`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) ·
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr) ·
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr). The cross-reference
+section is about a defect in **our own** tool, `static-disasm.py` in
+[`flat-to-vr-RE-toolkit`](https://github.com/TefMeister/flat-to-vr-RE-toolkit) — recorded here in full
+because a tool that produces confident false negatives has to be documented at least as loudly as one
+that works. Four of these entries exist because a project **corrected itself within a day**: a
+thread-pool diagnosis that named the wrong subsystem, an instrument that could only ever report
+"neither convention", a "setter with a blend time is exactly what we need" reading that turned out to
+be a dead end, and an absolute-target design that had to become a relative one.
 
 The [control rules](./docs/techniques/README.md#controls-a-negative-needs-a-positive-one-a-positive-needs-a-no-op-one),
 the [write-combined memory section](./docs/techniques/README.md#never-cpu-scan-mapped-gpu-memory-in-place--it-is-write-combined)

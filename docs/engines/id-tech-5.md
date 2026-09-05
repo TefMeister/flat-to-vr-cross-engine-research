@@ -145,6 +145,39 @@ rather than from the environment, after three launches silently ran an experimen
 transform because a **storefront-launched game does not inherit a user shell's environment**
 ([techniques](../techniques/README.md#configure-injected-code-from-a-file-it-reads-itself-not-from-environment-variables)).
 
+### 2026-09-05: that second path failed on its first run, and the reason is a rule about deferred contexts
+
+`[verified-numerically 2026-09-05]` The `Map`/`Unmap` path above ran live on 2026-09-04 and produced
+**zero** shadow writes against **2,787,733** pairing-table overflows — a total failure, which is at
+least an honest one. It matters to this whole engine family because the cause is a direct consequence
+of the deferred-context architecture described at the top of this page.
+
+**The pairing between `Map` and `Unmap` cannot be keyed on the buffer.** `WRITE_DISCARD` renames per
+context, so several deferred contexts may legally hold an outstanding map of the *same* buffer at
+once — with around six workers plus the immediate context and a few dozen registered buffers, that is
+the normal state, not an edge case. A table that claims a slot by resource pointer and searches for it
+at `Unmap` matches the wrong entry and saturates. **The identity that is unique by construction is the
+pair `(context, resource)`**, since the API allows one context only one outstanding map of a
+subresource. Full write-up, including the lock-free claim/release ordering and a pointer-width trap
+caught before it shipped:
+[an in-flight map's identity is `(context, resource)`](../techniques/README.md#-and-an-in-flight-maps-identity-is-context-resource--never-the-resource-alone).
+
+**Two engine-level cautions that come with it, both still open:**
+
+- The shadow copy behind the table is still **one window per buffer**, so two contexts writing the
+  same buffer simultaneously cannot both be represented. That limitation is unchanged; its counter
+  only starts meaning anything now that writes reach it at all.
+- `Map`/`Unmap` are hooked **once, on the immediate context, and never late-hooked**, unlike the
+  neighbouring `UpdateSubresource` path. Deferred contexts come from a different vtable, so *"the fix
+  works"* and *"our hook never sees these calls"* are still indistinguishable until the new
+  maps-seen / unmaps-seen counters separate them.
+
+⚠️ **And the diagnosis this replaces was wrong in an instructive way.** The 2026-09-04 write-up blamed
+a *"thread-ring pool exhausted (8 distinct threads seen)"* line printed in the same diagnostic block.
+That line belongs to an unrelated subsystem — draw-time scratch buffers — and sizing that pool would
+have changed nothing. `[disproved 2026-09-05]` General form:
+[a log line that co-occurs with a failure is not an explanation of it](../techniques/README.md#a-log-line-that-co-occurs-with-a-failure-is-not-an-explanation-of-it).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "id Tech 5" row.

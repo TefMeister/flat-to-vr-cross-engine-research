@@ -85,6 +85,43 @@ engine-level rather than title-level, not because it has been seen twice.*
   same author exists only for **id Tech 7 / DOOM Eternal**, built on single-pass stereo instancing.
 - **TAA with jittered projection and motion-vector reprojection is present** (`mvpMatrixNoJitter*`
   alongside `mvpMatrixLast*`) — a known VR hazard, and spotted statically before ever launching.
+- **⭐⭐ 2026-09-05 — the eye is an INDEX ON THE VIEW OBJECT, not a field on the camera, and the
+  reflection database says so in the developers' own words.** The whole field table was walked:
+  **4,774 classes**, **57,214 field records** (99.98% of the population; a deliberately looser
+  validator returned **+0** more), with the class layer self-checking against three independently
+  known `sizeof` values. `[verified-numerically 2026-09-05]`
+  - **The negative, and it is near-exhaustive.** **Zero** field names contain `stereo`; all 59
+    occurrences of `eye` are gameplay, AI or animation. Every view-shaped class was enumerated in
+    full — the render view struct (61 fields), the view object (110), the render view (35), the
+    screen view (8), the view bypass (6) and the frame info (4) — and **none carries a per-eye
+    field.** Positive control: the same scan re-found the per-frame offset pair, the
+    explicit-projection-matrix override and its boolean, the FOV pair, the near-clip clamp, and the
+    view origin and axis, unprompted.
+  - **The positive is in the doc comments, not the names.** The database stores id's own comments,
+    and searching *those* returns six hits, five renderer: a **`viewIndex`** on the screen view
+    *("determines which viewColor image will be rendered to, and which view from world will be
+    used")*; a **fixed-capacity list of two** world views on the frame info *("two identical ones in
+    stereo-3D (both centered between the eyes)")*, with **capacity 2 compiled into retail**, confirmed
+    from the container's own byte size; a screen-view list whose comment says *"stereo-3D will define
+    two views"*; and — the structural finding — a **GUI** origin offset *("for stereo 3D, the guis can
+    be offset differently in each screenView")* that is **the only surviving per-view stereo scalar,
+    with no world-camera counterpart.** That is why the previous generation's per-eye view field was
+    never going to be found here: it was replaced by *which view you are rendering*, not moved.
+  - **So the route to test is populating the second world-view entry**, which is
+    `[inferred-static 2026-09-05]` — no code path has been traced to it.
+  - **A latch to keep on file:** the render view holds a game-set copy and a *renderer* copy
+    described as *"latched at EndFrame time"*, so a write landing after that point is discarded for
+    the frame. `[hypothesis]` as an explanation of anything observed so far; do not use it as a
+    diagnosis until something is measured against it.
+  - **Two limits, stated because they bound the claim.** The tables list **reflected** members only,
+    so the negative is exact for *"is there a reflected eye field"* and only strongly suggestive for
+    *"is there an eye field"*. And the tables have **no code references at all** — neither absolute
+    nor RIP-relative, checked at five addresses — so they map the data completely and give **no
+    static anchor into renderer code**.
+  - The method is engine-agnostic and is written up as
+    [search the doc comments, not the names](../techniques/README.md#-a-reflection-table-often-carries-the-developers-own-doc-comments--search-those-not-the-names);
+    the cross-reference caveat is
+    [the ModRM hole](../techniques/README.md#-a-cross-reference-scanner-that-does-not-decode-modrm-is-blind-on-x64--and-every-no-xrefs-result-it-produced-is-suspect).
 
 ### Getting in, and getting the console
 

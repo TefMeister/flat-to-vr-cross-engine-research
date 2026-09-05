@@ -25,8 +25,8 @@ for the last sweep date and what it found.
 |---|---|---|
 | **Flat2VR community & Flat2VR Studios** | The hub of the whole hobby (150k+ Discord) — new mod releases, licensed-port announcements, and the pulse of what's being solved. | [flat2vrstudios.com/news](https://www.flat2vrstudios.com/) · [x.com/Flat2VR](https://x.com/Flat2VR) |
 | **Road to VR**, **UploadVR** | Press coverage catches licensed-port news (Flat2VR Studios titles) and major tool releases before they reach niche forums. | [roadtovr.com](https://www.roadtovr.com/) · [uploadvr.com](https://www.uploadvr.com/) |
-| **MTBS3D forums** | Long-running stereoscopic-3D/VR modding community — vorpX, geo-11, and generic-driver discussion lives here. | [mtbs3d.com/phpbb](https://www.mtbs3d.com/phpbb/) |
-| **PCVR Central** (Camracks, added 2026-08-24) | A non-rehosting directory of ~900 PC VR mods across ~968 games with quality/freshness labels and a Steam-library checker — a fast cross-check for "does a mod already exist" and for landscape/framework coverage before starting new adapter work. | [pcvrcentral.com/mods](https://pcvrcentral.com/mods) · [pcvrcentral.com/library](https://pcvrcentral.com/library) |
+| **MTBS3D forums** | Long-running stereoscopic-3D/VR modding community — vorpX, geo-11, and generic-driver discussion lives here. ⚠️ **Returns 403 to automated fetchers** (five URL forms tried, 2026-09-05) — it needs a browser, and an empty result here is a tooling result, not a quiet source. | [mtbs3d.com/phpbb](https://www.mtbs3d.com/phpbb/) |
+| **PCVR Central** (Camracks, added 2026-08-24) | A non-rehosting directory of PC VR mods with quality/freshness labels and a Steam-library checker — a fast cross-check for "does a mod already exist" and for landscape/framework coverage before starting new adapter work. **991 games with VR mods as of 2026-09-05**, against ~898 in mid-August, so it is growing quickly. ⚠️ The catalogue and per-game mod rows are **client-side rendered** — only the page header survives an automated fetch, and a game page can show a non-zero "VR conversion" count with no readable entry behind it. Needs a browser for anything specific. | [pcvrcentral.com/mods](https://pcvrcentral.com/mods) · [pcvrcentral.com/library](https://pcvrcentral.com/library) |
 
 ## Per-project relevance (checked with extra attention while these projects are active)
 
@@ -45,7 +45,7 @@ for the last sweep date and what it found.
 
 | Source | Why | Where |
 |---|---|---|
-| **Vk3DVision** (Helifax) | The only maintained **Vulkan** generic stereo driver; its per-game fix list is a fast feasibility check for Vulkan titles. Closed source — prior art only. | [github.com/helifax/Vk3DVision-Public](https://github.com/helifax/Vk3DVision-Public) · [fix list](https://3dsurroundgaming.com/Vk3DVisionGames.html) |
+| **Vk3DVision** (Helifax) | ⚠️ **ARCHIVED 2026-03-05, read-only** (re-confirmed via the GitHub API 2026-09-05; fix list's newest stamps 2025-08-30). Was the only maintained **Vulkan** generic stereo driver; its per-game fix list remains a feasibility check for Vulkan titles, but as **frozen prior art** — no new fixes will appear. Keep in the list at low priority to catch an un-archive or a successor. Prior art only. | [github.com/helifax/Vk3DVision-Public](https://github.com/helifax/Vk3DVision-Public) · [fix list](https://3dsurroundgaming.com/Vk3DVisionGames.html) |
 | **vorpX** | Commercial fallback for D3D9–12 games with no adapter. Feature/profile changes matter for older titles (Far Cry 2). | [vorpx.com/features](https://www.vorpx.com/features/) |
 | **Vireio Perception** (cybereality) | Free/open alternative to vorpX — newly added to this library 2026-08-24. | [github.com/cybereality/Perception](https://github.com/cybereality/Perception) |
 | **geo-11 / 3Dmigoto / Helix Mod** | DX11 stereo driver + shader-fix ecosystem; needs dgVoodoo2 to reach D3D9 games. | [helixmod.blogspot.com](https://helixmod.blogspot.com/) · [github.com/ThreeDeeJay/geo-11](https://github.com/ThreeDeeJay/geo-11) |
@@ -1573,3 +1573,156 @@ working at the speed the projects are moving — but it does argue for the habit
 demonstrating: **publish the condition with the technique, and the tag with the claim**, because the
 correction usually arrives before the reader does. Link checker over every anchor added: **0 broken**;
 mojibake grep clean.
+
+### 2026-09-05 — full sweep, home PC (in-house delta from 2026-09-04 22:00; two drops drained, two filed)
+
+**Own inbox: two files, both drained by explicit name.** `grep -rn "^Supersedes:" inbox/` found none,
+so oldest-first was safe.
+
+| Drop | From | Landed |
+| --- | --- | --- |
+| when the IK setters are dead ends, own the getter the solver reads | modding (`/lm` on `visceral-re2-vr`) | new section [**when every setter is a dead end, own the GETTER the solver reads**](./techniques/README.md#-when-every-setter-is-a-dead-end-own-the-getter-the-solver-reads), plus the [RE Engine page](./engines/re-engine.md) |
+| `static-disasm.py xrefs` is blind to RIP-relative references | `/pd` on `doom-2016-vr` | new sub-section [**a cross-reference scanner that does not decode ModRM is blind on x64**](./techniques/README.md#-a-cross-reference-scanner-that-does-not-decode-modrm-is-blind-on-x64--and-every-no-xrefs-result-it-produced-is-suspect) under "Tool defaults that fabricate false negatives" |
+
+⚠️ **The getter drop was written before the project's own morning session qualified it, so it was
+folded in with the qualification attached rather than as written.** The drop describes a clean win:
+hook the getter, edit the returned translation, the wrist moves by exactly that amount. What the same
+project measured hours later is that the getter is called in a **pre-update pose** (0.18–0.20 m and
+~48° from the joint's final pose on one weapon, 18° on another) and that the solver carries the
+**offset** you introduce rather than the absolute value — so an absolute target expressed in final
+space misses by exactly that gap **while still responding perfectly to a relative test.** A relative
+test cannot distinguish a relative consumer from an absolute one. That is now the loudest paragraph
+in the section, because it is the part that costs launches.
+
+**⭐ Nine sections were added or extended, and seven of the nine came out of our own projects on one
+day.** In the order they will be useful:
+
+- [**Own the getter the solver reads**](./techniques/README.md#-when-every-setter-is-a-dead-end-own-the-getter-the-solver-reads)
+  — four setters that were dead ends in four different ways, and the read path that was not. Carries
+  the call-count test for *"does the engine read this at all"*, the additive two-getter nesting
+  proof, the snap-versus-blend question, the pre-update-pose trap above, and two smaller traps
+  (a post-hook handing you a pointer to the register holding the return-buffer pointer; your own
+  reads going through your own hook, which had already produced one confusing "returns no value").
+- [**A reflection table often carries the developers' own doc comments — search THOSE**](./techniques/README.md#-a-reflection-table-often-carries-the-developers-own-doc-comments--search-those-not-the-names)
+  — the best recon result of the sweep. 57,214 field records gave a clean negative on *names*; the
+  same database's **comments** answered the question outright in the engine programmers' own words.
+  With it: scope a negative to the population you enumerated, run a positive control on the
+  enumerator, and the second prize — a **struct signature** that lets a memory-scan hit be confirmed
+  rather than assumed.
+- [**An in-flight map's identity is `(context, resource)`**](./techniques/README.md#-and-an-in-flight-maps-identity-is-context-resource--never-the-resource-alone)
+  — why a resource-keyed pairing table produced zero writes and 2.8 million overflows on a
+  deferred-context renderer, the claim/release ordering that keeps a lock-free table honest, a
+  32-bit compare-exchange on a 64-bit pointer caught before it shipped, and the verification rule:
+  **a fix whose harness cannot reproduce the bug has not been shown to fix anything.**
+- [**The reload race on a foreign vtable slot**](./techniques/README.md#-and-the-reload-the-fix-enables-has-a-race-of-its-own-the-slot-you-chain-into-may-not-be-the-engines)
+  — the direct consequence of yesterday's free-the-real-DLL fix. A proxy loaded twice captured a
+  *third party's* pointer as "the real one" and recursed 1,669 times in a millisecond. One launch in
+  four; the first block lived 700 ms on the bad launch and 16 ms on the three clean ones.
+- [**An instrument that tests one convention can only ever report "neither"**](./techniques/README.md#an-instrument-that-tests-one-convention-can-only-ever-report-neither-convention)
+  — a third entry under "the instrument can be the bug", and the shape differs from the other two: a
+  gated diagnostic goes *silent*, a convention-blind one stays **loud and negative**.
+- [**A log line that co-occurs with a failure is not an explanation of it**](./techniques/README.md#a-log-line-that-co-occurs-with-a-failure-is-not-an-explanation-of-it)
+  — a diagnostic block is a *place*, not a story. The fix the wrong reading implied would have
+  changed nothing.
+- [**Three controls turn an exhaustive static negative into evidence**](./techniques/README.md#1b-the-static-search-version-three-controls-turn-an-exhaustive-negative-into-evidence)
+  — the static sibling of the live control rules: a **population** control, a **detector** control
+  and an **encoding** control, and why the negative only really closed once a decoded layout said the
+  field *could not* be there.
+- [**The sweep that changes nothing is a positive result**](./techniques/README.md#and-the-sweep-that-changes-nothing-is-a-positive-result-about-where-the-cause-is-not)
+  — a parameter moved 20× while the symptom sat still; sweep wide before fine, and bracket the
+  pipeline rather than only reading its output.
+- [**The version that moves is usually the GAME's**](./techniques/README.md#-the-version-that-moves-is-usually-the-games--and-a-moved-struct-field-crashes-with-your-framework-nowhere-in-the-stack)
+  — the one section from the **web** rather than from us, and the most immediately useful thing the
+  web pass found. See below.
+
+**Engine pages.** [Remedy/Alan Wake](./engines/remedy-alan-wake.md) — handedness answered **live**
+(left-handed, `clip.w = +view.z`), plus the shape of the constant traffic (whole 128-register blocks,
+so a hook waiting for `start == reg` never fires) and the three projections seen. [id Tech 6](./engines/id-tech-6.md)
+— the reflection database's class layer walks, there is **no per-eye field**, and the eye is a
+**view index** with a two-entry world-view list compiled into retail; the only surviving per-view
+stereo scalar is a **GUI** offset, which is the structural reason the previous generation's per-eye
+view field was never going to be found. [id Tech 5](./engines/id-tech-5.md) — the `Map`/`Unmap` path
+failed totally on its first run, and the cause is a property of deferred contexts rather than of the
+patch. [RE Engine](./engines/re-engine.md) — the getter-override dock, the four disproved setter
+routes, the `via.render.Texture` offset hazard, and the sibling project's revision gap now **closed**
+(the two machines run *different* frameworks — a March fork build and an August nightly — with the
+same exported plugin API version, which is exactly why it was easy to miss).
+
+**Web — a full pass, and it changed two things this library was still saying.**
+
+- **⭐ [REFramework PR #1822](https://github.com/praydog/REFramework/pull/1822) (porlock2, merged
+  2026-09-05)** — verified firsthand from the pull request and the repository API. A March 2026 RE4
+  update re-laid-out `via.render.Texture` (description to a different base, D3D12 resource container
+  `0xA0` → `0xB8`); the framework read the old offsets and crashed **at the publisher logo, on game
+  worker threads, with no framework frame in the call stack**. Four lines to fix, offsets measured
+  rather than estimated. The transferable lesson is the empty call stack: **a fault surfaces where a
+  bad pointer is dereferenced, not where it was computed.** Both of this account's builds predate the
+  change.
+- **⚠️ Correction to this library: Vk3DVision is archived, and the pages had not caught up.** The
+  archive was noted in the 2026-09-01 sweep log but the [generic-drivers page](./generic-drivers/README.md)
+  still described it as *maintained* and the watch-list row still called it *the only maintained
+  Vulkan generic stereo driver*. Re-confirmed firsthand today (`archived: true`, last push
+  **2026-03-05**; fix list's newest per-title stamps 2025-08-30). Both now say so, with the
+  consequence stated plainly: **with Vk3DVision archived, the geo-11 GitHub mirror dormant since 2024
+  and Vireio untouched since 2022, there is no evidence of an actively maintained generic stereo
+  driver for Vulkan at all** — so *"a generic driver exists if the bespoke route fails"* is not
+  available on a Vulkan target. One loose end recorded rather than resolved: the repo's GitHub licence
+  metadata reports BSD-3-Clause, which sits oddly against the closed-source description; it changes
+  nothing, since this library reads no one's implementation either way.
+- **Everything else on the watch list: no change.** UEVR still **1.05** (2024-11-16; last commits
+  2026-08-27→30), REFramework's newest **release** still **v1.5.9.1** while `master` moved four times
+  in two days, OldUnreal `Unreal-testing` still **v227k_15** (2026-08-16), mutars silent on all three
+  VR projects, vrframework unchanged since June, dgVoodoo2 still **v2.87.4** (recorded 2026-09-03),
+  geo-11's mirror and Vireio dormant. Flat2VR Studios' newest news item is 2026-07-23; Road to VR and
+  UploadVR carried nothing mod-related in the window.
+- **Two sources could not be read, and that is a tooling result, not a negative** — MTBS3D returned
+  **403** to five URL forms, and vorpX's features and news pages returned **429**. Both watch-list
+  rows now say so, alongside a new note that PCVR Central's catalogue is client-side rendered. Its
+  header does render: **991 games with VR mods**, against ~898 in mid-August.
+- **A first-VR-mod search across nine of our titles found none** — The Evil Within, DOOM (2016), Far
+  Cry 2, Alan Wake (2012), Mad Max, Prince of Persia (2008), Manhunt (2003), Psychonauts, and the two
+  UE3 titles. Adjacent prior art only: vorpX profiles, 3D Vision fixes from 2012–2016, and for
+  Manhunt a free-camera/first-person plugin that is a plausible foundation and is not stereo.
+- **One claim was checked and NOT recorded.** A search result suggested Luke Ross's R.E.A.L.
+  framework had added DOOM (2016). A direct check of the published supported-title list shows **Doom
+  Eternal** and **Doom The Dark Ages** and **not DOOM (2016)**. Left out, per the rule that a
+  doubtful thing stays out — noted here so the next sweep does not spend the same twenty minutes.
+
+**Project-repo harvest.** All 21 repos in this lane's root pulled. Research-lane commits since
+2026-09-04 22:00 on **seven** projects — `alan-wake-vr`, `doom-2016-vr`, `far-cry-2-vr`,
+`prince-of-persia-2008-vr`, `re-village-scope-vr`, `the-evil-within-vr`, `visceral-re2-vr` — all read
+in full at the changed sections; the other nine were unchanged on those paths and were not read. **No
+dossier moved from "not covered" to "covered in full"** — this was a delta sweep throughout, and the
+coverage backlog is unchanged from the 2026-09-01 evening entry.
+
+**Generalised up out of project repos, named for traceability:** `visceral-re2-vr` §8c (the getter
+chain and the pre-update pose); `doom-2016-vr` §5 (the reflection database walk) and its `/pd` drop
+about `static-disasm.py`; `the-evil-within-vr` §7a and its dead-ends entry (the pairing key and the
+co-occurring log line); `alan-wake-vr` §4c (handedness, block uploads, the layered-hook race);
+`prince-of-persia-2008-vr` §3 (the ActionBlock census and its controls); `re-village-scope-vr` §7x
+(the exposure sweep).
+
+**Inboxes drained: one** (our own, two files, by explicit filename). **Inboxes filled: two** —
+`re-village-scope-vr/engine-research/inbox/` (the `via.render.Texture` offset hazard, because that
+project's M2 work sits on exactly that surface, plus the upstream Lua array hardening it asked to
+track) and `far-cry-2-vr/engine-research/inbox/` (that project and this library corrected the *same*
+OpenXR sentence to *different* tags two days apart — `[inferred-static]` there, `[reported]` here;
+the reasoning is in the drop and the library will move if the project disagrees). Deliberately **not**
+filed: a suggestion to fold `riprefs.py` into `flat-to-vr-RE-toolkit` as a `static-disasm.py` mode —
+the toolkit has no inbox, the change alters a shared tool's interface, and the scanner has been run
+against exactly one image. It stays a modding-lane decision, recorded in the technique section.
+
+**New credits:** **porlock2** added. First-party credit extended to `visceral-re2-vr`,
+`doom-2016-vr`, `the-evil-within-vr`, `alan-wake-vr`, `prince-of-persia-2008-vr` and
+`re-village-scope-vr` for this batch, and `flat-to-vr-RE-toolkit` named as the owner of the tool
+whose defect one section documents — recorded at least as loudly as the tools that work.
+
+**Process note.** Four of the nine new sections exist because a project **corrected itself within a
+day**: a diagnosis that named the wrong subsystem, an instrument that could only ever return
+"neither", a setter reading that was written down as the answer and turned out to be a dead end, and
+an absolute-target design that had to become relative. The pattern the last five entries kept noting
+is now the ordinary case rather than a remark — **publish the condition with the technique, and the
+tag with the claim.** One thing this sweep did differently and would do again: it re-derived every
+web claim it was about to write down, and the one it could not re-derive is the one it left out.
+Link checker over every anchor in the repository: **0 broken** (it also caught one pre-existing
+broken anchor in the id Tech 6 case study, now fixed); mojibake grep clean.
