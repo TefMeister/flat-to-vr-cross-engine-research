@@ -176,9 +176,55 @@ would record a game patch version — and especially beside any result that came
 engine collection. On this family, "it worked yesterday" is a statement about two programs, not one.
 The general form is on the techniques page as
 [dating a dependency](../techniques/README.md#dating-a-dependency-a-fix-newer-than-your-build-is-not-evidence-that-you-are-affected).
-⚠️ **The sibling project on this family has no revision recorded anywhere** — its Lua results are dated
-but the program underneath them is not, which is a cheap, no-launch gap for whichever lane next touches
-it.
+
+✅ **Closed 2026-09-04: the sibling project has now recorded its revision**, and the result is worth
+knowing because it is not the same program on both of this account's machines. One machine runs the
+same **fork build (2026-03-11)** as the project above; the other runs an **upstream nightly from
+2026-08-20**. Results from the two machines are results about two different frameworks, and the
+project's dossier now says so beside each. The exported plugin API version is the same on both, which
+is exactly why the difference is easy to miss.
+
+**Upstream continued to move on the same surface, 2026-09-04 → 09-05** `[reported 2026-09-05]`, read
+from the commit list and the pull request directly. `master` gained three Lua data-model commits —
+array element setting, general array handling, and string-versus-number ambiguity — of which the
+array one is the substantive change: the managed-array creation length was widened to a signed 64-bit
+type so a negative length can no longer wrap into a huge allocation, index validation was centralised
+into one checked helper (integer, in range), and out-of-range indexing now returns nothing or raises
+instead of behaving undefinedly. **On a March fork build, none of that is present**, and the shape of
+the exposure is the one described above: wrong values rather than errors, in recon code. Worth
+knowing concretely, because a project on this family has independently measured its build's managed
+array layout (element count and data at fixed offsets) and derives those offsets live at hand-over
+rather than assuming them — which is the right defence against exactly this drift.
+
+### 🚨 A game patch can move a `via.render.Texture` field, and the crash has no framework in its stack
+
+`[reported 2026-09-05]` — read from the merged pull request and the repository API firsthand.
+[REFramework PR #1822](https://github.com/praydog/REFramework/pull/1822) by **porlock2**, merged
+2026-09-05, is the clearest public example this family has produced of a hazard that applies to every
+project here.
+
+A March 2026 title update re-laid-out `via.render.Texture` to match a sibling title's layout: the
+description field moved to a different base, and the graphics-API resource container moved by 0x18.
+The framework's **static offset accessors** kept reading the old positions. The symptom was a crash at
+the publisher logo on startup under VR multipass, **on game worker threads with no framework frame in
+the call stack**, with or without upscaling enabled — which is precisely why it read for months as
+something other than a framework problem. The fix is four lines: a per-title branch selecting the new
+values, measured rather than estimated.
+
+**What every project on this engine should take from it:**
+
+- **Those texture accessors are what render-target and upscaler code leans on.** If you are building a
+  native render target, a mirror, or a second view, you are on this exact surface.
+- **The offsets are per-title *and* per-game-version.** "RE Engine support" is really "these titles,
+  at these versions".
+- **Date your framework build against the game's patches, not only against upstream.** A build
+  predating a title's layout change carries the pre-change path by definition, and no release check
+  will tell you. Both of this account's builds predate the change above, and neither project works on
+  the affected title — but the general exposure is the same for any title that re-lays-out a struct.
+
+General form, including why the empty call stack is misleading:
+[the version that moves is usually the game's](../techniques/README.md#-the-version-that-moves-is-usually-the-games--and-a-moved-struct-field-crashes-with-your-framework-nowhere-in-the-stack).
+Credit: **porlock2** and **praydog**.
 
 ### Custom animation and locomotion levers, cross-title
 
@@ -211,6 +257,53 @@ fixed the symptom, because the symptom was never an animation problem. What it a
 one-line fix, is in
 [techniques → the HMD-anchored body float](../techniques/README.md#vr-body-height-the-hmd-anchored-float).
 Recorded here so a third project on this engine does not walk it a third time.
+
+### ⭐⭐ And what DID work, 2026-09-05: the support hand is placed by overriding a getter, not by calling a setter
+
+`[verified-live 2026-09-05, n=1 launch per weapon, 2 weapons]` The third attempt on the same problem,
+and the one that landed. It is recorded here because the levers named are engine-level, not
+title-level, and because the four negatives around it are worth as much as the positive.
+
+**Every setter on the engine's IK controller was a dead end**, in four distinct ways
+`[disproved 2026-09-05]`: the arm-fit target setter accepts a value every frame and moves nothing —
+the game rewrites the target from its own source before the solve; the ARM solver kind cannot be
+enabled by either the direct-ABI route or the reflective invoke route, with the enabled flag reading
+back zero on every frame after; the arm target setter throws an internal exception on every index;
+and the two-arm and hand solver objects are **null** on both weapons, at bind pose and while holding.
+What remains enabled is arm-fit configured as a wrist solver — and that solver is reachable, just not
+through its own interface.
+
+**The lever is a managed getter on the weapon side.** Each weapon carries an *aid joint* — an anchor
+on the **weapon** skeleton, not on the player — and the wrist solver reads its world matrix through a
+two-deep getter chain, called **once per frame each** at equal counts. Post-hooking either getter and
+editing the returned translation moves the player's wrist by exactly that amount; editing both is
+additive; switching off returns it to zero, including under the game's own aim state. The solver
+**snaps**, so any smoothing is the mod's to add in the value it returns.
+
+Two engine-level details that generalise across titles here:
+
+- **The weapon-to-hand joint constraint on the implement is the *attach* joint (the right hand), not
+  the aid joint.** A decompile of the constraint update shows it reading the attach field and never
+  the aid field, which is what settled *anchor vs. follower* — the aid joint is an anchor.
+  `[inferred-static 2026-09-05]`
+- **A `Nullable<via.mat4>` return arrives through a hidden return-buffer pointer**: at return, the
+  hook's return value is a pointer to that buffer, with the has-value byte at offset 0 and the matrix
+  at +0x10. Dereference once and check the byte before touching the payload.
+
+**🚨 The trap that costs launches:** the getter is called at a point in the frame where the joint is
+in a **pre-update pose** — measured at 0.18–0.20 m and about 48° away from its final pose on one
+weapon, 18° on another — and the solver carries the **offset** you introduce across into final space
+rather than the absolute value. So an absolute target expressed in final space misses by exactly that
+gap, while still responding convincingly to a relative test. The working form is *blend in final
+space, then map back*, with the mapping recomputed live each frame from the un-hooked value and the
+engine's own world-matrix accessor for the joint. Full method, and the general rule about establishing
+which space and moment a hooked value lives in:
+[own the getter the solver reads](../techniques/README.md#-when-every-setter-is-a-dead-end-own-the-getter-the-solver-reads).
+
+Also confirmed natively on this family the same day: the input-system force call raises and drops the
+full aim state within a frame, and the attack kind fires a real shot (ammunition decremented, shoot
+clip on its own layer) — so aim and fire are both drivable from a plugin without touching the
+animation system. `[verified-live 2026-09-05, n=1]`
 
 ### Scoped optics are a fullscreen FOV zoom plus a GUI mask — there is nothing to reuse
 
