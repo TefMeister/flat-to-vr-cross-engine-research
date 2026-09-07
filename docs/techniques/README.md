@@ -661,6 +661,35 @@ not, what you have is a hypothesis, and it should be written down as one — bec
 session will read a confident sentence and act on it. That is exactly how the XIII correction
 above came to be needed: the note was believed, the tier was re-armed, and the game crashed again.
 
+### An affordance reachable only from a GUI panel is invisible to a driven session
+
+`[measured 2026-09-05]` Generalised out of
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr).
+
+A capability that exists only as a button in a framework's overlay panel **does not exist** for a session
+with nobody at the mouse — and nothing errors to say so. One project carried a texture-cycling probe for a
+week, built and working, and could not use it in any automated run because it had only ever been wired to a
+panel button. It answered a question that was blocking the project the whole time.
+
+Two consequences worth building in from the start:
+
+- **Every capability needs a headless entry point** — a console command, a config-file key, a hotkey the
+  input layer can synthesise. The panel button is a convenience on top of that, never the only door.
+- **Assume the overlay cannot be clicked from outside the process.** In that project the framework's
+  overlay registered hover but ignored synthetic clicks, via both `mouse_event` and
+  `SendInput` with `MOUSEEVENTF_ABSOLUTE` `[disproved 2026-09-05, n=3 attempts]`. If the panel is the only
+  door, the room is locked.
+
+**A related cost worth pricing in:** where a script cannot be reloaded safely — that project's reload
+duplicates every frame-callback registration — a one-line script change costs a **full relaunch**. That
+turns "try it and see" into a budgeted action and is a strong argument for
+[making one launch answer many questions](#make-one-launch-answer-many-questions).
+
+**And one launch trap from the same automation work:** issuing a Steam URL launch (`steam://rungameid/…`)
+while the Steam client is still starting produces **no process and no error at all** — the request is
+silently dropped. Wait for the client before launching, and treat "no process appeared" as a launcher
+result rather than a game result.
+
 ## The void behind the player
 
 Turn your head in a flat game that has been given a VR view, and at some angle the world simply
@@ -1879,6 +1908,48 @@ Generalised from a `/gr` research hand-off on
 [`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr), 2026-09-04; specification text is the
 Khronos Group's, read online, nothing copied.
 
+### A read-back that returns the same number under every write is three hypotheses, not one
+
+`[verified-live 2026-09-05, n=2 materials, n=3 launches]` Generalised out of
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr).
+
+You write `0.0` to a shader or material parameter and read back `0.1`. The reflex is to call it
+**re-assertion** — the engine is writing the value every frame and you are losing the race — and to open
+a hunt for the writer. That hunt can consume a session, and it rests on a reading the observation does not
+support. At least three explanations fit:
+
+1. The engine **re-asserts** the value each frame.
+2. The value is **clamped** on the way in, and `0.1` is the floor.
+3. **The write never lands at all** — wrong instance, wrong encoding, or an API that reports success and
+   discards.
+
+A single value cannot separate them, and one value is all a single write ever gives you.
+
+**The ladder that separates them costs one launch.** Write three values spanning the suspect bound and log
+each read-back:
+
+| written → read | reading |
+| --- | --- |
+| `0.500 → 0.500`, `0.050 → 0.100` | **a clamp.** No writer exists; cancel the hunt. |
+| `0.500 → 0.100` | **re-assertion or a dead write** — still two; see below. |
+| `0.500 → 0.500`, `0.050 → 0.050` | the value is yours, and something *later in the frame* overwrites it. Only now is finding the writer the right next step. |
+
+That project's ladder returned `0.500 → 0.100` on both materials, which killed the clamp reading — a clamp
+at 0.1 would have passed 0.5 through — and left two.
+
+**⭐ The discriminator between the last two is a hold, not a write.** Set the value **every frame for a
+second or two** and read it back. A per-frame writer loses to a per-frame hold; if the read-back is still
+unchanged, re-assertion is dead and what remains is that the write never lands. That is what happened, on
+two materials across two launches, and it closed the row: *there is no writer to hunt*. The parameter is
+read-only through that API, driven from somewhere the material does not expose, or the instance being
+written is not the one the renderer samples — and all three of those are addressed by a different route,
+not by more searching.
+
+**The transferable part is the shape.** When every observation of a quantity is the *same* observation,
+you have one data point and several hypotheses. Design the smallest set of writes whose read-backs differ
+between them, and only then spend a session on the hypothesis that survives. See also
+[prove the value you are debugging is the one the feature reads](#prove-the-value-you-are-debugging-is-the-one-the-feature-reads).
+
 ## A D3D9 `Reset` can disarm a device hook, silently and late
 
 `[verified-live 2026-09-03, n=2 resets, 1 title]` A D3D9 proxy that had been feeding a per-draw
@@ -2870,6 +2941,40 @@ Generalised from a `/pd` hand-off out of [`doom-2016-vr`](https://github.com/Tef
 Generalised from a `doom-2016-vr` modding-session hand-off, alongside the earlier `strings` trap
 from the same project.
 
+### ⚠️ "All seven candidate accessors are absent" describes your guess, not the object
+
+`[verified-live 2026-09-05, n=2]` Generalised out of
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr).
+
+A reflection API tempts you to probe an unknown object by **name**: try `get_Resource`, then
+`getResource`, then `get_Handle`, then four more, and conclude the object exposes nothing useful. One
+project did exactly that against a texture wrapper, recorded "all seven candidate accessors absent", and
+built a design decision on it. The result was true of the seven names guessed and said nothing whatever
+about the object.
+
+**Enumerate the type's own members instead.** Every reflection system that can answer "does this method
+exist" can also answer "what methods does this type have" — walk the zero-argument value getters and
+report what is actually there. The rewritten probe does this, and it is the difference between a negative
+about the object and a negative about your vocabulary. This is the same shape as
+[a cross-reference scanner that does not decode ModRM](#-a-cross-reference-scanner-that-does-not-decode-modrm-is-blind-on-x64--and-every-no-xrefs-result-it-produced-is-suspect):
+an instrument whose blind spot is invisible in its output.
+
+**Three guards for the enumeration itself:**
+
+- **Call only value-type and string returns.** A primitive getter is a field read; an object getter may
+  **construct** something, with side effects inside someone else's frame.
+- **A scripting-language `pcall` does not catch an access violation.** A guarded call is not a safety net
+  for a bad pointer — the process dies anyway. Restricting *what* you call is the actual protection.
+- **Read one known object last, as a control.** That project reads a resource whose dimensions and format
+  were established a fortnight earlier; a wrong reading there voids every negative in the same run. It is
+  the habit that had already caught three wrong answers the same day.
+
+**One more failure of name-based probing, opposite in shape:** in the same session,
+`find_type_definition("via.render.RenderTargetTextureResource")` returned nil while the resource
+**factory resolved the identical string** and handed back a working object. Resource types were simply not
+managed types on that build. When a name lookup fails but something else accepts the name, **take the type
+from the returned object**, not from the lookup that failed.
+
 ## Capturing the finished frame: the whole-frame route to a headset
 
 For an old game whose renderer predates every VR runtime, there is a route to a headset that needs
@@ -2977,6 +3082,48 @@ Two corollaries, both learned expensively:
 Evidence:
 [the-evil-within-vr](https://github.com/TefMeister/the-evil-within-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
 §7 and §11.
+
+### A recognizer is only as specific as the measurements it takes — and tightening it can refuse the case the design depends on
+
+`[verified-live 2026-09-05, n=7 latches]` Generalised out of
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr).
+
+The section above says to identify a resource by how it is used. When you cannot — when you must latch
+onto an allocation at creation time because that is the only moment it is visible — the predicate you
+write is a **hypothesis about what makes this resource unique**, and it silently expires.
+
+One project's predicate checked dimension, width, a height window and one usage flag. It worked for two
+weeks, and then the engine allocated an HDR intermediate at the same size, which passed all four, and the
+picture went black. **Width plus height plus one flag was enough on the day it was written and stopped
+being enough the moment the engine allocated something else the same size.** The fix is not cleverness but
+census: log every allocation the predicate accepts and every near miss, and check what actually
+distinguishes the one you want. Here it was the format and one flag — every genuine target had arrived as
+`R8G8B8A8_UNORM_SRGB` with no unordered-access flag across four latches in two sessions.
+
+**⚠️ And then the obvious fix was a regression, which is the more useful half of the story.** The format
+gate was added to the shared predicate — and the design *depends* on later accepting a different format:
+the pipeline latches an 8-bit resolve first and then **upgrades** to the raw HDR buffer when it appears,
+because the HDR source is the one with the picture in it. The tightened predicate refused the upgrade
+too, so the run silently fell back to the washed-out early source and its "good" result was a worse
+picture than before.
+
+**The rule: tighten at the decision, not in the shared predicate.** The predicate answers *"could this be
+the class of thing I want?"* — keep it geometric and broad. The **caller** answers *"may this be a first
+source, or an upgrade to one I hold?"*, and that is where the format rule belongs. A recognizer used by
+two decisions with different requirements must not carry either one's requirement inside it.
+
+Two smaller findings from the same work, both cheap to inherit:
+
+- **An allocation that arrives when nothing is waiting for it is lost for the rest of the process.** In
+  that engine a target allocates on its **first use** and never again, so a latch that is not armed at
+  that moment never gets another chance. If your capture depends on catching an allocation, arm it
+  **before** the action that triggers the first use, not after.
+- **A pooled resource can leave you holding a frozen buffer with no error anywhere.** When the engine
+  pools by size, switching to a different size means your latched buffer is simply no longer written —
+  the last frame it received stays on screen, indefinitely, looking like a hang in your own code.
+  `[hypothesis]` on the pooling mechanism (2026-09-05); the symptom is measured. Detect it by comparing
+  the size you are rendering for against the size you latched, and **warn rather than auto-clear**,
+  because the same-size case recovers by itself.
 
 ## Deferred-context renderers: finding the world, and patching it once per eye
 
@@ -3170,6 +3317,39 @@ failure beats a script that dies on line one leaving a missing log line as its o
 Evidence:
 [visceral-re2-vr](https://github.com/TefMeister/visceral-re2-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
 §4, §5 and §9.
+
+### The object you are writing to may not be the one on screen — read the flag back
+
+`[verified-live 2026-08-19]` · `[measured 2026-09-06]` Generalised out of
+[`arcade-controls-re2-vr`](https://github.com/TefMeister/arcade-controls-re2-vr) and
+[`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr).
+
+The section above is about writing to the wrong *value*. This is about writing to the right value on a
+**dead object**, which produces the identical symptom — the feature does not respond — with none of the
+same causes.
+
+When an engine rebuilds the player (a save load, a death-and-continue, a level transition), the old
+component objects frequently remain **allocated and writable**. A cached pointer taken before the rebuild
+still accepts writes; the setter returns success; nothing throws. The meshes on screen are different
+objects entirely. One project spent real time on a head-hiding flag that "did not work" and was in fact
+being set perfectly, on a head that no longer existed.
+
+**The guard is one line: read the flag back after clearing it.** If it reads the value you wrote and the
+thing is still visible, your handle is stale — that is a *positive* discriminator, not an inference from
+absence. Re-resolve on every event that could rebuild the actor, and treat a cached component pointer as
+valid only for the frame you found it in.
+
+**A second, subtler version of the same hazard is intra-frame.** In that engine a joint's cached
+`WorldMatrix` is **stale if it is read in the same frame as a write to that joint** — one project read it
+fresh at one update stage and stale at another, and the alternating pose was a hand-teleport bug that
+looked like bad maths. If you write skeletal transforms, establish which stage the cache is coherent at
+before trusting a read.
+
+**And a mod that hooks a pipeline its own commits call needs a re-entrancy token.** The same project
+guards its ammunition writes with a flag so its own commits are not intercepted by its own hook — and the
+flag is **not refcounted**, so a nested commit clears it early and the outer one runs unguarded. In C++
+this wants RAII with a depth count, not a boolean. The bug class is easy to miss because it only appears
+when two of your own operations overlap, which is exactly the case a single-feature test never produces.
 
 ## ⭐ When every setter is a dead end, own the GETTER the solver reads
 
@@ -3835,6 +4015,58 @@ seconds — **prefix every log line with its subsystem tag**, and **read the emi
 message**, because a message written for one context reads as an explanation in another. Generalised
 from [`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr), 2026-09-05.
 
+### A hard-edged mask makes phase correlation lie, confidently
+
+`[verified-numerically 2026-09-05]` A fourth entry in this family, and the first where the instrument
+is a **measurement** rather than a diagnostic — which is why it was believed for a whole day.
+
+Measuring how far a picture moved between two captures is a solved problem: high-pass both images and
+phase-correlate. The complication in a VR mod is that the interesting picture is usually a *region* —
+the inside of a scope, a mirror, a portal — so the natural move is to mask everything else off with a
+binary annulus and correlate what remains.
+
+**Do not.** A hard-edged mask has enormous energy at its own rim, and after high-passing, that rim is
+the strongest feature in **both** images and sits in exactly the same place in both. The correlator
+locks onto the mask and returns precisely `(0, 0)` with a peak-to-rms ratio around 500 — a confident,
+well-conditioned, completely fabricated answer. Every *"the picture did not move"* result that project
+recorded in one day came from this. Use a **smooth raised-cosine taper in radius** instead.
+
+**The control that catches it — and nothing else did — is a known offset.** Roll or shift the baseline
+image by an amount you chose, and require the pipeline to recover that amount before you believe
+anything it says about real data. The hard mask recovered `(0, 0)`; the tapered mask recovered
+`(-23, +17)` exactly, and pinned the sign convention as a free bonus. This is
+[validate the instrument before you trust either result](#3-validate-the-instrument-before-you-trust-either)
+in its cheapest possible form, and an image pipeline should carry it permanently.
+
+**Two more ways to build the mask wrong**, from the same work: a mask derived from "high variance"
+regions locks onto the **animated world outside** the region of interest, which does not move with the
+thing you are steering, and again returns a confident `(0, 0)`. And whole-frame mean-absolute-difference
+is worse than useless — a pair of frames that differ unmistakably to the eye scored 14.6 against a
+same-state noise floor of 10.0.
+
+**The escape hatch worth remembering:** a large, unmistakable action, looked at. A 40° step settled in
+one move what two correlators could not settle in a day.
+
+### The noise floor is the idle animation, and it can exceed the effect
+
+`[measured 2026-09-05]` The companion trap to the one above, and the reason a fitted slope from that
+project had to be withdrawn.
+
+Two captures of the *same commanded state*, seconds apart, differed by up to 26 pixels — because the
+player character idles, and the weapon sways with them. Nothing was commanded; nothing was wrong. That
+is the floor every measurement in that scene sits on.
+
+The consequence is arithmetic. Across a 2.5° sweep the quantity being measured moved **less than the
+idle**, so the fitted slopes (`dx` −3.5, `dy` +4.9 px/deg) carried residual RMS of 7.0 and 6.0 px —
+larger than the total change across the entire sweep. A slope like that is not a weak measurement, it is
+not a measurement. It was published as a lower bound, and withdrawn a day later.
+
+**The rule: take same-state repeats first, and quote the floor beside every number derived from that
+scene.** Three or four captures with nothing commanded cost seconds and tell you the smallest effect the
+scene can express. If the effect you want is smaller, the answer is a bigger step, landmark tracking, or
+suppressing the idle — not a better fit. See also
+[prove the test can fail](#prove-the-test-can-fail-mutation-check-a-numerical-verification-before-trusting-it).
+
 ## Counting callers separates what a binary *links* from what it *uses*
 
 `[inferred-static 2026-09-01, n=1 game]` — read out of the binary, never seen running; the
@@ -4459,13 +4691,260 @@ offset finds **unrelated classes that happen to share that offset**. Two of the 
 texture pointer and an unrelated three-field write at the same displacement. An offset is not a type;
 confirm the class before counting a site as evidence.
 
+## Two-handed VR weapons: the second controller hides behind the first
+
+`[reported 2026-09-05]` from this account's own headset time, with two independent public solutions
+verified firsthand on 2026-09-07.
+
+Hold a rifle the way a person actually holds one and the support hand ends up **directly behind the
+trigger hand along the headset's line of sight**. On an inside-out headset that is the worst case for
+optical tracking: the rear controller is occluded by the front one, its pose degrades immediately, and
+the weapon jitters or swings. Observed live in a RE Village session on 2026-09-05, where it cost a
+retake. This is not a tuning problem — it is a geometric consequence of the natural pose, so **it will
+appear in every project that ships a two-handed weapon**, and it is worth designing for before the
+first headset test rather than after.
+
+Meta's own tracking write-up names the condition without quantifying it: *"Scenarios that suffered the
+worst are when the controllers are near the edge of field of view, too far, too close, or when there is
+occlusion."* `[reported]` A targeted search found **no
+vendor-published figure** for how long a controller's pose coasts on its IMU once it is occluded —
+neither Meta nor Valve appears to publish one, and the community explanations that do exist are not
+specifications. Treat "how bad, and for how long" as unknown; design so the question does not arise.
+
+**The two public solutions break the same assumption in different places.** Both stop the in-game hand
+being a 1:1 map of the physical controller — that mapping is what forces the two controllers into line —
+but they break it at opposite ends:
+
+| | mechanism | what the player gives up |
+| --- | --- | --- |
+| **STALKER Anomaly VR** (MarsyApp) | **Offset the IK target.** The secondary hand is *spread apart* in IK so the controllers do not cover each other for the headset cameras, with the offset configured **per weapon** in the game's LTX config files. Both hands stay live. | The virtual hand no longer sits where the physical one is — a proprioceptive mismatch that scales with the offset. |
+| **Onward** (virtual gunstock) | **Stop reading the rear hand.** *"When you bring a two handed weapon up to aim Virtual Gunstock Mode kicks in and keeps the weapon locked in position. Your front hand and body movement now controls the aim."* The occluded controller stops being an input. | Fine control: the article reports accurate scoped shooting *"with a slight loss of fine control"*. |
+
+Per-weapon configuration is the detail worth stealing from the first. A single global offset cannot be
+right for a pistol, a rifle and a launcher at once, because the correct real-world hand separation is a
+property of the weapon's geometry.
+
+**⚠️ One thing this account believes and has NOT confirmed publicly:** that the offset should put the
+**left hand above the right**, stacking the controllers vertically rather than separating them some
+other way. That is our own live observation `[reported 2026-09-05, n=1 observer]`. MarsyApp's own text
+says *spread apart* (`разводится`), not *above*, and no screenshot or video confirming the real-world
+hand geometry could be found. So the **direction** of the offset is open, and a project adopting this
+should treat it as a knob to find in the headset, not a constant to copy.
+
+**The cheap test, before writing any IK:** hold the pose in the headset with the mod's existing
+one-to-one hands and watch the rear hand. If it jitters, the offset is needed; the amount is what one
+session with a slider settles.
+
+Sources verified firsthand 2026-09-07: MarsyApp's own development thread and Boosty posts for **Anomaly
+VR** (in Russian; the roadmap lists *"Анти-окклюзия вторичной руки (Secondary IK offset)"* as complete)
+— <https://ap-pro.ru/forums/topic/14575-anomaly-vr/> · <https://boosty.to/anomaly_vr>; **UploadVR** on
+Onward's inside-out tracking update — <https://www.uploadvr.com/onward-inside-out-tracking-update/>;
+**Meta** developer blog, *Tracking Technology Explained: LED Matching*. Credit **MarsyApp**, **Downpour
+Interactive** (Onward), **UploadVR**, **Meta**. Generalised out of
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr).
+
+## A retail build that shipped its assertions names its own globals
+
+`[inferred-static 2026-09-05]` · found on UE3, which is the only engine it has been checked against.
+
+Finding an engine's global data structures in a stripped retail binary is normally a byte-signature job
+— brittle, per-build, and the part every public SDK generator leaves for you to supply. There is a much
+cheaper route to try **first**, whenever a build shipped with assertions compiled in.
+
+Most C/C++ engines define their assertion macro with the preprocessor's stringification operator, so
+**the text of the asserted expression becomes a string literal in the binary**. UE3's is representative
+(`Development/Src/Core/Inc/UnFile.h`) `[reported 2026-09-05, from public source]`:
+
+```
+#define check(expr)  { if(!(expr)) appFailAssert( #expr, __FILE__, __LINE__ ); … }
+```
+
+Three things follow, and the second is what makes this worth doing:
+
+1. **A symbol you cannot otherwise search for becomes searchable.** A global like UE3's `GObjObjects`
+   never appears as a string in ordinary code — but `check( GObjObjects.Num() == 0 )` puts the text
+   `GObjObjects.Num() == 0` in the string pool.
+2. **The xref lands *inside* the function that touches the global.** The failure call sits in the same
+   basic block as the test, so the global appears there as a **direct memory operand**. That is
+   qualitatively better than a string that merely mentions a thing: it is a labelled pointer to the
+   access site.
+3. **`__FILE__` rides along as free confirmation.** The same call passes the source path, so a
+   source-file string sits near every hit. It separates a real hit from a coincidence, says which
+   assertion you are standing in, and leaks the studio's source-tree layout for every later hunt in the
+   same binary.
+
+**The check that tells you whether the route is open at all is the route itself.** Assertions usually
+compile out in shipping configurations (`DO_CHECK`, `NDEBUG` and equivalents), so this is not universal
+— but finding *any* recognisable assertion text is the test, and a single hit opens the technique for
+**every** variable any surviving assertion guards, not only the symbol you searched for. On one 2010 UE3
+retail build the string `GObjObjects` appears **seven times** `[measured 2026-09-04, n=1 binary]`, which
+is what prompted this: a build that *looks* stripped may still name its internals.
+
+**Two practical rules.** Search for the **symbol name as a substring**, never for a whole expression —
+`#expr` preserves the source's own whitespace, so the exact formatting is compiler- and
+version-dependent. And inlining duplicates sites, so a hit count is not a count of distinct assertions.
+
+**Honest limits.** The macro shape is near-universal in C/C++, but *"most engines stringify"* is
+`[hypothesis]` — one engine's macro was read, not a survey. And the xref-lands-in-the-accessing-function
+claim is read off the macro's expansion, not confirmed in a disassembler; a project row is queued to test
+it, and that outcome belongs back here.
+
+Public sources, read online, nothing cloned or copied: **CodeRedModding**'s UE3 source mirror
+(<https://github.com/CodeRedModding/UnrealEngine3>) for the macro and the assertion sites — the engine
+source is Epic Games'; **ItsBranK**'s `UE3SDKGenerator` (MIT,
+<https://github.com/ItsBranK/UE3SDKGenerator>), whose `Configuration.cpp` ships its patterns as the
+literal string `"null"` `[verified-live 2026-09-05, n=1 API read]` and is therefore the evidence that
+the generators supply the harness and **not** the addresses. Generalised out of
+[`enslaved-vr`](https://github.com/TefMeister/enslaved-vr).
+
+## The cheapest control is the case where the correct answer is "change nothing"
+
+`[verified-live 2026-09-05, n=4 flat launches]` Generalised out of
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr).
+
+Most corrections a VR mod computes are **zero in some configuration**. A per-eye offset is zero at the
+midpoint; a head-relative correction is zero when the head is where the model was baked; a mirror or
+scope steering term is zero when the eye is on the axis it was tuned for. That configuration is a free
+and enormously specific control: **run it, and any implementation that does something is wrong before
+comfort, feel or magnitude is even a question.**
+
+The worked case is a rifle scope. Flat aim-down-sights puts the eye on the bore by construction, so a
+correct steering correction must be the identity there. Three candidate rays were tried against that one
+control:
+
+| the eye→target ray aimed at | angle from the bore | picture |
+| --- | --- | --- |
+| the rig's parked placement | **35.3°** | replaced entirely |
+| the weapon transform's root (the grip) | **50.1°** | replaced, worse |
+| **the scope's own anchor (a joint plus the mount offset)** | **0.7°** | **unchanged — passes** |
+
+**Two wrong rays caught and the third confirmed, in one day, for three flat launches and no headset
+time.** Both wrong ones looked entirely plausible in code.
+
+Three things this technique is really made of:
+
+- **⭐ Verify a model's INPUTS before you disprove the model.** Two imaging models had already been tried
+  in the headset and written down as disproved. They were not: each derived its direction from the same
+  wrong anchor, so the *arc it was fed* was 35° in a configuration where the eye was on-axis — the model
+  was never reached. A day of headset conclusions rested on an input nobody had measured. Print the
+  intermediate quantity your model consumes, and check it against the case where you know its value.
+- **Run the control at the cheapest gate that can express it.** The identity case here exists in flat
+  play, so it costs a flat launch and not a headset session. That is the whole economy of the thing: a
+  control that lives one gate cheaper than the failure it catches pays for itself immediately. See also
+  [make one launch answer many questions](#make-one-launch-answer-many-questions).
+- **⚠️ Passing proves the implementation, not the model.** On-axis is precisely where every value of the
+  gain constant behaves identically, so the control says nothing about the gain, its sign, or the law
+  relating them. It says the code does not corrupt the case it must not touch. Record which of the two
+  you have; conflating them is how a "validated" model reaches a headset untested.
+
+The same session supplies the counter-example that makes the rule sharp. A later finding showed the
+picture was tied to the **viewing camera** rather than to the steered plane, so the flat control had been
+passing for a reason unrelated to the model being right: in flat aim-down-sights the camera *is* on the
+bore, which is why every flat steering test agreed with a correct implementation and with a doomed one
+alike. **An identity control is a filter, not a proof** — it removes wrong implementations cheaply, which
+is worth a great deal, and it removes nothing else.
+
+## When the shipped inventory has nothing big enough, the limit is on borrowing — not on having
+
+`[verified-live 2026-09-06, n=1 launch]` Generalised out of
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr).
+
+A recurring move in this library is **borrow an engine-owned resource instead of creating one**: an
+allocation the engine already registers with its own pipeline sidesteps the registration problem that
+sinks a resource you create yourself. It works, and it has an apparent ceiling — the game ships what it
+ships. One project enumerated the shipped render-target inventory, found the largest usable one at
+1920×1080, and recorded *"borrowing a bigger target is exhausted"* as a wall.
+
+**It was not a wall. The asset in question was a 64-byte descriptor file.** In that engine an `.rtex` is
+a header — magic, version, DXGI format, width, height, a handful of flags and two floats — and the GPU
+allocation is made by the engine at load time from those numbers. Writing one from scratch and dropping
+it in as a loose file produced `MIRROR SOURCE latched: 2560x1448`, followed by the pipeline's own HDR
+upgrade at the new size. The engine honoured a width and height it never shipped, and the framework's
+loose-file loader served a path **the game's archives do not contain at all** — it turned out to be a
+loader, not merely an override.
+
+**The generalisable shape.** Before recording "the game ships nothing big enough" as a limit, ask what
+the shipped thing actually *is*. If the asset is a **descriptor** — a small header the engine reads in
+order to size an allocation — then the inventory bounds what you can *borrow* and says nothing about what
+can *exist*. The engine-registration advantage survives intact, because the engine still performs the
+allocation; you have only chosen the numbers. Assets in this class are commonplace: render-target
+descriptors, buffer and pool declarations, some texture headers, streaming and level-of-detail tables.
+
+**⭐ The control that makes an authored asset trustworthy is a round-trip, not a successful run.** The
+writer was validated by making it reproduce **shipped files byte for byte** before any novel size was
+attempted `[verified-numerically 2026-09-06, n=2 files]`. That is the difference between "my file worked"
+and "my writer is correct": a novel asset that loads proves only that the engine tolerated it, while a
+byte-identical reproduction proves you understood the format. Do the reproduction first — it is free, and
+it fails loudly.
+
+**And the loader's own log is a positive control that your file is on the path the game reads.** A
+sibling project deployed a loose texture for a character who was not on screen; the loader **opened it,
+and nothing changed** `[measured 2026-09-06]`. That is the ideal shape for a first deployment on any new
+asset path — the open is proof of reach, and the absence of a visible change is not a failure. Without
+it you cannot tell "the override does nothing" from "the override was never read".
+
+**⚠️ And confirm the identity of the thing you are editing before you measure it.** In that same project
+a full morning of texture measurements — slot contents, tiling scales, material assignments — was taken
+against the wrong character, because two similar player IDs were assumed to map the obvious way and did
+not `[measured 2026-09-06]`. Everything had to be re-measured. An asset ID is a hypothesis until
+something in the running game confirms it.
+
+Credit **Ekey** (REE.PAK.Tool, whose published format description made the descriptor readable) and
+**praydog** (REFramework, whose loose-file loader is the delivery path).
+
+## A report from the person in the headset is primary evidence
+
+`[verified-live 2026-09-06]` Generalised out of
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr).
+
+Two findings from one VR session, worth stating as a rule because the pull in the other direction is
+strong when you hold a rich log and the observer has offered a sentence.
+
+**The observer settles questions the instruments could not.** Three flat launches over two days failed to
+establish whether one render-target size was sharper than another — the correlator was fighting a noise
+floor larger than the effect it was asked to measure. A bigger change plus a human eye settled it in one
+look: *"it is way better the quality, if it stayed like this would be great!"*. When an effect is meant
+to be **seen**, a person seeing it is a valid measurement and often the cheapest one available. Record it
+as `[verified-live … n=1 observer]` and move on.
+
+**⚠️ And telemetry explains a report — it does not overrule one.** In the same session an observer's
+verdict was filed as suspect because the log showed the weapon in a pose that would have invalidated it.
+The observer corrected it: those samples were the gaps *between* tests, headset resting on the forehead,
+and every verdict had been given while looking. The telemetry was accurate and the inference from it was
+wrong, because the log recorded what the hardware was doing and not what the person was attending to. **A
+report about what the game looked like is primary; the log is context for it.** When the two disagree,
+the log has found a gap in its own coverage — start there, not with the report.
+
+The practical fix is a **judging window**: a one-line, log-side gate that says when a verdict is worth
+recording, derived from the pose the test actually requires. That project's is *bore within 20° of the
+gaze*, and it caught a bad judging window on the night it was written. A gate like that lets telemetry do
+the job it is good at — saying *when* a sample counts — without letting it argue with the person about
+*what they saw*.
+
 ## Sources
 
 - **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, the log-before-the-call habit, and the exclusive-mode DirectInput wall that `SendInput` cannot cross; generalised out of [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research) §9a/§9b; the byte-identity read-only-tree rule from the same dossier (2026-09-02)
 - **Psychonauts VR** (this account) — the void-behind-the-player characterisation and measurement method, the camera-matrix identification arithmetic, the double-rotation trap, the unbound-key false negative and the camera-height-is-not-eye-height rule (notes 71–72); generalised out of [`psychonauts-vr/modding-notes/`](https://github.com/TefMeister/psychonauts-vr/tree/main/modding-notes) and [`psychonauts-vr/dev-archive/`](https://github.com/TefMeister/psychonauts-vr/tree/main/dev-archive)
 - **Unreal Gold VR** (this account) — the mutation-checked numerical verification, the no-convergence and full-window-2D-layer design notes; generalised out of [`unreal-gold-vr/modding-notes/`](https://github.com/TefMeister/unreal-gold-vr/tree/main/modding-notes)
 - **Visceral — RE2 VR** (this account) — the HMD-anchored body float and the pelvis-drop grounding fix; generalised out of [`visceral-re2-vr/modding-notes/`](https://github.com/TefMeister/visceral-re2-vr/tree/main/modding-notes)
-- **RE Village sniper scope** (this account) — the argument-encoding silent-zero case, the hook-to-acquire-a-handle pattern, and the posted-window-message input route; generalised out of [`re-village-scope-vr/modding-notes/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/modding-notes)
+- **RE Village sniper scope** (this account) — the argument-encoding silent-zero case, the hook-to-acquire-a-handle pattern, and the posted-window-message input route; and, from the 2026-09-05/06 sessions, the identity control, the authored render-target descriptor and its byte-for-byte round-trip, the observer-is-primary-evidence rule, the three-hypothesis read-back ladder, the masked phase-correlation trap and its idle noise floor, the expiring resource recognizer, the enumerate-don't-guess reflection rule, and the panel-only-affordance trap; generalised out of [`re-village-scope-vr/modding-notes/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/modding-notes) and [`re-village-scope-vr/engine-research/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/engine-research)
+- **Visceral — RE2 VR** (this account) — additionally the stale-component read-back guard, the
+  intra-frame stale joint matrix, the non-refcounted re-entrancy token, the loader-open-as-positive-control
+  habit and the wrong-character-identity caution; generalised out of
+  [`visceral-re2-vr/engine-research/`](https://github.com/TefMeister/visceral-re2-vr/tree/main/engine-research)
+- **MarsyApp** — **Anomaly VR** (STALKER Anomaly), whose own development thread and Boosty posts
+  document a per-weapon **secondary-hand IK offset** specifically to stop the two controllers occluding
+  each other for the headset cameras. Read online (in Russian), described in our own words; no code or
+  files taken: <https://ap-pro.ru/forums/topic/14575-anomaly-vr/> · <https://boosty.to/anomaly_vr>
+- **Downpour Interactive** (Onward) and **UploadVR** — the *Virtual Gunstock* mode, the opposite
+  solution to the same problem (stop reading the occluded hand rather than move it), and UploadVR's
+  report of it: <https://www.uploadvr.com/onward-inside-out-tracking-update/>
+- **Meta** — the developer blog post *Tracking Technology Explained: LED Matching*, cited only for its
+  own statement that occlusion is among the worst-case controller-tracking scenarios
+- **CodeRedModding** (public UE3 source mirror; the engine source is Epic Games') and **ItsBranK**
+  (`UE3SDKGenerator`, MIT) — the assertion-macro expansion, and the evidence that the SDK generators ship
+  the harness and not the addresses. Read online, nothing cloned or copied:
+  <https://github.com/CodeRedModding/UnrealEngine3> · <https://github.com/ItsBranK/UE3SDKGenerator>
 - **DOOM (2016) VR** (this account) — the launch-time gate and the date-match-your-evidence point, the line-endings false negative, the `strings` minimum-length trap, the in-process raw-input route, the call-argument-not-a-global switch shape, and the repeated-launch/ASLR sampling trap; generalised out of [`doom-2016-vr/external-research/`](https://github.com/TefMeister/doom-2016-vr/tree/main/external-research) and [`doom-2016-vr/modding-notes/`](https://github.com/TefMeister/doom-2016-vr/tree/main/modding-notes)
 - **Alice: Madness Returns VR**, **Alan Wake VR**, **Prince of Persia (2008) VR** and **Burnout
   Paradise VR** (this account) — the third-party-stereo-fix-as-intelligence method, the proxy-export

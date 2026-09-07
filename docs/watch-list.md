@@ -26,7 +26,8 @@ for the last sweep date and what it found.
 | **Flat2VR community & Flat2VR Studios** | The hub of the whole hobby (150k+ Discord) — new mod releases, licensed-port announcements, and the pulse of what's being solved. | [flat2vrstudios.com/news](https://www.flat2vrstudios.com/) · [x.com/Flat2VR](https://x.com/Flat2VR) |
 | **Road to VR**, **UploadVR** | Press coverage catches licensed-port news (Flat2VR Studios titles) and major tool releases before they reach niche forums. | [roadtovr.com](https://www.roadtovr.com/) · [uploadvr.com](https://www.uploadvr.com/) |
 | **MTBS3D forums** | Long-running stereoscopic-3D/VR modding community — vorpX, geo-11, and generic-driver discussion lives here. ⚠️ **Returns 403 to automated fetchers** (five URL forms tried, 2026-09-05) — it needs a browser, and an empty result here is a tooling result, not a quiet source. | [mtbs3d.com/phpbb](https://www.mtbs3d.com/phpbb/) |
-| **PCVR Central** (Camracks, added 2026-08-24) | A non-rehosting directory of PC VR mods with quality/freshness labels and a Steam-library checker — a fast cross-check for "does a mod already exist" and for landscape/framework coverage before starting new adapter work. **991 games with VR mods as of 2026-09-05**, against ~898 in mid-August, so it is growing quickly. ⚠️ The catalogue and per-game mod rows are **client-side rendered** — only the page header survives an automated fetch, and a game page can show a non-zero "VR conversion" count with no readable entry behind it. Needs a browser for anything specific. | [pcvrcentral.com/mods](https://pcvrcentral.com/mods) · [pcvrcentral.com/library](https://pcvrcentral.com/library) |
+| **PCVR Central** (Camracks, added 2026-08-24) | A non-rehosting directory of PC VR mods with quality/freshness labels and a Steam-library checker — a fast cross-check for "does a mod already exist" and for landscape/framework coverage before starting new adapter work. **991 games with VR mods, unchanged from 2026-09-05 to 2026-09-07**, against ~898 in mid-August — growing quickly over weeks, flat over days. ⚠️ The catalogue and per-game mod rows are **client-side rendered** — only the page header survives an automated fetch, and a game page can show a non-zero "VR conversion" count with no readable entry behind it. Needs a browser for anything specific. | [pcvrcentral.com/mods](https://pcvrcentral.com/mods) · [pcvrcentral.com/library](https://pcvrcentral.com/library) |
+| **Anomaly VR** (MarsyApp, added 2026-09-07) | A large third-party VR conversion of a non-Unreal, non-RE title, whose author publishes **ergonomics** solutions we otherwise have no public examples of — notably a per-weapon secondary-hand IK offset to stop the two controllers occluding each other for the headset cameras. Watch for further grip/IK/comfort write-ups; this is the only author-documented instance of that solution we have found. Posts are in Russian. | [ap-pro.ru thread](https://ap-pro.ru/forums/topic/14575-anomaly-vr/) · [boosty.to/anomaly_vr](https://boosty.to/anomaly_vr) |
 
 ## Per-project relevance (checked with extra attention while these projects are active)
 
@@ -67,6 +68,12 @@ for the last sweep date and what it found.
    [`ATTRIBUTION.md`](../ATTRIBUTION.md).
 4. Nothing is downloaded or cloned to do this — see [`CONTRIBUTING.md`](../CONTRIBUTING.md) rule 1.
 5. If nothing new turns up, that's a valid, useful result — it confirms the landscape is stable.
+6. **On GitHub, read `pushed_at`, not `updated_at`.** `updated_at` moves when anyone stars the repo or
+   the description changes, so a metadata refresh inside the sweep window reads exactly like activity.
+   On 2026-09-07 three watch-list repos (anvilengine2vr, Vireio, EMV-Engine) showed `updated_at` inside
+   or near the window with `pushed_at` months or years old. Quote `pushed_at` and the newest commit's
+   own date; and check the newest **release** separately, since a release can be republished without a
+   commit and a repo can move for two days without cutting one.
 
 ## Sweep log
 
@@ -1726,3 +1733,123 @@ tag with the claim.** One thing this sweep did differently and would do again: i
 web claim it was about to write down, and the one it could not re-derive is the one it left out.
 Link checker over every anchor in the repository: **0 broken** (it also caught one pre-existing
 broken anchor in the id Tech 6 case study, now fixed); mojibake grep clean.
+
+### 2026-09-07 — full sweep, dev PC (in-house delta from 2026-09-05 15:36; two drops drained, two filed)
+
+**Eleven new sections, and the two-day delta was concentrated in two projects.** The web was almost
+completely quiet; nearly everything below came out of our own repos, and a third of it is a record of
+our own errors.
+
+**Techniques — five new top-level sections.**
+- [**Two-handed VR weapons: the second controller hides behind the first**](./techniques/README.md#two-handed-vr-weapons-the-second-controller-hides-behind-the-first)
+  — the modding lane's inbox drop, researched and turned into a page. Two public solutions that break the
+  1:1 controller→hand mapping at opposite ends: **Anomaly VR**'s per-weapon secondary-hand IK offset, and
+  **Onward**'s virtual gunstock, which stops reading the occluded hand instead of moving it. Both verified
+  firsthand today. The drop's "left hand above the right" is recorded as **ours and unconfirmed** —
+  MarsyApp's own text says *spread apart*, not *above*.
+- [**A retail build that shipped its assertions names its own globals**](./techniques/README.md#a-retail-build-that-shipped-its-assertions-names-its-own-globals)
+  — the `/gr` inbox drop, generalised. `#expr` puts the asserted expression in the string pool, and the
+  xref lands *inside* the accessing function as a direct memory operand, with `__FILE__` alongside as free
+  confirmation. Finding one hit opens the technique for every variable any surviving assertion guards.
+- [**The cheapest control is the case where the correct answer is "change nothing"**](./techniques/README.md#the-cheapest-control-is-the-case-where-the-correct-answer-is-change-nothing)
+  — ⭐ the best thing in this sweep. Two wrong rays caught and a third confirmed in one day, for three
+  flat launches and no headset time. Carries the harder lesson with it: **verify a model's INPUTS before
+  you disprove the model** — two models had been written down as disproved while being fed a 35° error —
+  and the honest limit that passing proves the implementation, not the model.
+- [**When the shipped inventory has nothing big enough, the limit is on borrowing — not on having**](./techniques/README.md#when-the-shipped-inventory-has-nothing-big-enough-the-limit-is-on-borrowing--not-on-having)
+  — a recorded wall turned out to be a **64-byte descriptor file**. Includes the control that makes an
+  authored asset trustworthy (round-trip a shipped file byte for byte *before* writing a novel one) and
+  the loader-open-as-positive-control habit.
+- [**A report from the person in the headset is primary evidence**](./techniques/README.md#a-report-from-the-person-in-the-headset-is-primary-evidence)
+  — a human eye settled in one look what three launches of correlation could not, and, the same night, a
+  correct log led to a wrong inference about an observer's verdict. **Telemetry explains a report; it does
+  not overrule one.** The practical form is a judging window.
+
+**Techniques — six new subsections, each filed under the family it belongs to.** A
+[three-hypothesis read-back ladder](./techniques/README.md#a-read-back-that-returns-the-same-number-under-every-write-is-three-hypotheses-not-one)
+under *silent no-ops* (clamp / re-assertion / dead write cannot be told apart by one value; a frame-rate
+**hold** is what kills the re-assertion reading). A fourth entry under *the instrument can be the bug* —
+[a hard-edged mask makes phase correlation lie](./techniques/README.md#a-hard-edged-mask-makes-phase-correlation-lie-confidently),
+returning exactly `(0,0)` at peak/rms ≈ 500 — plus
+[the idle animation as the noise floor](./techniques/README.md#the-noise-floor-is-the-idle-animation-and-it-can-exceed-the-effect),
+which is why a published bound was withdrawn a day later.
+[A recognizer is only as specific as its measurements](./techniques/README.md#a-recognizer-is-only-as-specific-as-the-measurements-it-takes--and-tightening-it-can-refuse-the-case-the-design-depends-on)
+under *identify a resource by how it is used* — and the more useful half, that tightening the **shared
+predicate** refused an upgrade the design depended on, so tighten at the decision instead.
+[Enumerate rather than guess accessor names](./techniques/README.md#-all-seven-candidate-accessors-are-absent-describes-your-guess-not-the-object)
+under *tool defaults that fabricate false negatives*.
+[The object you are writing to may not be the one on screen](./techniques/README.md#the-object-you-are-writing-to-may-not-be-the-one-on-screen--read-the-flag-back)
+under *prove the value you are debugging is the one the feature reads*, with the intra-frame stale joint
+matrix and the non-refcounted re-entrancy token. And
+[a panel-only affordance is invisible to a driven session](./techniques/README.md#an-affordance-reachable-only-from-a-gui-panel-is-invisible-to-a-driven-session)
+under *driving a live game from a hook*.
+
+**Engine pages.** [RE Engine](./engines/re-engine.md) gains three sections, one of which
+**qualifies an existing one**: `via.render.Mirror` reflects the **viewing camera**, so steering the plane
+cannot decouple a scope picture from the head — and the reason every flat test passed is that flat ADS
+puts the camera on the bore. Recorded with its honest status (`[hypothesis]`, not a disproof of the
+reflection mechanism; a bisector-plane steering is not ruled out). Also: an `.rtex` is a 64-byte
+descriptor and authored ones are honoured, the loose-file loader serves paths absent from the pak,
+shipped heights are name + 8; and three reflection-API facts including a material float that cannot be
+written through `setMaterialFloat` under a frame-rate hold. [UE1–3](./engines/unreal-1-3.md) gains the
+`DO_CHECK`-is-on finding with the two substitute cross-checks, since the SDK generators supply no
+signature to check against.
+
+**Web — a full pass, and it found almost nothing, which is itself the result.** UEVR still **1.05**
+(master last moved 2026-08-30), OldUnreal still **v227k_15**, vrframework unchanged since 2026-06-05,
+dgVoodoo2 still **v2.87.4**, Vk3DVision still archived (last push 2026-03-05), geo-11 dormant since
+2024-12, Vireio since 2022-01, EMV-Engine since 2024-07, mutars silent on all three projects.
+REFramework moved **once** — master commit `b6baf6b`, 2026-09-05, *"Graphics: Fix bounce count setting in
+some newer games"* — a narrow RE-Engine ray-tracing tuning fix, deliberately **not** written up. Flat2VR
+Studios' newest news item is still 2026-07-23; Road to VR and UploadVR carried nothing mod-related in the
+window; PCVR Central's header still reads **991**, unchanged over two days. MTBS3D returned **403** again,
+which is a tooling result and not a quiet source.
+
+**Two method notes from the web pass, both now in "How a sweep works".** ⚠️ **`updated_at` is not
+activity** — three watch-list repos showed it inside the window with `pushed_at` months or years older,
+because starring a repo moves it; quote `pushed_at` and the newest commit's own date. And an old article
+resurfacing in search results reads exactly like a new one: a *"Valheim VR Mod Is Now In Beta"* result
+looked in-window and is dated **2021-04-04** on the page itself. Fetch before believing a search result's
+apparent recency.
+
+**One claim was checked and deliberately left out.** A subagent's report on the two-hand grip carried
+verbatim Russian quotes with a hedge that they were extracted rather than verified. Both source pages were
+re-fetched firsthand before anything was written down, and the Onward and Meta quotes with them. All three
+held. The rule stands: a quote nobody has re-derived does not enter this library, however plausible.
+
+**Project-repo harvest.** All 16 game repos pulled. Research-lane commits since 2026-09-05 15:36 on
+**four** projects — `re-village-scope-vr` (17 commits), `visceral-re2-vr` (8), `alan-wake-vr` (2),
+`enslaved-vr` (1) — all read in full at the changed sections. Eleven repos carried only the 2026-09-05
+`/gr` pass stamp; `arcade-controls-re2-vr` and `unreal-gold-vr` were untouched. **No dossier moved from
+"not covered" to "covered in full"** — a delta sweep throughout, so the coverage backlog is unchanged from
+the 2026-09-01 evening entry.
+
+**Generalised up out of project repos, named for traceability:** `re-village-scope-vr` §8a–§8e (the
+identity control, the masked-correlator trap, the idle noise floor, the read-back ladder), §9a/§9c/§9d
+(the reflection probe, the expiring recognizer and its regression), §9f (the mirror follows the viewing
+camera) and §9h–§9i (the authored `.rtex`, the observer's verdict, the judging window);
+`visceral-re2-vr` §7a (the stale-component read-back), §7b (the loader-open control and the
+wrong-character caution) and §8e (the stale joint matrix and the re-entrancy token);
+`enslaved-vr`'s 2026-09-05 assertion-string topic.
+
+**Inboxes drained: one** (our own, two files, by explicit filename — the `/gr` assertion drop and the
+modding lane's two-hand grip drop). **Inboxes filled: two, both on `visceral-re2-vr`** —
+`engine-research/inbox/` (its §7b `[hypothesis]` that "a loose rtex with a larger size is the untested
+lever" was proved live on the sibling project the day before, with the descriptor layout and the
+round-trip control) and `external-research/inbox/` (the two public two-hand-grip solutions, for its `/gr`
+lane, because that project holds the grip code and its two-hand latch is shipped OFF). Deliberately **not**
+filed: anything back to `re-village-scope-vr` or `enslaved-vr`, since both findings originated there and a
+pointer home is noise.
+
+**New credits:** **MarsyApp**, **Downpour Interactive**, **UploadVR**, **Meta**, **CodeRedModding** and
+**ItsBranK**. First-party credit extended to `re-village-scope-vr`, `visceral-re2-vr`,
+`arcade-controls-re2-vr` and `enslaved-vr` for this batch. **Anomaly VR** added to the watch list as a
+standing source — it is the only place we have found that publishes VR *ergonomics* solutions in the open.
+
+**Process note.** Five of the eleven new sections document an error this account made and corrected
+within a day or two: a bound published and withdrawn, three steering models "disproved" while their input
+was 35° wrong, a morning of texture measurements taken against the wrong character, a predicate fix that
+was a regression against a design the same file already described, and an observer's verdict filed as
+suspect on the strength of a log that was measuring something else. That is now the ordinary shape of
+this library's best material, and the reason is worth naming: **an error caught in a day carries its own
+control with it**, which a first-time-right result never does.
