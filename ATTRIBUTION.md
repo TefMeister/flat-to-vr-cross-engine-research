@@ -129,6 +129,31 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   public example in
   [techniques → the version that moves is usually the game's](./docs/techniques/README.md#-the-version-that-moves-is-usually-the-games--and-a-moved-struct-field-crashes-with-your-framework-nowhere-in-the-stack)
   and on the [RE Engine family page](./docs/engines/re-engine.md).
+- **MarsyApp** — **Anomaly VR**, the VR conversion of S.T.A.L.K.E.R. Anomaly, whose own development
+  thread and Boosty posts document a **per-weapon secondary-hand IK offset** that exists specifically so
+  the two controllers do not occlude each other for the headset's tracking cameras. The only
+  author-documented instance of that solution we have found. Read online (in Russian) and described in
+  our own words; no code, files or configuration taken. Cited in
+  [techniques → two-handed VR weapons](./docs/techniques/README.md#two-handed-vr-weapons-the-second-controller-hides-behind-the-first).
+  - <https://ap-pro.ru/forums/topic/14575-anomaly-vr/> · <https://boosty.to/anomaly_vr>
+- **Downpour Interactive** — **Onward**, whose *Virtual Gunstock* mode solves the same controller-occlusion
+  problem by the opposite route: locking the weapon when it is raised and driving aim from the front hand
+  and body, so the occluded rear controller stops being an input. Cited as a contrasting public design;
+  nothing reused. Reported by **UploadVR**, whose article is the source we read.
+  - <https://www.uploadvr.com/onward-inside-out-tracking-update/>
+- **Meta** — the developer blog post *Tracking Technology Explained: LED Matching*, cited only for its own
+  statement that occlusion is among the worst-case controller-tracking scenarios. Platform documentation,
+  read online; no affiliation or endorsement implied.
+- **CodeRedModding** — the public **UnrealEngine3** source mirror, whose `Core` headers and object files
+  are the evidence for UE3's assertion-macro expansion and for the specific `check()` sites that name
+  `GObjObjects`. The engine source is **Epic Games'**; the mirror is credited for making it readable
+  online. Read online only; no code copied or redistributed here.
+  - <https://github.com/CodeRedModding/UnrealEngine3>
+- **ItsBranK** — **UE3SDKGenerator** (MIT), whose `Engine/Template/Configuration.cpp` ships its
+  `GObjects` / `GNames` / `ProcessEvent` patterns as the literal string `"null"` — the evidence that the
+  public UE3 SDK generators supply a scanning harness and **not** the addresses, which is what makes the
+  assertion-string route worth taking first. Read online via the GitHub API; no code reused.
+  - <https://github.com/ItsBranK/UE3SDKGenerator>
 - **prideslayer** and contributors — **VRIK Player Avatar** (Skyrim VR). Cited only to draw the
   distinction between the well-known VR floor-calibration/height-offset problem it addresses and the
   pose-dependent, animation-driven body float documented in
@@ -770,6 +795,31 @@ work — Microsoft's D3D9 documentation, **elishacloud**'s dxwrapper discussion,
 Steamless, **Jim2point0**'s cheat table, NVIDIA's `nvstereo.h` — that work is credited above and was
 read online only; every address, count and measurement quoted was re-derived in our own binaries.
 
+
+The [identity control](./docs/techniques/README.md#the-cheapest-control-is-the-case-where-the-correct-answer-is-change-nothing),
+[authoring an asset the game never shipped](./docs/techniques/README.md#when-the-shipped-inventory-has-nothing-big-enough-the-limit-is-on-borrowing--not-on-having),
+[the observer's report as primary evidence](./docs/techniques/README.md#a-report-from-the-person-in-the-headset-is-primary-evidence),
+[the three-hypothesis read-back ladder](./docs/techniques/README.md#a-read-back-that-returns-the-same-number-under-every-write-is-three-hypotheses-not-one),
+[the masked-correlation trap](./docs/techniques/README.md#a-hard-edged-mask-makes-phase-correlation-lie-confidently)
+and [its idle noise floor](./docs/techniques/README.md#the-noise-floor-is-the-idle-animation-and-it-can-exceed-the-effect),
+[the expiring resource recognizer](./docs/techniques/README.md#a-recognizer-is-only-as-specific-as-the-measurements-it-takes--and-tightening-it-can-refuse-the-case-the-design-depends-on),
+[enumerate rather than guess accessor names](./docs/techniques/README.md#-all-seven-candidate-accessors-are-absent-describes-your-guess-not-the-object),
+[the panel-only affordance](./docs/techniques/README.md#an-affordance-reachable-only-from-a-gui-panel-is-invisible-to-a-driven-session),
+[the stale-object read-back guard](./docs/techniques/README.md#the-object-you-are-writing-to-may-not-be-the-one-on-screen--read-the-flag-back)
+and the two-handed-grip occlusion section were generalised on **2026-09-07** out of our own work on
+legitimately-owned copies of **Resident Evil Village**, **Resident Evil 2** and **Enslaved: Odyssey to the
+West**, plus the headset observations that prompted several of them:
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr) ·
+[`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) ·
+[`arcade-controls-re2-vr`](https://github.com/TefMeister/arcade-controls-re2-vr) ·
+[`enslaved-vr`](https://github.com/TefMeister/enslaved-vr). Several of them are records of our **own**
+errors — a bound published and withdrawn a day later, three models "disproved" on an input nobody had
+measured, a morning of measurements taken against the wrong character, and a fix that was a regression
+against a design the same repository had written down — kept because the correction transfers further
+than the original claim would have. Where they rest on other people's public work — **Ekey**'s
+REE.PAK.Tool, **praydog**'s REFramework, **MarsyApp**'s Anomaly VR, **Downpour Interactive**'s Onward,
+**Meta**'s tracking write-up, **CodeRedModding**'s UE3 mirror and **ItsBranK**'s UE3SDKGenerator — that
+work is credited above and was read online only; nothing was cloned, installed or copied.
 Like everything else we write, these are CC-BY-4.0 — take them and build on them, just say where
 they came from.
 

@@ -340,6 +340,80 @@ relative to each other. Sample the same value at an early and a late hook in one
 the general form is in
 [prove the value you are debugging is the one the feature reads](../techniques/README.md#prove-the-value-you-are-debugging-is-the-one-the-feature-reads).
 
+### 🚨 2026-09-05/06: `via.render.Mirror` reflects the VIEWING camera — steering the plane cannot make it a scope
+
+`[verified-live 2026-09-05, n=3 headset launches]` This qualifies the mirror section above, and it is the
+single most important thing this account has learned about that component.
+
+A mirror rigged to a weapon and steered by rotating its plane behaves correctly in flat play and **not** in
+VR, for a structural reason: the reflected view direction belongs to the **viewing camera**, not to the
+plane. In flat aim-down-sights the viewing camera sits on the weapon's bore, so a scope built this way looks
+right and every flat test agrees with it. Put on a headset and the viewing camera becomes the head, so the
+picture in the glass turns with the head no matter what the plane does.
+
+The measurements, with steering off: rotating the pane 40° about its own normal changed nothing in the glass;
+rotating 20° about the bore **rolled** the image and moved its direction not at all; a 60° steering rotation
+changed nothing `[verified-live 2026-09-05, n=1 each, headset]`. All three are exactly what a true planar
+reflection of a mirror rigid to the weapon predicts.
+
+- **Consequence:** pane steering is `[disproved 2026-09-05]` as a VR lever for decoupling the picture from
+  the head. The plane's remaining job is roll.
+- **What is left is the crop.** For a given head pose, the scope's content is a *region* of the head's
+  reflected render — so the lever is which region you sample, not where the plane points. That has its own
+  usage limit, now measured: **the mirror can only show what the (reflected) head camera sees**, so the
+  weapon has to be inside the head's view at all.
+- **⚠️ Honest status:** *"the pane sets only roll"* is `[hypothesis]`, not a disproof of the reflection
+  mechanism — the null results above are also what a correct reflection produces, and one model's zero
+  change is explained by its rotation axis being the pane normal. A bisector-plane steering (normal along
+  the eye's offset from the bore line, plane through the midpoint, which puts the reflected camera *on* the
+  bore line) is **not** ruled out.
+
+Generalised out of [`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr) §8–§9g.
+
+### ⭐ 2026-09-06: an `.rtex` is a 64-byte descriptor — you can author render targets the game never shipped
+
+`[verified-live 2026-09-06, n=1 launch]` · `[verified-numerically 2026-09-06, n=2 files]`
+
+The engine-owned-render-target trick (borrow a target the engine already registers, because a target you
+create yourself has no pipeline backing) has no resolution ceiling after all.
+
+- **The file is a header, not a texture.** An `.rtex.5` is **64 bytes**: `RTEX`, version 5, a 4, the DXGI
+  format, width, height, then `1, 0, 0, 1, 0, 0, 0, 1.0f, 1.0f, 0` `[measured 2026-09-06, n=6 files]`. The
+  engine makes the GPU allocation from those numbers at load.
+- **A descriptor written from scratch is honoured.** A 2560×1448 `.rtex` authored by hand and dropped in as
+  a loose file produced `mirror RT: using movie/rtex/movie_2560_1440.rtex (2560x1448)`, a latch, and then
+  the pipeline's own raw-HDR upgrade at the new size. So **REFramework's LooseFileLoader serves a path the
+  pak does not contain** — it is a loader, not only an override.
+- **Validate the writer by round-trip.** The author tool reproduces the shipped 1920 and 1280 files **byte
+  for byte** before any novel size was attempted. See
+  [techniques → when the shipped inventory has nothing big enough](../techniques/README.md#when-the-shipped-inventory-has-nothing-big-enough-the-limit-is-on-borrowing--not-on-having).
+- **Shipped heights are name + 8.** `movie_1920_1080` is really 1920×**1088** and `movie_1280_720` is
+  1280×**728** — the "padded" sizes a latch observes are in the file, not runtime rounding. `movie_1144_1048`
+  is really 1144×808.
+- **Format signature of the movie targets:** every one is DXGI format **29** (`R8G8B8A8_UNORM_SRGB`);
+  `mirror_env.rtex` is format **26** (`R11G11B10_FLOAT`) at 1024×1024.
+
+Credit **Ekey** (REE.PAK.Tool, whose published format description made the descriptor readable) and
+**praydog** (REFramework).
+
+### Two reflection-API facts about resources on current builds
+
+- **`sdk.find_type_definition("via.render.RenderTargetTextureResource")` returns nil while
+  `sdk.create_resource` resolves the identical string** and hands back a working object
+  `[verified-live 2026-09-05, n=1]`. Resource types are not managed TDB types on that build — take the type
+  from the returned object, never from the failed lookup.
+- **`getMaterialTexture` returns a fresh `via.render.TextureResourceHolder` wrapper on every call**, with no
+  accessor for the underlying resource among seven names tried `[verified-live 2026-09-05, n=2]`. Wrapper
+  pointers are therefore useless as identities, and a guard built on comparing them cannot work. The general
+  lesson — that a list of absent guessed names describes the guess and not the object — is in
+  [techniques](../techniques/README.md#-all-seven-candidate-accessors-are-absent-describes-your-guess-not-the-object).
+- **A material float can be un-writable through `setMaterialFloat` with no error.** One lens parameter read
+  back its original value under a single write, under a three-value ladder, and under a **frame-rate hold
+  sustained for ~1.5 s**, on two materials across three launches `[verified-live 2026-09-05, n=3 launches]`.
+  The hold is what rules out a per-frame writer; what remains is that the write never lands. Do not open a
+  hunt for a writer on this API before running that ladder — see
+  [techniques → a read-back that returns the same number under every write](../techniques/README.md#a-read-back-that-returns-the-same-number-under-every-write-is-three-hypotheses-not-one).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Capcom RE Engine" row.

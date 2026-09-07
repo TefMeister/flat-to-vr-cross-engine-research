@@ -550,6 +550,55 @@ place, assume the state-block rewrite applies to you until a log says otherwise,
 check in before the next stereo observation — a disarmed stereo mod renders a perfectly good mono
 frame and says nothing.
 
+### ⭐ 2026-09-05: a 2010 UE3 retail build shipped with `DO_CHECK` ON — its assertions name its globals
+
+`[measured 2026-09-04, n=1 binary]` · `[inferred-static 2026-09-05]`
+
+UE3's `check()` macro stringifies the asserted expression (`Development/Src/Core/Inc/UnFile.h`):
+
+```
+#define check(expr)  { if(!(expr)) appFailAssert( #expr, __FILE__, __LINE__ ); … }
+```
+
+`GObjObjects` is **never** a string literal in UE3 source — every occurrence in the public mirror is
+ordinary code, and the `debugf` messages beside it say "NULL object", "Invalid object index %i", "Empty
+slot", none of which name the array. Yet the string `GObjObjects` appears **seven times** in one 2010
+retail `Enslaved.exe`. It gets there through assertion sites such as `check( GObjObjects.Num() == 0 )` and
+`check(GObjObjects(InIndex)==NULL)` in `UnObj.cpp` and
+`check( GObjObjects.IsValidIndex( CurObjectIndex ) )` in `UnObjGC.cpp`.
+
+**Why this matters for every UE3 project here.** The usual route to `GObjects` / `GNames` /
+`ProcessEvent` is a byte signature, and the public SDK generators **do not supply one** —
+`ItsBranK/UE3SDKGenerator`'s `Configuration.cpp` ships `GObjectsPattern`, `GNamesPattern` and
+`ProcessEventPattern` as the literal string `"null"` with the offsets `NULL` and `ProcessEventIndex` `-1`
+`[verified-live 2026-09-05, n=1 API read]`. They give you a `FindPattern` harness and a slot to put *your*
+pattern in. So:
+
+- **Grep the strings for the symbol name before hand-building any signature** in a UE3 binary. The
+  assertion's failure call is emitted *inside* the function containing the test, so the global appears
+  there as a **direct memory operand** — the address, not a hint toward it.
+- **`__FILE__` is free confirmation beside every hit**, e.g. `…\Development\Src\Core\Src\UnObj.cpp`. It
+  separates a real hit from a coincidence, names which assertion you are in, and leaks the studio's
+  source-tree layout for every later hunt in the same binary.
+- **One hit opens the whole binary.** `DO_CHECK` being on means *every* surviving `check()` — engine and
+  game — contributes a stringified expression naming the variables it guards. `GNames`,
+  `ProcessEvent`'s neighbourhood and cheat/console gates are all plausible beneficiaries.
+- **Two independent cross-checks, since a signature is no longer available as the second one:** two
+  *different* assertion sites naming the array should xref to code touching the **same** address; and
+  shape-validate the result — `GObjObjects` is a `TArray<UObject*>`, so 32-bit UE3 gives
+  `{ void* Data; INT ArrayNum; INT ArrayMax; }`, and a live read should show a heap pointer with
+  `0 < ArrayNum <= ArrayMax` and element 0 dereferencing to an object whose vtable is in-module.
+
+**Caveats.** Ninja Theory's 2010 branch will differ from the published mirror in detail, and inlining
+duplicates sites — seven copies is consistent with a handful of distinct assertions, not seven of them.
+Whether `DO_CHECK` is on is **per build**: check each title separately, and the check is simply whether any
+assertion text is in the string pool at all. The engine-agnostic form is in
+[techniques](../techniques/README.md#a-retail-build-that-shipped-its-assertions-names-its-own-globals).
+
+Credit **CodeRedModding** (public UE3 source mirror; engine source is Epic Games') and **ItsBranK**
+(`UE3SDKGenerator`, MIT). Read online; nothing cloned or copied. Generalised out of
+[`enslaved-vr`](https://github.com/TefMeister/enslaved-vr).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Unreal Engine 2 / 3" row.
