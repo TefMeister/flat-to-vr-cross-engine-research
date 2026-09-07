@@ -2375,18 +2375,10 @@ This is worth reaching for **earlier than it usually is**, because it removes ev
 sections above are about: no scancode-versus-virtual-key question, no pointer ballistics, no UIPI, no
 foreground requirement, no dependence on Windows delivering anything at all.
 
-**Three implementation rules, each of which was load-bearing:**
-
-- **⭐ OR, never assign.** A key the human is physically holding must never be cleared by the injector.
-  Assignment turns your harness into an input *filter* and will fight the player in any
-  live-supervised session.
-- **⭐ Apply a relative mouse delta exactly ONCE per write.** A delta left standing in the shared block
-  is re-added at the poll rate — 200 times a second here — and spins the camera forever. Device state
-  for buttons is a *level*; mouse motion is an *event*. The same block carries both, so they need
-  different lifetimes.
-- **Cover every struct flavour the game might ask for.** Here that was the 256-byte keyboard array plus
-  both the 16-byte and 20-byte mouse structures; a game that asks for the one you did not implement
-  gets nothing, silently.
+In the worked case that meant the 256-byte keyboard array plus both the 16-byte and 20-byte mouse
+structures. **What the hook does with the buffer is where the failures live** — four rules, the
+pure-function property that makes them testable without a launch, and the shared-vtable hazard are all
+[below](#-the-four-apply-rules-each-named-for-the-failure-it-prevents).
 
 **Four independent readings confirmed it, which is the standard worth copying** rather than the
 technique alone: an `applied` counter in the proxy (355 in six seconds of one held key); **the game's
@@ -2409,6 +2401,80 @@ and the baseline being *near zero* rather than merely *small* is what makes the 
   raw input, `GetMessageA` or `ToAscii` — only `PeekMessageA`, the pump itself. So the posted-message
   route was excluded **before** a single test was written. See
   [read the import table before you design the input layer](#read-the-import-table-before-you-design-the-input-layer).
+
+#### The transport is the problem — and injecting below it removes the whole class at once
+
+`[verified-live 2026-09-07]` · the rules below `[verified-numerically 2026-09-07, 36 host checks]`
+
+Everything the sections above say about injecting *through* Windows is a list of things that can
+silently defeat you. **Every one of them is a property of the transport**, not of the game:
+
+| | inject **through** Windows | inject **inside the read path** |
+| --- | --- | --- |
+| works without window focus | ✗ — `SendInput` follows focus | ✓ |
+| survives an integrity mismatch | ✗ — UIPI fails **silently** | ✓ |
+| delta scale is portable | ✗ — ballistics, up to 4× | ✓ — you write the value the game reads |
+| a remapper in the middle | ✗ — Steam Input and friends sit in the path | ✓ — irrelevant |
+| needs a proxy or hook | ✓ not required | ✗ — **the real cost** |
+| proof of success | inferred from behaviour | **the game's own counters change** |
+
+The principle is not about DirectInput or about one game: **find the call where the game asks the OS
+for input, and answer it — instead of asking the OS to tell the game.**
+
+#### ⭐ The four apply rules, each named for the failure it prevents
+
+The hook itself is the obvious part. What the hook *does* is where the failures live:
+
+1. **One-shot relative motion.** A delta left standing in the block is re-served on every poll — a
+   camera that spins and never stops. **Make the write consume itself.**
+2. **OR semantics, never replace.** A physically held key must not be cleared by the injector, or
+   synthetic and human input fight each other.
+3. **Discriminate by state size, and REFUSE unrecognised sizes.** A permissive "big enough" check is
+   how the worst input bug in this account happened — see the vtable pair below.
+4. **⭐ Bit-for-bit no-op when disabled, or on bad magic.** The underrated one: it lets the hook stay
+   **permanently installed and be *proved* inert**, so *"is the hook itself the problem?"* becomes
+   answerable without uninstalling and relaunching. This is
+   [the instrument can be the bug](#the-instrument-can-be-the-bug) solved by construction rather than
+   by a control run.
+
+**⭐⭐ And the shape matters as much as the rules: the apply step is a pure function of
+`(buffer, size, desired state)`, so it is unit-testable on the host with no game and no launch.** One
+implementation carries 36 host checks passing with nothing running. For a technique whose failures
+otherwise cost live sessions at the most expensive gate available, that is the single most valuable
+property it has — design for it deliberately, and keep the impure parts (hook installation, shared
+memory) outside the function under test.
+
+#### 🚨 The shared-vtable pair — two opposite failures, one cause
+
+`[verified-live]` on both halves, from two different projects. **DirectInput devices of the same class
+share one vtable**, and that single fact produces two failure modes that look nothing like each other:
+
+- **Patch via one device, and your hook fires for the other.** One project hooked through the *mouse*
+  and found its handler running for the *keyboard*: mouse deltas landed in the key-state array,
+  index 1 being `DIK_ESCAPE`, so a pause menu opened "by itself" — and **silently invalidated three
+  experiments** before anyone noticed. Fix: record the device **instance** pointer and require
+  `device == that pointer`.
+- **Register only the first device, and instrument the wrong one.** Another project registered just
+  the first device created; that game creates the **mouse** first, so its keyboard was never
+  instrumented and the log looked devoid of activity — a convincing false negative. Fix: register
+  **every** device and store originals **per vtable** rather than in single globals.
+
+**The two fixes are complementary, not alternatives**, and each looks like the whole answer when read
+alone: one narrows *what you act on*, the other widens *what you observe*. Take both. And note that
+this is exactly why rule 3 above says **refuse** an unrecognised state size rather than tolerating it
+— when one vtable serves several device classes, buffer size is the only thing distinguishing them at
+the call, and a permissive check is what let the mouse deltas into the key array.
+
+Credit our own `prince-of-persia-2008-vr` (the injector, the hook-every-device fix and the host test
+suite) and `ai-game-control-profiles/UNIVERSAL.md` (the shared-vtable rule and the incident behind it).
+No public source was involved in this finding.
+
+**⚠️ Confidence, stated at the scope it earns:** the live result is `[verified-live 2026-09-07]` on
+**one game**; the apply rules are `[verified-numerically]` as host tests and `[inferred-static]` as
+*general* rules — they are one implementation's answers, not a survey; and the generalisation to other
+engines and input APIs is `[hypothesis]`, filed because the reasoning is transport-independent and the
+cost of trying is a proxy most of these projects already ship, **not** because it has been demonstrated
+twice.
 ### Three documented ways a game *could* filter injected input — with their OS-version floors
 
 Worth knowing so a future negative can be diagnosed rather than guessed at:
@@ -3499,6 +3565,68 @@ the live file always vanish. Worked example on the
 Evidence:
 [manhunt-2003-vr](https://github.com/TefMeister/manhunt-2003-vr/blob/main/engine-research/ENGINE-DOSSIER.md),
 §4a.
+
+## ⭐⭐ The camera you want may be a shipped rule you can enable from DATA — no code patch
+
+`[verified-live 2026-09-07, n=1, observed at the controls]` Generalised out of
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr).
+
+The section above says the setting you want to change may be data rather than code. Here is the same
+idea at its most valuable, because the target is the thing a flat-to-VR conversion needs most.
+
+On one 2008 title, the camera system is rule-driven: the shipped archive contains named camera rules,
+each with a **list of state conditions** that must hold for it to apply — including developer rules
+left in the retail data. **Rewriting one rule's condition list so that every condition is the
+always-true state took over the live camera in normal gameplay, with no code patch at all.** The
+edit was to the shipped archive; the only missing piece had been a repacker.
+
+**Why this deserves its own entry rather than a line in the data-not-code section:** a camera
+takeover is normally the expensive part of one of these projects — find the view matrix, find who
+writes it, hook it, fight the engine for it every frame. A data-driven camera selector can hand you
+the same thing for the cost of understanding one table. **Before designing a camera hook, look for a
+camera *selector* and find out what decides which rule wins.**
+
+Three things to check, in the order that costs least:
+
+1. **Does the retail data still contain developer camera rules?** Names are the tell — anything of the
+   `Debug`, `Free`, `Ghost`, `Fly` or `FirstPerson` family. Retail archives frequently keep them, in
+   the same way retail builds
+   [keep their assertions](#a-retail-build-that-shipped-its-assertions-names-its-own-globals).
+2. **What gates them?** If it is a list of state conditions, the cheapest edit is to make the
+   conditions trivially true rather than to raise a priority or add a new rule. In the worked case the
+   priority half of the planned mod turned out to be **unnecessary** — the rule was already winning
+   once its conditions passed.
+3. **Which rule actually won?** Worth asking explicitly, because the answer was not obvious here: the
+   observed behaviour was a *ghost cam* while the rule that had been patched was named for
+   *first person* `[hypothesis]`. **A successful takeover does not prove you took over the thing you
+   edited.**
+
+**What you get is very unlikely to be what you want, and that is fine.** Here the result is a **free,
+detached camera** — it flies into the sky and through walls, the movement keys still drive the
+player, and normal play is impossible on that build. That is a *foundation*, not a feature: the
+remaining work is locking it to the player's head, which is a data question about the same table
+rather than a code question about the renderer.
+
+### ⚠️ And the observation trap that came with it: a still frame cannot tell a locked camera from a free one
+
+**Two readings were recorded wrongly from screenshots on the day this landed**, in opposite directions:
+
+- *"The edit did nothing"* — taken **standing still**, which is the one state in which a free camera
+  sits in a plausible third-person position and looks exactly like the shipped one.
+- *"It produced a character-less camera"* — taken after the observer had **flown the camera away**,
+  which looks like a bug and is just the feature working.
+
+**The discriminating action is to MOVE the camera and watch whether the subject stays in frame.** A
+still frame carries no information about the coupling between camera and subject, and coupling is the
+entire question. This generalises past cameras: **when the property you are testing is a
+*relationship* between two things, no single observation of either one can measure it** — you have to
+move one and watch the other. Design the test as an action, not a screenshot.
+
+See also
+[check whether the game shipped a photo mode before building a detached camera](#check-whether-the-game-shipped-a-photo-mode-before-building-a-detached-camera),
+which is the same instinct applied to a different shipped affordance — and note the counter-case
+recorded there, where the bindings existed and dispatched nowhere. **A rule present in data is a
+lead; a rule observed to change the picture is a finding.**
 
 ## Configure injected code from a file it reads itself, not from environment variables
 
@@ -5661,13 +5789,19 @@ via the GitHub API; no code taken.
   and, from 2026-09-07, **Alice**'s frame-alternating both-eyes proof with its zero-spread control,
   synthetic-offset tool validation, IPD fit and convergence-plane trap, and **Prince of Persia**'s
   CRC32 dictionary reaching past the type table into shipped UI name references, and — from the
-  2026-09-07 live session — the device-state injector, its OR-not-assign and apply-the-delta-once
-  rules, and the title-screen negative that could not have gone positive;
+  2026-09-07 live session — the device-state injector and its four apply rules, the transport
+  comparison, the host-testable pure-function shape, the title-screen negative that could not have gone
+  positive, and the data-driven camera takeover with its still-frame ambiguity;
   generalised out of each project's `engine-research/` and `modding-notes/` folders:
   [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr) ·
   [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) ·
   [`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr) ·
   [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr)
+- **`ai-game-control-profiles`** (this account) — the shared-vtable rule for DirectInput devices of one
+  class, and the incident behind it: a hook installed through the mouse firing for the keyboard, mouse
+  deltas landing in the key-state array, and three experiments silently invalidated before it was
+  noticed. Paired in the text with the opposite failure from `prince-of-persia-2008-vr`:
+  [`ai-game-control-profiles`](https://github.com/TefMeister/ai-game-control-profiles)
 - **Arcade Controls for RE2 VR** (this account) — the signal-cannot-separate-the-states guard;
   generalised out of [`arcade-controls-re2-vr`](https://github.com/TefMeister/arcade-controls-re2-vr)
 - **Enslaved VR** (this account) — the post-processing-before-judging-stereo rule and the shipped

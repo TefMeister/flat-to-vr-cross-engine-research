@@ -2137,3 +2137,85 @@ became a design pattern; six files became a field map. The fix is not more cauti
 **when writing a general claim, name the sample it rests on in the same sentence.** Where this sweep did
 that — four candidate explanations, none run — the claim should survive contact with the next
 measurement.
+
+### 2026-09-07 (fifth sweep, evening, dev PC) — the input technique got its safety rules, and a camera was taken over from data alone
+
+Delta from the 17:30 sweep. **No watch-list pass** — fifth of the day. One inbox drop drained; two of
+the four repos that moved carried substance. Every commit carries `Lane: /sr estate`.
+
+**⭐ The input-injector section, published two sweeps ago, now has the part that actually matters.**
+The technique — hook the device-state call and answer it — was the easy half. The `/gr` drop supplied
+the engineering, and it is better than what was there:
+
+- **A transport comparison table.** Focus, UIPI, ballistics and third-party remappers are all
+  **properties of the transport**, not of the game, so injecting below the transport removes the whole
+  class at once. The row worth reading twice is the last one: proof of success stops being *inferred
+  from behaviour* and becomes **the game's own counters changing**.
+- **Four apply rules, each named for the failure it prevents** — one-shot relative motion; OR never
+  replace; **refuse** an unrecognised state size rather than tolerating it; and ⭐ **bit-for-bit no-op
+  when disabled or on bad magic**, which is the underrated one, because it lets the hook stay
+  permanently installed and be *proved* inert. That is *the instrument can be the bug* solved by
+  construction instead of by a control run.
+- **⭐⭐ The apply step is a pure function of `(buffer, size, desired state)` — unit-testable on the
+  host with no game and no launch.** One implementation carries **36 host checks, 0 failures**, with
+  nothing running. For a technique whose failures otherwise cost live sessions at the most expensive
+  gate available, that is its single most valuable property, and it is a design choice rather than an
+  accident.
+- **🚨 The shared-vtable pair, which is a two-project finding and the reason it earns a place here.**
+  DirectInput devices of one class share a vtable, and that fact produced **two opposite failures**:
+  one project hooked through the *mouse* and had its handler fire for the *keyboard* — mouse deltas
+  landing in the key-state array, index 1 being `DIK_ESCAPE`, a pause menu opening "by itself",
+  **three experiments silently invalidated**; another registered only the *first* device, that game
+  creates the mouse first, so its keyboard was never instrumented and the log looked dead. **The fixes
+  are complementary, not alternatives** — one narrows what you act on, the other widens what you
+  observe — and each reads like the whole answer alone. It is also exactly why apply-rule 3 says
+  *refuse* an unrecognised size: when one vtable serves several device classes, the buffer size is the
+  only thing distinguishing them at the call.
+
+**⭐⭐ And a new top-level section:
+[the camera you want may be a shipped rule you can enable from DATA](./techniques/README.md#-the-camera-you-want-may-be-a-shipped-rule-you-can-enable-from-data--no-code-patch).**
+On one 2008 title, rewriting a shipped camera rule's state-condition list so every condition is
+always-true **took over the live camera in normal gameplay, with no code patch at all**
+`[verified-live 2026-09-07]`. A camera takeover is normally the expensive part of one of these
+projects; a data-driven camera *selector* can hand you the same thing for the cost of understanding
+one table. Three checks in cost order (do developer rules survive in retail data? what gates them? and
+**which rule actually won** — the observed behaviour was a ghost cam while the rule patched was named
+for first person). The priority half of the planned mod turned out **unnecessary**: the rule was
+already winning once its conditions passed.
+
+**⚠️ With the observation trap that came with it, which generalises well past cameras.** Two readings
+were recorded wrongly from stills the same day, in *opposite* directions — *"the edit did nothing"*
+(taken standing still, the one state where a free camera sits in a plausible third-person spot) and
+*"a character-less camera"* (the observer had flown it away). **When the property you are testing is a
+relationship between two things, no single observation of either can measure it.** Move one, watch the
+other; design the test as an action, not a screenshot.
+
+**Engine pages.** [Scimitar / Anvil](./engines/scimitar-anvil.md) gains the camera-is-data finding as
+the strongest structural fact on that family, with the sibling-titles generalisation explicitly marked
+`[hypothesis]` — one game, and the page records the *shape* worth checking first elsewhere.
+
+**Project-repo harvest.** All 16 pulled. Since 17:30, **four** moved: `prince-of-persia-2008-vr` (four
+commits — full menu automation, then the camera takeover and its two withdrawn still-frame readings),
+`psychonauts-vr` (container enumeration and a corrected PVS step — **deliberately not lifted**, it is
+a game-specific container fact and stays in its own repo), `alan-wake-vr` (an x64dbg configuration
+finding) and `alice-madness-returns-vr` (receiving my drop from the last sweep). Coverage backlog
+unchanged — fifth delta sweep in a row.
+
+**Generalised up:** the `/gr` inbox drop, sourced to `prince-of-persia-2008-vr`'s
+`staging/…/proxy-dinput8/` work and `ai-game-control-profiles/UNIVERSAL.md`;
+`prince-of-persia-2008-vr`'s dossier camera section and its 2026-09-07b note.
+
+**Inboxes drained: one** (ours, one file, by explicit filename). **Inboxes filled: none** — everything
+this sweep touched originated in the project that would receive it, and the one drop filed last sweep
+is already sitting unread in `alice-madness-returns-vr`.
+
+**New credits:** first-party, to `ai-game-control-profiles` — named in its own right for the
+shared-vtable rule and the incident behind it, alongside `prince-of-persia-2008-vr`.
+
+**Process note.** Yesterday's lesson was that this lane's error mode is **scope**. This sweep is the
+first test of the fix, and it held: every general claim here names its sample in the same sentence —
+the live result is one game, the apply rules are one implementation's answers rather than a survey,
+the cross-engine generalisation is `[hypothesis]` and says so, and the Anvil family page marks the
+sibling-titles question untested rather than implying it. The one place a stronger claim was available
+— the shared-vtable pair — earned it by being **two projects failing in opposite directions from the
+same cause**, which is the bar this library was built to hold.
