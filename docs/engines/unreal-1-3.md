@@ -599,6 +599,38 @@ Credit **CodeRedModding** (public UE3 source mirror; engine source is Epic Games
 (`UE3SDKGenerator`, MIT). Read online; nothing cloned or copied. Generalised out of
 [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr).
 
+### ⭐⭐ 2026-09-07: on UE3 the vertex-`c0` shear is confirmed as REAL STEREO — two eyes, and the baseline scales with IPD
+
+`[verified-live 2026-09-07, n=1 launch]` · `[verified-numerically 2026-09-07, R² = 0.99948]`
+
+The 2026-09-04b finding was that a per-eye shear written to vertex constant `c0` reaches the screen.
+That establishes the write lands; it does **not** establish that two eyes are being produced, because
+a single mono view translated sideways behaves identically. On 2026-09-07 the stronger claim was
+measured, on a flat monitor, in one launch:
+
+- **Alternating the eye once per `Present`** and capturing a 16-frame burst produced **exactly two
+  clusters** of horizontal displacement — the signature of two eyes, since each capture lands on one
+  or the other. 12 px separation at default IPD.
+- **The stereo-OFF control in the same live scene returned spread `0` px on every frame**, in a scene
+  with walking NPCs, drifting fog and idle animation. The noise floor is not small, it is zero, so
+  every non-zero reading afterwards is signal.
+- **Sweeping IPD gives a straight line through the origin:** 6.5 → 12 px, 12.5 → 22, 18.5 → 33,
+  24.5 → 44; `separation = 1.7833 × ipd + 0.108`, R² = 0.99948, max residual 0.40 px. Proportional
+  separation is what makes it a *baseline* rather than a coincidence.
+
+**⚠️ And the trap this UE3 title threw, which will recur on every third-person game in the family.**
+A red/cyan anaglyph showed the player character with almost no fringing while the world doubled
+around her — which reads exactly like the classic UE3 failure where skinned character shaders take a
+different constant register and never receive the shear. **It was wrong.** Sweeping *convergence*
+moved her disparity from +78 px to −1 to +26, so she is sheared; she simply sits near the convergence
+distance, because a third-person camera holds the hero at a roughly fixed range. **Zero disparity is
+ambiguous between "not sheared" and "at the convergence plane" — change convergence and re-measure
+before recording a per-shader gap.** Full method, controls and the tool-validation step:
+[techniques → proving both eyes render](../techniques/README.md#proving-both-eyes-render--on-a-flat-monitor-in-one-launch).
+
+Generalised out of
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Unreal Engine 2 / 3" row.

@@ -154,6 +154,13 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   public UE3 SDK generators supply a scanning harness and **not** the addresses, which is what makes the
   assertion-string route worth taking first. Read online via the GitHub API; no code reused.
   - <https://github.com/ItsBranK/UE3SDKGenerator>
+- **kagenocookie** — **RE-Engine-Lib**, whose published RE Engine format readers carry a
+  wider-corpus field map for the `.rtex` render-target descriptor than our own six-file decode could
+  support — including names for two fields both of this account's decodes had recorded as anonymous
+  constants. Cited as the worked example in
+  [techniques → a field map that fits every observed byte is not thereby correct](./docs/techniques/README.md#a-field-map-that-fits-every-observed-byte-is-not-thereby-correct).
+  Read online; no code taken.
+  - <https://github.com/kagenocookie/RE-Engine-Lib>
 - **prideslayer** and contributors — **VRIK Player Avatar** (Skyrim VR). Cited only to draw the
   distinction between the well-known VR floor-calibration/height-offset problem it addresses and the
   pose-dependent, animation-driven body float documented in

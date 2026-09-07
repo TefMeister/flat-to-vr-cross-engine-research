@@ -1216,9 +1216,29 @@ inferring the format from byte patterns:
   of otherwise-opaque stored hashes into named, typed objects in one pass — one project resolved 201
   of 202 this way. Applies to any engine with reflection-style or registry-style type tables, not
   just the one it was found on.
+- **⭐ And the dictionary reaches past the type table.** `[measured 2026-09-07]` On that same engine,
+  **UI screen names are stored as CRC32 little-endian in the shipped menu-definition files** — not
+  just types in a registry, but ordinary content references. Once you have a CRC32 dictionary built
+  from the executable's own identifier strings, try it against **every** unexplained 32-bit constant
+  you meet: immediates in vtable methods, fields in data files, keys in lookup tables. The same
+  session also recorded a clean **negative** from the same dictionary — a hypothesised
+  "state-hash channel" between two subsystems does not exist, and that negative is only worth
+  anything because the dictionary was demonstrated to resolve other constants in the same sweep.
+- **⚠️ But an engine usually hashes names at ONE level of its hierarchy, not everywhere.** Finding a
+  name hash somewhere is not evidence that the object you want is hash-addressed. On a different
+  engine, four independent public sources agree that animation *motions* are addressed by a plain
+  numeric `(bank, motion)` pair, while the murmur-hashed fields in the very same file format are for
+  **bone** names, and the one hash-keyed lookup in the API is at **file** level
+  `[reported 2026-09-07, 4 sources]`. A session that assumed "this format hashes names, so my motion
+  is keyed by its name hash" would have built the wrong lookup and read the failure as a format
+  problem. **Establish which level is hashed before designing against it** — and note that the two
+  readings usually predict *different* failure signatures, which is what makes the question cheap to
+  settle.
 
-Generalised from `prince-of-persia-2008-vr`'s static `.forge`/Scimitar decoding session, 2026-09-02
-(no launch); engine-specific layout detail stays in that project's own dossier.
+Generalised from `prince-of-persia-2008-vr`'s static `.forge`/Scimitar decoding sessions of
+2026-09-02 and 2026-09-07 (no launch), and — for the hashed-at-one-level rule — from
+`visceral-re2-vr`'s 2026-09-07 motion-format research; engine-specific layout detail stays in each
+project's own dossier.
 
 ### ⭐ A reflection table often carries the developers' own doc comments — search THOSE, not the names
 
@@ -2974,6 +2994,41 @@ an instrument whose blind spot is invisible in its output.
 **factory resolved the identical string** and handed back a working object. Resource types were simply not
 managed types on that build. When a name lookup fails but something else accepts the name, **take the type
 from the returned object**, not from the lookup that failed.
+
+### 🚨 …and the false POSITIVE: never name the string you are asking a fetcher to find
+
+`[measured 2026-09-07, n=1 page, 2 fetches]` on the incident · `[hypothesis]` on the frequency.
+Generalised out of [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr).
+
+Every row above is a fabricated **negative**. This one runs the other way, and that makes it worse: a
+fabricated **positive** enters the record as a fact and gets acted on later.
+
+During material research, a page fetch was asked, in effect, *"does this forum thread mention
+`Detail_UVScale`, `DetailNormalMap`, `DetailMaskMap`, `DetailIntensity`, `DetailNormalPower`?"* The
+fetcher returned **a quote listing those five names as though they were the thread's content**. A
+neutral re-fetch of the same URL showed the thread contains none of them — it is five short posts
+about a broken download link.
+
+**The dangerous part is that this is what the standard defence looks like when applied naively.** The
+rule against fabricated negatives says to prove the fetch *could* have returned a positive by putting
+a known-present item in the query. Name the string you are actually testing for, and you have handed
+the summarising model the answer to give back. **The two rules pull against each other, and the
+resolution has to be stated:**
+
+- **To prove the fetch is capable of a positive,** use a control string you **already know** is on
+  that page — never the string whose presence is the question.
+- **To test whether a string is present,** ask an **open** question — *"list the parameter names this
+  page mentions"*, *"what does this thread discuss?"* — and then look for your term in the answer.
+  Never *"does this page mention X?"*
+
+**This is the second confirmed case in this account of an automated read producing text a page does
+not contain.** The first was a wiki serving cloaked "AI instructions" to fetchers rather than to
+browsers — a hostile page. This one is a **compliant summariser**. Same failure surface, opposite
+cause, and only the second one is invisible to anyone reading the page by hand afterwards.
+
+**The cheap habit that caught it:** a second, differently-worded fetch of the same URL. Where a claim
+is about to be written down as fact, re-derive it once with a prompt shaped differently from the
+first. If the two disagree, neither is evidence yet.
 
 ## Capturing the finished frame: the whole-frame route to a headset
 
@@ -4892,6 +4947,43 @@ something in the running game confirms it.
 Credit **Ekey** (REE.PAK.Tool, whose published format description made the descriptor readable) and
 **praydog** (REFramework, whose loose-file loader is the delivery path).
 
+### ⚠️ When the change's failure mode is invisible, ship a control asset before the real one
+
+`[hypothesis]` on the specific risk (raised 2026-09-07); the reasoning behind it is `[inferred-static]`. Generalised out of
+[`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr).
+
+Authoring an asset puts you one step further from the engine than editing a number, and some asset
+formats carry a **silent semantic gamble**. The worked case: a single-channel `BC4_UNORM` mask was
+authored for a material's detail-map slot. `BC4` samples as `(R, 0, 0, 1)` — so if the shader reads
+that mask's `.g` or `.b`, the mask is **zero everywhere** and the effect it gates dies across the
+whole material. Which channel the slot reads is not documented publicly, in a corpus that *does*
+document channel packing for the neighbouring map types — which is a genuine negative rather than a
+gap in the search.
+
+**And that failure looks exactly like success.** The intended visible outcome was "smoother where
+the mask says smooth". A mask that reads as zero everywhere delivers smooth everywhere — correct in
+the place you are looking at, regressed everywhere you are not.
+
+Two habits, in order of cheapness:
+
+- **⭐ Prefer the lever with no confound, and separate the diagnostic from the fix.** The same effect
+  is gated by two plain float properties on the same material. Setting one to zero disables the
+  feature with **no texture edit and no channel gamble at all** — and one of the two already ships at
+  zero, so it is realistically one number. When you want to know *whether* a thing is the cause, use
+  the lever that cannot fail for an unrelated reason; save the authored asset for when you want the
+  *fix*.
+- **Ship a control asset whose effect is unmistakable, first.** A uniform mid-grey mask discriminates
+  the two outcomes in one launch: if the shader reads the populated channel, the effect halves
+  everywhere; if it reads an empty one, nothing changes at all. That is the
+  [read-back-against-a-known-value habit](#a-read-back-that-returns-the-same-number-under-every-write-is-three-hypotheses-not-one)
+  applied to a texture instead of a scalar — and it is the same idea as validating an image tool on
+  synthetic offsets before trusting it on real ones.
+
+**The general shape:** before deploying an authored asset whose failure is invisible, ask what the
+asset would look like if the engine ignored it, and whether you could tell. If you could not, author
+a deliberately extreme version first. An asset that changes the picture obviously is a measurement;
+an asset that changes it subtly is a hope.
+
 ## A report from the person in the headset is primary evidence
 
 `[verified-live 2026-09-06]` Generalised out of
@@ -4921,6 +5013,265 @@ gaze*, and it caught a bad judging window on the night it was written. A gate li
 the job it is good at — saying *when* a sample counts — without letting it argue with the person about
 *what they saw*.
 
+## Proving BOTH eyes render — on a flat monitor, in one launch
+
+`[verified-live 2026-09-07, n=1 launch]` · `[verified-numerically 2026-09-07, R² = 0.99948]`
+Generalised out of
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr).
+
+You have a stereo shear working in a graphics-API proxy. The picture moves when you change IPD.
+**That proves nothing about stereo.** A single mono view shoved sideways does exactly the same thing,
+and mistaking a pan control for a per-eye path is the easiest self-deception available in this work.
+The question looks like it has to wait for a headset, because a flat monitor shows one image. It does
+not.
+
+**The technique: alternate the eye at the frame boundary, then capture a burst.**
+
+- Flip the eye index **once per `Present`** — never mid-frame, so every frame is still entirely one
+  eye and still the exact single-eye path everything else already exercises.
+- Keep a **flip counter** in the log. This is the whole difference between *"the eye never
+  alternated"* and *"the eye alternated and nothing moved"*, and those two need completely different
+  fixes.
+- Capture ~16 frames as fast as the OS allows and measure each one's horizontal displacement against
+  the first.
+
+**If both eyes are real, the frames fall into exactly TWO clusters** — never three, never a
+continuum — because every capture lands on either a left-eye or a right-eye frame. On the worked case
+that was 12 px of separation at default IPD, and the two-cluster structure held at every setting
+tried.
+
+**Measure the displacement by cross-correlating column-mean intensity profiles.** A stereo shear is a
+*coherent horizontal translation*, which is exactly what that measures, and it is nearly blind to
+everything that is not one. **Mean-absolute-difference is not a substitute:** an earlier session on
+the same game scored input routes by mean-luma delta and reported a *working* lever as "no effect",
+because animated grass and water put the noise above the signal. Compare
+[the masked-correlation trap](#a-hard-edged-mask-makes-phase-correlation-lie-confidently) — same
+lesson, opposite tool.
+
+### The two controls that make this evidence rather than a vibe
+
+**1. Run the stereo-OFF control first, in the same live scene.** With stereo off, 16 captures of a
+scene containing walking NPCs, drifting fog and idle animation gave **spread 0 px — every frame
+`dx = +0`**, correlation 0.984–1.000. Scene animation does not produce a coherent horizontal
+translation, so the noise floor here is not "small", it is **exactly zero**, and any non-zero reading
+afterwards is signal. **A control that returns exactly zero is worth far more than one that returns
+"about 3 px, probably noise"** — and it is the happy opposite of the case where
+[the noise floor is the idle animation](#the-noise-floor-is-the-idle-animation-and-it-can-exceed-the-effect).
+Which one you get is a property of the measure you chose, so choose the measure that the confound
+cannot express.
+
+**2. Validate the tool on synthetic offsets before trusting it on real ones.** Shift one real frame
+by known amounts and require recovery:
+
+```
+truth  -40  -12   -3    0   +3  +12  +40
+meas   -40  -12   -3    0   +3  +12  +40     7/7 exact, corr 1.0000
+different-scene control:                     corr 0.4556
+```
+
+Now "high correlation" means *rigid translation* with evidence behind it, and the threshold is
+defensible rather than guessed.
+
+### Then make it quantitative: sweep IPD and fit
+
+Two clusters prove *two eyes*. Proportionality proves the separation is a **baseline** and not a
+coincidence:
+
+| IPD | 6.5 | 12.5 | 18.5 | 24.5 |
+| --- | --- | --- | --- | --- |
+| cluster separation | 12 px | 22 px | 33 px | 44 px |
+
+`separation = 1.7833 × ipd + 0.108 px`, **R² = 0.99948**, max residual 0.40 px. Proportional, through
+the origin, sub-pixel residuals. Four points and a fit are a different class of claim from *"it got
+bigger when I pressed the key"*, and they cost about a minute.
+
+### ⭐ The trap that comes with it: an object at the convergence plane looks unsheared
+
+Rendering the eye pair as a **red/cyan anaglyph** makes disparity visible instantly — and on the
+worked case it immediately showed the player character with almost **no** fringing while the whole
+world doubled around her. That reads exactly like the classic failure in which skinned character
+shaders take a different constant register and never receive the shear. It would have been a serious
+finding.
+
+**It was wrong, and the discriminating lever is CONVERGENCE, not the eye:**
+
+| convergence | player character | world wall | NPCs |
+| --- | --- | --- | --- |
+| 98 | **+78 px** | +96 | +109 |
+| 300 (default) | **−1 px** | +17 | +17 |
+| 915 | **+26 px** | +8 | −5 |
+
+The character's disparity moves a long way, so she **is** sheared — she simply sits near the
+convergence distance, because a third-person camera holds the hero at a roughly fixed range.
+
+**Generalisation: zero disparity is ambiguous between "not sheared" and "at the convergence plane".**
+Change convergence and re-measure before concluding anything; if the object moves, it is sheared. On
+**any** third-person game this will look like a character-shader bug in an anaglyph, and it is not.
+
+### Three smaller traps from the same launch
+
+- **A far field too dark to match is not "zero disparity".** Block-matching a distant street returned
+  peaks of 0.19–0.43 — that is *no measurement*. Report it as unmeasurable and pick a better scene;
+  do not record it as a depth-invariant result.
+- **Check that a counter counts what its name says.** A `draws_fixed` counter turned out to count
+  *pixel*-shader fix-texture bindings rather than sheared draws, so it could not corroborate anything
+  about the vertex path. The frame and flip counters could, and did.
+- **`F12` is Steam's screenshot key.** Harmless to the game, but the Steam toast sits in screen
+  captures for about ten seconds and will quietly contaminate image analysis of that corner. Pick
+  hotkeys that the platform overlay does not already own.
+
+**Cost: one launch, and no rebuild if the shear already exists.** Control, four IPD settings, a
+convergence sweep and an anaglyph took about fifteen minutes of driving, entirely from outside the
+process with synthetic input and screen capture. That is a headset question answered at the
+[cheapest gate that can express it](#the-cheapest-control-is-the-case-where-the-correct-answer-is-change-nothing).
+
+## A field map that fits every observed byte is not thereby correct
+
+`[measured 2026-09-07]` Generalised out of
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr) and
+[`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) — and it is a correction to this
+library's own work, filed the day after it was published.
+
+The previous section recommends validating an asset writer by reproducing shipped files **byte for
+byte**. That control is real and it is worth taking. Here is precisely what it does *not* buy you.
+
+One project decoded a 64-byte render-target descriptor across six shipped files, reproduced two of
+them byte-identically, and wrote down a field map. A day later a **public decode of the same format**
+turned up, written against a much wider corpus — and it disagrees:
+
+| field, in order | our decode | the public library `[verified-live 2026-09-07, n=1 source read]` | observed |
+| --- | --- | --- | --- |
+| 4th dword | DXGI format | `format`, typed as a **`DxgiFormat`** enum — agrees | `29` / `26` |
+| 5th, 6th | width, height | width, height — agrees | vary |
+| 7th | depth / array size | **`depth`** | `1` |
+| 8th | — | **`mipCount`** | `0` |
+| 9th | — | **`arraySize`** | `0` |
+| 10th | **mip count** | **`ukn1`** — unknown | `1` |
+| two `f32` near the end | two unnamed `1.0` floats | ⭐ **`widthRate`, `heightRate`** | `1.0`, `1.0` |
+
+**Both maps fit every byte in the corpus, and they cannot both be right.** Ours implies mip 1 and
+array 1; theirs implies mip 0 and array 0. Ours is the more *physically plausible* reading, which is
+presumably why it was written that way — and plausibility is not evidence.
+
+⚠️ **Note what this table deliberately does not give you: byte offsets.** The public reader gates the
+last three fields on `version >= 5` and skips a further four bytes at `version >= 6`, so a fixed
+offset is only correct for one version — and the version is exactly the thing a modder reading one
+game's files is least likely to have varied. Quoting the **order** is a claim the evidence supports;
+quoting an offset would have been a fourth guess laid on top of three.
+
+**The rule this yields: the fields that are constant across your corpus are exactly the fields your
+corpus cannot name.** A byte-for-byte reproduction proves your *layout* — the offsets, the widths,
+the total size — and it proves the writer is faithful. It says nothing about the *semantics* of any
+field that never varied in the files you looked at. Name those fields only if you can vary them, or
+find someone who has.
+
+Three practical consequences:
+
+- **Look for a public decode before naming a field, not after.** Format libraries, 010 Editor
+  templates, extractor source and asset-tool plugins routinely carry a field table for exactly the
+  file you are staring at. This one cost nothing to find and would have changed what was written.
+- **Record disputed fields as disputed, in the tool.** The correction's instruction was to say so in
+  the writer's docstring rather than repeat a name that has not been tested — so the next person
+  reading the tool inherits the doubt rather than the guess.
+- **⭐ An unnamed constant can be a lever you have not noticed.** The two anonymous `1.0` floats both
+  decodes recorded turn out to be **resolution scale rates**. That is a second control over the
+  allocated size, sitting in plain sight in a file one project had already reproduced byte for byte,
+  invisible precisely because it never varied. When a public decode names your anonymous fields,
+  read the names for **capabilities**, not just for correctness.
+
+**What survives unchanged**, and it is worth separating explicitly, because a correction that voids
+too much is its own failure: every field between `0x18` and `0x30` is a small constant under *both*
+candidate maps, and **none of them scales with width or height** — so the practical conclusion that
+drove the work ("there is no size-dependent field to break") never depended on which naming was
+right. The byte-for-byte reproduction stands, and so does the live demonstration that the engine
+allocates an authored, never-shipped size. **Say which half of a finding a correction reaches.**
+
+Credit **kagenocookie** — [RE-Engine-Lib](https://github.com/kagenocookie/RE-Engine-Lib) (**MIT**),
+whose published format reader is the wider-corpus decode. Read online via the GitHub API on
+2026-09-07; no code taken.
+
+**⚠️ And a postscript that belongs to this section rather than a footnote.** The correction reached
+this library secondhand, and re-deriving it from the source found **a third error in the chain**: the
+field is named `format` and *typed* `DxgiFormat`, not named `DxgiFormat`, and the offsets that came
+with the correction do not survive the version gating described above. So the sequence ran:
+a plausible guess, corrected by a better source, relayed with two new small errors, caught by reading
+the source. **A correction is a claim like any other and inherits none of its target's scrutiny for
+free.**
+
+## 🚨 The framework you inject through applies its transform to EVERY camera — including the one your feature depends on
+
+`[verified-live 2026-09-07, n=1 source read]` on the framework's code · `[inferred-static 2026-09-07]`
+on the consequence for the observed symptom. Generalised out of
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr).
+
+A VR mod framework's central job is to force the HMD's per-eye view and projection onto the game's
+camera. If your feature involves a **second** render — a scope, a mirror, a portal, a security
+monitor, a rear-view mirror, a picture-in-picture map — then the question *"does the framework's
+override reach that render too?"* is load-bearing, and it is usually not documented anywhere.
+
+**The worked case.** A rifle-scope mod built on a mature RE Engine framework produced a scope picture
+that swung with the player's head in VR while behaving perfectly in flat play. Two headset sessions
+were spent on the assumption that the *engine's* mirror component followed the viewing camera, and
+several imaging models were built and discarded against it.
+
+**Reading the framework's own source settled it in one pass, and the tell was an asymmetry between
+two sibling functions** `[verified-live 2026-09-07, n=1 source read]`, in `src/mods/VR.cpp` on master:
+
+- In the **projection**-matrix hook, the guard restricting the override to the primary camera is
+  **commented out** — the override therefore applies to every camera the game asks a projection for.
+  (The GUI-camera projection hook next to it has the same guard commented out.)
+- In the **view**-matrix hook, the equivalent `if (camera != get_primary_camera()) return;` is
+  **live**.
+
+So a secondary render receives **the current eye's asymmetric, off-centre HMD projection over its own
+non-eye view matrix**. And that combination has a signature worth memorising: **a projection that
+changes with head pose sitting on top of a view matrix that does not** is exactly what "the picture
+inside moves where I look" looks like. It is not an engine property and no amount of steering the
+secondary render's geometry can cancel it.
+
+Corroboration from the same source that the two renders really are distinct: the framework's own
+scene-layer helper treats a layer as *not* the main view precisely when it carries a mirror —
+`is_fully_rendered() { return is_enabled() && get_mirror() == nullptr && has_main_camera(); }` — and
+the framework's author, asked about scopes in that engine, answered *"The way scopes work is they
+create a separate scene, yes."* `[reported, issue #698, 2023-03-27]`
+
+### The transferable habits
+
+- **Before blaming the engine for a secondary render's behaviour, read the injector's camera hooks.**
+  You are two layers deep — game, framework, your mod — and the middle layer is the one nobody
+  instruments. It is public source in most of these projects and costs one read.
+- **⭐ Look for asymmetry between sibling functions.** A guard present in one of a matched pair and
+  commented out in the other is a far stronger signal than either function read alone, and a
+  commented-out guard usually records a bug someone hit from the *other* direction. Grep for the
+  guard, not for the feature.
+- **⭐⭐ Search the framework's history for the SYMPTOM, not for the API.** The same author hit this
+  exact class of problem on a different title and fixed it by **exemption**: a 2023 commit
+  (*"VR (RE4): Fix scope not being zoomed in"*) tested the camera's owning GameObject name for a
+  `ScopeCamera` prefix and returned early without overriding, commented *"Allows the sniper scope to
+  work."* `[verified-live 2026-09-07, n=1 commit + diff read]` A search for "projection override" would
+  never have found it; a search for "scope" did.
+- **⚠️ And check the fix is still there.** That exemption is **no longer present in current master** —
+  a later refactor replaced the per-game preprocessor blocks with runtime game-identity checks, and
+  the block did not survive `[verified-live 2026-09-07, n=1 grep of master]`. **A remedy found in a
+  framework's history is a design to re-implement, not a feature to enable**, and this is the
+  practical form of
+  [dating a dependency](#dating-a-dependency-a-fix-newer-than-your-build-is-not-evidence-that-you-are-affected):
+  the question is not only "is the fix newer than my build" but "is it in *any* build, still".
+- **A branch or a render mode may already exempt your case.** Forks that add multi-pass rendering
+  often filter the layer set they duplicate, and a filter that drops mirror-bearing layers restores
+  their own projection as a side effect. Which build and which setting therefore change whether the
+  bug exists at all — so **record the framework's branch, commit and settings beside every result**,
+  or two sessions will compare observations taken under different code.
+
+**⚠️ The one thing this does not do is retire the engine-level question.** Establishing that the
+framework overwrites the projection explains the head-tracking swing; it does not establish what the
+secondary render would do without it. Keep those two claims separate, and note which of them each
+past observation actually tested — several will turn out to have tested neither.
+
+Credit **praydog** — [REFramework](https://github.com/praydog/REFramework), whose public source is
+the evidence for every code claim above, and whose 2023 fix is the design worth copying. Read online
+via the GitHub API; no code taken.
+
 ## Sources
 
 - **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, the log-before-the-call habit, and the exclusive-mode DirectInput wall that `SendInput` cannot cross; generalised out of [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research) §9a/§9b; the byte-identity read-only-tree rule from the same dossier (2026-09-02)
@@ -4928,7 +5279,9 @@ the job it is good at — saying *when* a sample counts — without letting it a
 - **Unreal Gold VR** (this account) — the mutation-checked numerical verification, the no-convergence and full-window-2D-layer design notes; generalised out of [`unreal-gold-vr/modding-notes/`](https://github.com/TefMeister/unreal-gold-vr/tree/main/modding-notes)
 - **Visceral — RE2 VR** (this account) — the HMD-anchored body float and the pelvis-drop grounding fix; generalised out of [`visceral-re2-vr/modding-notes/`](https://github.com/TefMeister/visceral-re2-vr/tree/main/modding-notes)
 - **RE Village sniper scope** (this account) — the argument-encoding silent-zero case, the hook-to-acquire-a-handle pattern, and the posted-window-message input route; and, from the 2026-09-05/06 sessions, the identity control, the authored render-target descriptor and its byte-for-byte round-trip, the observer-is-primary-evidence rule, the three-hypothesis read-back ladder, the masked phase-correlation trap and its idle noise floor, the expiring resource recognizer, the enumerate-don't-guess reflection rule, and the panel-only-affordance trap; generalised out of [`re-village-scope-vr/modding-notes/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/modding-notes) and [`re-village-scope-vr/engine-research/`](https://github.com/TefMeister/re-village-scope-vr/tree/main/engine-research)
-- **Visceral — RE2 VR** (this account) — additionally the stale-component read-back guard, the
+- **Visceral — RE2 VR** (this account) — additionally, from 2026-09-07, the never-name-the-string
+  fetcher rule, the disputed-field-map correction, the control-asset habit and the hashed-at-one-level
+  caution; and the stale-component read-back guard, the
   intra-frame stale joint matrix, the non-refcounted re-entrancy token, the loader-open-as-positive-control
   habit and the wrong-character-identity caution; generalised out of
   [`visceral-re2-vr/engine-research/`](https://github.com/TefMeister/visceral-re2-vr/tree/main/engine-research)
@@ -4949,7 +5302,10 @@ the job it is good at — saying *when* a sample counts — without letting it a
 - **Alice: Madness Returns VR**, **Alan Wake VR**, **Prince of Persia (2008) VR** and **Burnout
   Paradise VR** (this account) — the third-party-stereo-fix-as-intelligence method, the proxy-export
   completeness rule and its static-vs-dynamic failure modes, and the instrument-can-be-the-bug case;
-  generalised out of each project's `engine-research/` folder:
+  and, from 2026-09-07, **Alice**'s frame-alternating both-eyes proof with its zero-spread control,
+  synthetic-offset tool validation, IPD fit and convergence-plane trap, and **Prince of Persia**'s
+  CRC32 dictionary reaching past the type table into shipped UI name references;
+  generalised out of each project's `engine-research/` and `modding-notes/` folders:
   [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr) ·
   [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) ·
   [`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr) ·
@@ -4975,6 +5331,14 @@ the job it is good at — saying *when* a sample counts — without letting it a
 - **HelixMod community** (incl. **Chiz**) and the **geo-11 / 3D Vision fix scene** — their published
   per-game fix write-ups, changelogs and settings documentation, read online as reports on engine
   behaviour. No code taken. <https://helixmod.blogspot.com/>
+- **praydog** — additionally **REFramework**'s own source, read via the GitHub API on 2026-09-07:
+  the asymmetric primary-camera guard in `src/mods/VR.cpp` (commented out for the projection hook,
+  live for the view hook), the `is_fully_rendered()` mirror test in `shared/sdk/Renderer.hpp`, the
+  2023 `ScopeCamera` exemption commit `20a3ec54` and its removal in the 2026-04-25 refactor, and the
+  issue-#698 comment on scopes rendering as separate scenes. No code taken.
+- **kagenocookie** — [RE-Engine-Lib](https://github.com/kagenocookie/RE-Engine-Lib) (MIT), whose
+  wider-corpus `.rtex` field map corrected this library's own decode and named two fields both of
+  this account's decodes had recorded as anonymous constants. Read online; no code taken.
 - **Remleo** — [UEVR PR #433](https://github.com/praydog/UEVR/pull/433), the optional-truthiness/garbage-vtable-slot gamma fix (merged 2026-08-30)
 - **ErwinGunsmith** — [REFramework PR #1809](https://github.com/praydog/REFramework/pull/1809), restoring the `false` return of `on_pre_gui_draw_element` (merged 2026-08-28)
 - **prideslayer** and contributors — **VRIK Player Avatar** (Skyrim VR), cited only to distinguish the familiar VR floor-calibration/height-offset problem from the pose-dependent float described above: [nexusmods.com/skyrimspecialedition/mods/23416](https://www.nexusmods.com/skyrimspecialedition/mods/23416)
