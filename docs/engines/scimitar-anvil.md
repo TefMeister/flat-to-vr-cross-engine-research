@@ -101,6 +101,41 @@ repacker was built and validated (null-op byte-identical on three archives up to
 one differing at exactly four bytes). Deployment is a user decision; whether the edit alone makes the
 first-person camera win is untested.
 
+### ⭐⭐ 2026-09-07: the camera is DATA — a shipped debug rule was enabled from the archive, with no code patch
+
+`[verified-live 2026-09-07, n=1, observed at the controls]`
+
+The strongest structural fact this account has on the family. The camera system is **rule-driven**:
+the shipped archive contains named `CameraRule` entries, each carrying a **list of state conditions**
+that must hold for it to apply — and the retail data still contains the developers' own debug rules.
+
+**Rewriting one rule's condition list so every condition is the always-true state took over the live
+camera in normal gameplay.** No code patch, no hook, no view-matrix hunt. The only piece that had been
+missing was an archive repacker.
+
+- **What it yields is a free / detached camera** — it flies into the sky and through walls, the
+  movement keys still drive the player, and normal play is impossible on that build. That is a
+  **foundation**, not a feature: the remaining work (locking it to the player's head) is a data
+  question about the same table, not a code question about the renderer.
+- **The priority half of the planned mod turned out to be unnecessary** — the rule was already winning
+  once its conditions passed. Try the conditions before touching priority.
+- ⚠️ **A successful takeover does not prove you took over the thing you edited.** The observed
+  behaviour is a *ghost cam* while the rule that was patched is named for *first person*
+  `[hypothesis]`. Which rule actually won is open, and it is now a data question.
+- ⚠️ **A still frame cannot tell a locked camera from a free one.** Two readings were recorded wrongly
+  from screenshots the same day — *"the edit did nothing"* (taken standing still, the one state where a
+  free camera sits in a plausible third-person spot) and *"a character-less camera"* (the observer had
+  flown the camera away). **Move the camera and watch whether the subject stays in frame.**
+
+Whether the other Anvil/Scimitar titles expose their cameras the same way is **untested**
+`[hypothesis]` — this is one game, and the family page records it because the *shape* (named rules,
+condition lists, developer entries surviving into retail data) is the thing worth checking first on a
+sibling. Engine-agnostic form, with the checks in cost order:
+[techniques → the camera you want may be a shipped rule you can enable from DATA](../techniques/README.md#-the-camera-you-want-may-be-a-shipped-rule-you-can-enable-from-data--no-code-patch).
+
+Generalised out of
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Ubisoft AnvilNext 2.0" row.
