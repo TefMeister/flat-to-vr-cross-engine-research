@@ -342,8 +342,13 @@ the general form is in
 
 ### 🚨 2026-09-05/06: `via.render.Mirror` reflects the VIEWING camera — steering the plane cannot make it a scope
 
-`[verified-live 2026-09-05, n=3 headset launches]` This qualifies the mirror section above, and it is the
-single most important thing this account has learned about that component.
+> ⚠️ **Read the next section with this one.** Its measurements stand; its *explanation* was corrected
+> on 2026-09-07 — the head-following is REFramework overwriting the mirror's projection, not the
+> engine's mirror following the viewing camera.
+
+`[verified-live 2026-09-05, n=3 headset launches]` This qualifies the mirror section above. The
+measurements below are the most useful set this account has taken on that component; the reading
+placed on them at the time did not survive two days, which the next section records.
 
 A mirror rigged to a weapon and steered by rotating its plane behaves correctly in flat play and **not** in
 VR, for a structural reason: the reflected view direction belongs to the **viewing camera**, not to the
@@ -369,6 +374,50 @@ reflection of a mirror rigid to the weapon predicts.
   bore line) is **not** ruled out.
 
 Generalised out of [`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr) §8–§9g.
+
+### ⚠️ 2026-09-07, same day: the section above describes a SYMPTOM whose cause is the framework, not the engine
+
+`[verified-live 2026-09-07, n=1 source read]` This supersedes the *reading* of the section
+immediately above — not its measurements, which stand exactly as recorded.
+
+That section reports that a mirror rigged to a weapon shows a picture that turns with the head in VR,
+and reads it as *"the reflected view direction belongs to the viewing camera"*. The measurements are
+right and the reading is wrong at the layer it blames. What praydog's own source shows:
+
+- **Natively, the Mirror renders with its OWN camera and projection.** `via.render.layer.Scene`
+  carries a `via.Camera*` immediately followed by a `via.render.Mirror*`, and REFramework's own
+  helper treats a mirror-bearing layer as *not* the main view by construction:
+  `is_fully_rendered() { return is_enabled() && get_mirror() == nullptr && has_main_camera(); }`
+  (`shared/sdk/Renderer.hpp`). praydog, on issue #698 (2023-03-27): *"The way scopes work is they
+  create a separate scene, yes."*
+- **🎯 But REFramework forces the HMD eye projection onto every camera.** In `src/mods/VR.cpp`, the
+  primary-camera guard inside `VR::on_camera_get_projection_matrix` is **commented out**, while the
+  equivalent guard in `on_camera_get_view_matrix` is **live**. The mirror render therefore gets the
+  current eye's asymmetric, off-centre HMD **projection** on top of the mirror camera's own, non-eye
+  **view matrix** — and a projection that changes with head pose over a view matrix that does not is
+  precisely *"the picture inside is moving where I look and tilt."*
+
+**What this changes for the project.** The `[disproved]` on pane steering as a VR lever stands — it
+was never going to cancel a projection override — but the *reason* moves from "the engine's mirror
+follows the head" to "our injector overwrites the mirror's projection", and that has a different and
+much better fix: **exempt the mirror's camera from the override.** praydog did exactly that for RE4's
+scope in 2023 (commit `20a3ec54`, *"VR (RE4): Fix scope not being zoomed in"*), matching the camera's
+GameObject name against a `ScopeCamera` prefix and returning early. ⚠️ **That block is not in current
+master** — a 2026-04-25 refactor replaced the per-game `#ifdef`s with runtime game-identity checks and
+it did not survive — so it is a design to re-implement, not a switch to find. RE8 uses a Mirror where
+RE4 used a named camera, so the *match condition* differs; the remedy does not.
+
+**Also worth reading before spending a headset launch:** a fork's multi-pass rendering mode may
+already exempt mirror-bearing layers by filtering them out of the set it duplicates, which restores
+their own projection as a side effect. Whether that applies is a property of **branch and setting**,
+so record both beside every observation — this project's two machines run two different framework
+builds, and results from them are results about two frameworks.
+
+The engine-agnostic form, with the habits that found it:
+[techniques → the framework you inject through applies its transform to every camera](../techniques/README.md#-the-framework-you-inject-through-applies-its-transform-to-every-camera--including-the-one-your-feature-depends-on).
+
+Credit **praydog** (REFramework — the source, the 2023 fix and the issue comment). Verified firsthand
+via the GitHub API on 2026-09-07; no code taken. Route first identified by this account's `/gr` lane.
 
 ### ⭐ 2026-09-06: an `.rtex` is a 64-byte descriptor — you can author render targets the game never shipped
 

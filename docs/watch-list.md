@@ -1853,3 +1853,101 @@ was a regression against a design the same file already described, and an observ
 suspect on the strength of a log that was measuring something else. That is now the ordinary shape of
 this library's best material, and the reason is worth naming: **an error caught in a day carries its own
 control with it**, which a first-time-right result never does.
+
+### 2026-09-07 (second sweep, midday, dev PC) — the delta was two hours old and worth more than the two days before it
+
+The 10:40 sweep had just finished; this one ran because a `/gr` estate pass, a `/gs` pass and two
+live modding sessions all landed inside the following ninety minutes. **No watch-list web pass was
+run** — re-checking sources cleared two hours earlier would be theatre. Instead the entire web budget
+went on **re-deriving claims this library was about to publish**, which is where it earned its keep.
+
+**Four new sections, and one of them corrects this library's own work from the same morning.**
+
+- ⭐⭐ [**The framework you inject through applies its transform to EVERY camera**](./techniques/README.md#-the-framework-you-inject-through-applies-its-transform-to-every-camera--including-the-one-your-feature-depends-on)
+  — the sweep's most valuable entry, and the one that most needed verifying. If your feature involves
+  a *second* render — scope, mirror, portal, monitor, PiP map — the injector's per-eye override may be
+  reaching it. **The tell is an asymmetry between sibling functions**: in REFramework's `src/mods/VR.cpp`
+  the primary-camera guard is **commented out** in the projection hook and **live** in the view hook,
+  so a secondary render gets the eye's off-centre HMD projection over its own non-eye view matrix —
+  which is exactly what *"the picture inside moves where I look"* looks like. Carries three habits:
+  read the injector before blaming the engine; **search the framework's history for the SYMPTOM, not
+  the API** (praydog's 2023 `ScopeCamera` exemption is findable by "scope" and invisible to
+  "projection override"); and **check the remedy still exists** — that block was removed in a
+  2026-04-25 refactor, so it is a design to re-implement, not a switch to find.
+- [**Proving BOTH eyes render — on a flat monitor, in one launch**](./techniques/README.md#proving-both-eyes-render--on-a-flat-monitor-in-one-launch)
+  — alternate the eye once per `Present`, capture a burst, and the frames fall into **exactly two
+  clusters**. With a stereo-OFF control that returned **spread 0 px** in a scene full of animation, a
+  tool validated on synthetic offsets, and an IPD sweep fitting `1.7833 × ipd` at **R² = 0.99948**.
+  Plus ⭐ the convergence-plane trap: **zero disparity is ambiguous between "not sheared" and "at the
+  convergence plane"**, which on any third-person game reads as a character-shader bug and is not.
+- [**A field map that fits every observed byte is not thereby correct**](./techniques/README.md#a-field-map-that-fits-every-observed-byte-is-not-thereby-correct)
+  — a correction to **yesterday's** section. A byte-for-byte reproduction proves your *layout*, not
+  your *semantics*: **the fields that are constant across your corpus are exactly the ones your corpus
+  cannot name.** Two anonymous `1.0` floats turned out to be resolution **scale rates** — a second
+  lever on target size, invisible precisely because it never varied.
+- [**Never name the string you are asking a fetcher to find**](./techniques/README.md#-and-the-false-positive-never-name-the-string-you-are-asking-a-fetcher-to-find)
+  — filed under *tool defaults that fabricate false negatives*, because this one fabricates a
+  **positive**, which is the dangerous direction. Naming your target string in the question hands the
+  summariser the answer. Rule 7's capability control still applies, but **the control string must be
+  one you already know is present, never the one under test.**
+
+**Two new subsections.**
+[Ship a control asset before the real one](./techniques/README.md#-when-the-changes-failure-mode-is-invisible-ship-a-control-asset-before-the-real-one)
+when the change's failure mode is invisible — a `BC4` mask reading as zero everywhere looks exactly
+like success — and prefer the lever with no confound, separating the diagnostic from the fix. And two
+bullets under *read the shipped files*: a **CRC32 dictionary reaches past the type table** into
+shipped UI name references, and ⚠️ **an engine usually hashes names at ONE level of its hierarchy** —
+finding a name hash somewhere is not evidence your object is hash-addressed.
+
+**Engine pages.** [RE Engine](./engines/re-engine.md) gains a same-day correction sitting directly
+under the section it corrects, with a pointer added to that section's own heading: the mirror's
+head-following is **the framework overwriting its projection**, not the engine's mirror following the
+viewing camera. The measurements stand; the reading did not survive two days, and the corrected
+reading has a much better fix attached. [UE1–3](./engines/unreal-1-3.md) gains the upgrade from
+*"the `c0` shear reaches the screen"* to **two eyes with a baseline proportional to IPD**, plus the
+third-person convergence trap.
+
+**Web — no watch-list pass; four targeted verifications instead, all against primary sources.** Every
+code claim in the framework section was re-derived from praydog's repository via the GitHub API before
+publication: the commented-out guard and its live sibling, the `is_fully_rendered()` mirror test, the
+2023 `ScopeCamera` commit and diff, and the issue-#698 comment. **All four held.** ⚠️ **Two things the
+verification added that the secondhand version did not have:** the 2023 exemption is **gone from
+current master**, and kagenocookie's field is named `format` *typed* `DxgiFormat` rather than named
+`DxgiFormat` — and its last three fields are **version-gated**, so the byte offsets that arrived with
+the correction are only right for one version. The library's table now quotes field **order** and says
+plainly why it does not quote offsets. **A correction is a claim like any other and inherits none of
+its target's scrutiny for free** — that sentence is now in the section itself.
+
+**Project-repo harvest.** All 16 pulled. Since the 10:40 sweep: a `/gr` estate CHECK-IN pass stamped
+fourteen repos, and **four** carried substance — `alice-madness-returns-vr` (both eyes confirmed
+live), `re-village-scope-vr` (two `/gr` drops on the projection question), `visceral-re2-vr` (three
+`/gr` topics, a `/gs` drop, and a correction to my own drop from ninety minutes earlier), and
+`prince-of-persia-2008-vr` (screen names are CRC32; a hypothesised state-hash channel does not exist).
+Coverage backlog unchanged — still a delta sweep.
+
+**Generalised up out of project repos:** `alice-madness-returns-vr`'s 2026-09-07 modding note (the
+whole both-eyes section); `re-village-scope-vr`'s two `/gr` inbox drops (the framework override);
+`visceral-re2-vr`'s `/gr` correction topic (the field-map rule) and its detail-map topic (the control
+asset, the fetcher rule); `prince-of-persia-2008-vr` §CRC32 and `visceral-re2-vr`'s motion-format
+topic (the two hashing bullets).
+
+**Inboxes drained: one** (our own, two files, by explicit filename). **Inboxes filled: one** —
+`re-village-scope-vr/engine-research/inbox/`, a `Supersedes:` note correcting **one caveat** in that
+lane's own drop from an hour earlier. The drop said the project *"records no REFramework revision at
+all"*; it recorded both machines' builds on 2026-09-04, and the home PC is on the **`pd-upscaler`**
+branch — which is the branch that drop's own MULTIPASS remedy lives on. So the remedy is a setting on
+the machine with the symptom, not a rebuild. ⚠️ With the caution filed alongside it: the swing was
+observed on the **dev** PC's nightly, a different framework, so it must be reproduced on the home PC
+before MULTIPASS is credited with fixing anything.
+
+**New credits:** **kagenocookie** (RE-Engine-Lib, MIT). **praydog**'s credit extended to cover
+REFramework's source as read evidence. First-party credit extended to
+`alice-madness-returns-vr` and `prince-of-persia-2008-vr` for this batch.
+
+**Process note, and it is the point of this entry.** The previous sweep closed by saying that an error
+caught in a day carries its own control with it. This one closed a loop faster than that: a section
+published at 10:40 was corrected at 12:30, by a lane that was not asked to check it, and the
+correction itself arrived carrying two errors that only a primary-source read caught. **The chain was
+guess → better source → relayed with new errors → source.** Nothing in that chain was careless; it is
+just what a claim does as it travels. The cheap defence is the one this sweep used throughout: before
+writing a claim down, read the thing it is about.
