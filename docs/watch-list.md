@@ -2050,3 +2050,90 @@ the only one that would have survived contact with a reader. But the specific le
 and worth keeping in plain sight: **this lane published a fabricated claim, and its own verification
 step is what let it through.** The defence that works is not "verify", it is **verify with a question
 that does not contain the answer**.
+
+### 2026-09-07 (fourth sweep, evening, dev PC) — two of this library's own claims met measurements and lost
+
+Delta from the 14:10 sweep. **No watch-list pass** — fourth sweep of the day. **Own inbox empty**;
+everything below came from the estate's own live and static work, and the sweep's whole job turned out
+to be **correcting sections it published earlier today**. First sweep under the new
+[`Lane:` commit trailer](https://github.com/TefMeister/claude-memory) convention; every commit here
+carries `Lane: /sr estate`.
+
+**❌ Correction 1 — the DirectInput reconciliation rule does not survive a controlled test.** This
+morning's entry said, on vendor documentation, that DirectInput is a Raw Input wrapper and that the
+real trap is **scancodes on the keyboard side**. Hours later a project measured the opposite with the
+control the claim deserved: game foreground, keyboard acquired **`NONEXCLUSIVE`**, polled at ~**200 Hz**,
+a key held via `SendInput` **as scancodes** for **22 seconds** across four logged samples — `keys
+currently down: 0` throughout `[verified-live 2026-09-07, n=1 game]`.
+
+The correction deliberately **does not replace one confident story with another.** It records the
+counter-example, then lays out **four candidate explanations with the observation that separates each**
+— a per-device split (the vendor text is about the *mouse* high-DPI path; inject a mouse delta and
+watch `DIMOUSESTATE`), a UIPI integrity mismatch, a shimmed or redistributable `dinput8`, and injection
+shape — and states that **none has been run**. It also refuses the opposite over-correction: one
+negative on one 2008 console port does not restore the folk memory the section was written to retire.
+The scancode rule is now framed as *the first thing to try*, never as an explanation, and the
+superseded paragraph carries an inline warning above its own correction.
+
+**⭐⭐ And the replacement is better than the rule it replaces:**
+[when no OS route reaches the game, write into the buffer the game asks for](./techniques/README.md#-and-when-no-os-route-reaches-the-game-write-into-the-buffer-the-game-asks-for).
+Hook the device-state call, and after the real call returns OR in a state block the harness writes from
+outside through shared memory. It removes *every* variable the surrounding sections are about — no
+scancode question, no ballistics, no UIPI, no foreground requirement. Three implementation rules that
+were load-bearing: **OR, never assign** (never clear a key the human is holding); **apply a relative
+mouse delta exactly once** (buttons are a level, motion is an event — a delta left standing is re-added
+200×/s and spins the camera forever); and cover every struct flavour or the game silently gets nothing.
+Confirmed four independent ways, including a frame difference of **24.08 against a 0.00–0.23 no-input
+baseline on the same scene** — the baseline being *near zero* rather than merely small is what makes it
+unambiguous.
+
+**⚠️ Plus the method lesson that makes the whole episode instructive: the original injection test had
+been run at the TITLE SCREEN — the one place in that game that polls no input at all**, as its own
+device-hook log later showed (zero polls there, ~200 Hz in gameplay). Every negative from it was
+worthless. **Confirm the game is reading input at that moment before trusting an input negative** — and
+note that a *console port* is exactly the kind of title whose menus wait on a gamepad, which is what
+this one was doing.
+
+**❌ Correction 2 — "the public SDK generators ship no patterns" was a claim about two tools stated as a
+claim about a family.** A fork in the same lineage ships **filled-in byte signatures for six shipped
+titles** `[verified-numerically 2026-09-07]`. **Check the forks of a tool before concluding its
+ecosystem does not solve your problem.** Filed alongside it, a second and sharper correction to the same
+section: **a symbol no surviving assertion mentions is invisible to a string-search technique, and that
+is not evidence of anything.** A sibling global returned 0 hits in both encodings and a session went
+looking for the anomaly; there was none — **no public locator for that symbol searches by name at all**,
+because the name never reaches the binary. All six working ones use a code pattern. **Before explaining
+your own negative, find out what the established toolchain actually does.** The section now says plainly
+that it is a string-search technique which lands on exactly the symbols an assertion happens to name,
+and is *silent*, not negative, everywhere else.
+
+**Project-repo harvest.** All 16 pulled. Since 14:10, **four** repos moved:
+`prince-of-persia-2008-vr` (six commits — windowed mode, the import-table read, the gamepad hypothesis
+confirmed, the controlled `SendInput` negative, and the working injector), `enslaved-vr` (three `/gr`
+topics on the `GNames` route, plus a `/gs` drain), `alice-madness-returns-vr` (four, including a
+withdrawn drop of its own and a broken ViGEm bus on this machine), and `visceral-re2-vr` (a partial-drain
+line). Coverage backlog unchanged — delta sweep, fourth in a row.
+
+**Generalised up:** `prince-of-persia-2008-vr` §6d and its 2026-09-07d note (the controlled negative,
+the injector and its three rules, the title-screen trap, the import-table exclusion);
+`enslaved-vr`'s 2026-09-07b `/gr` topic (both corrections to the assertion-strings section).
+
+**Inboxes drained: none — ours was empty.** **Filled: one** —
+`alice-madness-returns-vr/engine-research/inbox/`. Its virtual-pad route is blocked by a broken ViGEm
+bus on this machine; the sibling's injector needs no ViGEm, no gamepad and no Windows input delivery,
+and Alice already has the same live-verified `d3d9.dll` proxy slot. ⭐ **The drop deliberately does not
+assume the route applies**: Alice's dossier records our *proxy's* `GetAsyncKeyState` hotkeys, not the
+game's own input API, so the drop names the deciding observation — read the exe's import table — and
+gives **three outcomes with a different next step for each**.
+
+**New credits:** **KN4CK3R** and **polivilas** (UnrealEngineSDKGenerator — credited specifically because
+its existence corrects a claim published here), **apple1417** (bl-sdk/unrealsdk).
+
+**Process note.** Four sweeps in one day, and the last two were almost entirely self-correction: a
+withdrawn claim at 14:10, two more at 17:00. The pattern is now clear enough to name. **This library's
+error mode is not carelessness, it is scope** — every one of the four corrections was a true statement
+about a small sample published as a statement about a class. Vendor documentation about *one device
+path* became a rule about an API; two generators became "the generators"; one mod's summarizer prose
+became a design pattern; six files became a field map. The fix is not more caution, it is a habit:
+**when writing a general claim, name the sample it rests on in the same sentence.** Where this sweep did
+that — four candidate explanations, none run — the claim should survive contact with the next
+measurement.
