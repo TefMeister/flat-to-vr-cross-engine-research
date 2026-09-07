@@ -1464,6 +1464,29 @@ while a neighbouring entry point was; deferred contexts come from a different vt
 "our hook never sees these calls" look identical until a counter separates them. That counter was
 added in the same change, which is the correct order.
 
+**⚠️ And `unmaps == 0` has a SECOND cause, which is semantic rather than a hooking gap.**
+`[reported 2026-09-07]` The natural reading of "we counted maps but no unmaps" is *our `Unmap` hook is
+blind to these buffers* — a different vtable flavour, or a hook installed once on the immediate context
+and never late-hooked. That is a real failure mode. But on a **deferred** context `Map` does not touch
+the real resource at all: the runtime hands back a **fresh scratch allocation owned by that context's
+command list**, committed when the list is replayed. In at least one public implementation of that
+contract, **`Unmap` on a deferred context is a no-op and the update is committed in `Map`** — discard
+allocates a new slice, and no-overwrite requires a prior discard on that list or errors.
+
+So `unmaps == 0` can mean *there is nothing for `Unmap` to do*, and attributing it to a blind hook
+sends the next session after an instrumentation bug that does not exist. **The discriminator is cheap:
+count whether `Unmap` is reached on *any* context at all, not just on the buffers you care about.** A
+global count that is also zero means the hook; a global count that is healthy means the semantics.
+
+**And this is the reason the `(context, resource)` key above is right, stated positively rather than
+as a bug post-mortem:** the same constant buffer can legitimately be mapped **simultaneously on two
+different deferred contexts**, so a resource-only key is not merely lossy, it is incorrect by the API's
+own contract. The cleanest public statement of why a per-*thread* structure is on the wrong axis comes
+from the vendor's own documentation — *"only one thread can call a `ID3D11DeviceContext` at a time"*.
+**Threads are unbounded and transient; contexts are few and stable.** Key on the thing the API
+serialises.
+
+
 Generalised from [`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr), 2026-09-05.
 See also [deferred-context renderers](#deferred-context-renderers-finding-the-world-and-patching-it-once-per-eye).
 
@@ -2273,6 +2296,90 @@ Two implementation notes that do survive unchanged:
 Generalised from `doom-2016-vr` modding-session hand-offs (2026-08-31, including two of that
 session's own corrections), and from the XIII and RE Village sessions it cites.
 
+### ⚠️ "DirectInput ignores injected input" is a pre-Vista folk memory — and it has been costing us the wrong diagnosis
+
+`[reported 2026-09-07, first-party vendor documentation]` Generalised out of the estate's control
+profiles.
+
+The belief that a DirectInput game cannot see `SendInput` — because DirectInput "talks to the driver
+directly" — is the standard reason given when synthetic input fails against an older title. **It is
+wrong on modern Windows.** Microsoft's own DirectInput guidance states that internally **DirectInput
+creates a second thread to read `WM_INPUT` data**: its mouse path is a wrapper over Raw Input.
+Whatever Raw Input sees, DirectInput sees.
+
+**The real DirectInput trap is on the keyboard side, and it is a different one:** DirectInput reads
+**scancodes**, so synthetic keystrokes must carry `KEYEVENTF_SCANCODE` rather than being sent as
+virtual-key events. That distinction is the entire reason a separate scancode-based automation library
+exists alongside the popular virtual-key one.
+
+**⭐ That mechanism reconciles two contradictory first-hand results in this account**, which is why it
+is worth writing down rather than just correcting the folklore. One project found scancodes were the
+route that worked and recorded that virtual keys "cost a sibling project a session". Another found the
+exact opposite on its own game — scancodes did not reach it at all while the same keys as virtual-key
+events worked immediately, contradicting its *own* record from the day before. Both are `n=1`, and both
+are consistent with one rule:
+
+> **A DirectInput consumer needs scancodes; a window-message consumer takes either.** So send one, fall
+> back to the other, and **record which won, per game**. `[hypothesis]` on that being the whole
+> explanation.
+
+This is the concrete form of the estate's standing rule to
+[build several input routes and measure which the game obeys](#injected-input-measure-it-against-a-control-never-against-zero):
+the two routes are not redundant, they select for different consumers.
+
+### Three documented ways a game *could* filter injected input — with their OS-version floors
+
+Worth knowing so a future negative can be diagnosed rather than guessed at:
+
+| API | what it exposes | floor |
+| --- | --- | --- |
+| `MSLLHOOKSTRUCT.flags` | `LLMHF_INJECTED`, `LLMHF_LOWER_IL_INJECTED` — visible **only to a low-level hook**, not to ordinary message handling | long-standing |
+| `GetCurrentInputMessageSource` | `originId == IMO_INJECTED` for `SendInput` from a non-UIAccess process | **Windows 8+**, so an older engine *cannot* be using it |
+| `GetMessageExtraInfo` | the injector's own `dwExtraInfo` tag | long-standing |
+
+The OS floor is the useful column: if the game predates Windows 8 it cannot be using the middle row,
+which removes a whole class of "the game detects us" theories without any experiment.
+
+### ⚠️ Two rules that belong beside every `SendInput` in this library
+
+- **UIPI failure is SILENT.** Input may only be injected into a process at an equal or lesser
+  integrity level, and when it is blocked **neither the return value nor `GetLastError` reports it**
+  `[reported]`. A harness must run at the same integrity level as the game, and **"no effect" must not
+  be read as "the game ignores injected input" until that has been checked.** This is a
+  [silent no-op](#silent-no-ops-verification-that-cannot-see-the-failure) sitting underneath every
+  input experiment.
+- **⭐ An injected mouse `dx` is not a portable unit.** Windows pointer ballistics scale injected mouse
+  deltas by **up to 4×** depending on the pointer speed and threshold settings `[reported, vendor
+  documentation]`. A figure measured on one machine — "120 steps of `dx=40`" — is a property of *that
+  machine's* pointer settings as much as of the game, and this account came close to copying one to a
+  sibling project as though it were an engine constant. Pin the values via `SystemParametersInfo` at
+  harness start, or calibrate against a read-back.
+
+### And one thing that is genuinely unresolved — recorded as unresolved
+
+**Whether `SendInput` reaches a pure Raw Input consumer is contested in public sources**, and this
+library takes no side:
+
+- **Against:** remote-desktop and game-streaming projects report their `SendInput` path producing
+  absolute packets or zero deltas in raw-input games and needing kernel HID injection instead; one
+  states that the Windows cursor may move while a game listening only for Raw Input receives nothing.
+- **For:** the entire user-mode injection ecosystem targets raw-input shooters, and the anti-cheat
+  literature treats user-mode injection as *working but detectable* — which is only coherent if the
+  events arrive.
+
+Plausible reconciliation: the streaming failures are about **injection shape** — absolute coordinates,
+or relative deltas defeated by the game's own cursor clamping — rather than a hard OS rule
+`[hypothesis]`. Either way, **a null result against a raw-input game is not self-explanatory** and
+needs a control before it becomes a conclusion.
+
+Credit **Microsoft Learn** for the DirectInput high-DPI mouse guidance (the `WM_INPUT` thread),
+`SendInput`, `MOUSEINPUT` pointer ballistics, `MSLLHOOKSTRUCT`, `GetCurrentInputMessageSource` and
+UIPI; **learncodebygaming** for `pydirectinput` and the scancode requirement; **changeofpace**
+(`MouClassInputInjection`) for the injected-flag observation; and **ClassicOldSong** (Apollo) and the
+**LizardByte / Sunshine** team for the raw-input failure reports. All read online; nothing cloned or
+copied. The two contradictory first-hand results being reconciled are our own, in the
+`enslaved-vr`, `alan-wake-vr`, `doom-2016-vr` and `psychonauts-vr` control profiles.
+
 ## Controls: a negative needs a positive one, a positive needs a no-op one
 
 The single most productive thing this account did in one week was stop trusting results and start
@@ -2642,7 +2749,52 @@ Carry the standing caveat with it: [a binding surviving in a shipped config is n
 feature is live](#and-check-that-the-shipped-switch-still-dispatches--a-binding-in-a-config-is-a-lead-not-a-feature).
 The file tells you which key, not whether anything is listening.
 
-Items 4 and 5 generalised from `mad-max-vr` modding-session hand-offs, 2026-09-04.
+### ⭐⭐ 6. A console that can `exec` a FILE is a full scripting channel over one keypress
+
+`[reported 2026-09-07]` Generalised out of
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr).
+
+Everything above is about getting *characters* into a console reliably, which is fiddly: layouts, dead
+keys, tap lengths, scancode-versus-virtual-key. **There is often a way to type almost nothing at all.**
+
+Most engine consoles have a command that executes a file of commands. Bind **one key** to
+`exec <file>`, put that file where the engine looks for it, and then **rewrite the file from your
+harness between presses**. The next press runs whatever you just wrote. One synthetic keypress —
+already the most reliable thing in the input layer — becomes an arbitrary command channel, and the
+whole character-entry problem disappears.
+
+Two details that make or break it in practice:
+
+- **The engine may want the file extensionless**, or in a specific directory. That is a per-engine
+  fact to establish once and record in the dossier.
+- **Rewrite the file, do not append.** The press executes the current contents; a stale line left at
+  the top will run again every time.
+
+**⭐ And once you have that channel, look for an ABSOLUTE pose-setter before writing any relative
+input.** Engines with a debug/cheat console frequently ship one — the worked case is UE3's
+`BugItGo <X> <Y> <Z> <Pitch> <Yaw> <Roll>`, which sets the player's location **and rotation** outright,
+with a companion command that prints the current pair. That changes the character of the whole
+problem:
+
+| | injected relative input | absolute pose command |
+| --- | --- | --- |
+| repeatability | depends on sensitivity, ballistics, frame timing | exact |
+| verification | measure the result and hope | **print the pose back and compare** |
+| calibration | required, per machine | none |
+
+**A camera you can set and read back is self-verifying**, which retires an entire class of "did the
+input land, and by how much?" experiments — including the
+[pointer-ballistics portability trap](#-directinput-ignores-injected-input-is-a-pre-vista-folk-memory--and-it-has-been-costing-us-the-wrong-diagnosis)
+above, since there is no `dx` to scale.
+
+**So the order of investigation is: shipped console → `exec` file channel → absolute pose command →
+and only then injected mouse movement.** One project had a mouse-injection row on its board and found
+two keyboard-only routes sitting in front of it. ⚠️ Check the command *names* against the engine
+version rather than assuming them — two plausible-sounding ones in that same investigation do not
+exist under the names first tried, which is the ordinary case for console vocabulary.
+
+Items 4 and 5 generalised from `mad-max-vr` modding-session hand-offs, 2026-09-04; item 6 from
+`alice-madness-returns-vr`, 2026-09-07.
 
 ## Before you build it, check whether the game shipped it
 
@@ -3029,6 +3181,28 @@ cause, and only the second one is invisible to anyone reading the page by hand a
 **The cheap habit that caught it:** a second, differently-worded fetch of the same URL. Where a claim
 is about to be written down as fact, re-derive it once with a prompt shaped differently from the
 first. If the two disagree, neither is evidence yet.
+
+**⚠️ Two days later this rule caught this library itself, and the way it failed sharpens it.** A claim
+about one mod's configuration was published here after a verification pass — and **the verification
+question named the string it was verifying**, asking the fetcher to quote any sentence about the exact
+feature under test. It produced one. The clause survived into a curated entry and had to be withdrawn.
+So:
+
+- **The rule binds VERIFICATION fetches, not only discovery fetches.** A confirming question is the
+  *easiest* one to answer wrongly, because it hands over the shape of the answer. The check that is
+  supposed to catch a fabrication is the one most likely to reproduce it. Verify with an open prompt —
+  *"summarise this thread and quote the developer's replies verbatim"* — and read the answer for your
+  term.
+- **⭐ A claim that appears only in summarizer prose, and never in the body of a page actually fetched,
+  is not `[reported]`. It has no source yet.** That is a mechanical test, it needs no judgement, and it
+  would have caught this before publication. Apply it before promoting anything to a curated file.
+
+**And note what an honest empty result looks like**, since the fear of a fabricated negative pushes the
+other way. When the same source was later asked openly for its roadmap, it returned material no
+summarizer would invent — asymmetric frustum handling, shadow maps shared between eyes, specific OpenXR
+interaction profiles — and repeated pagination returned the same set. **Content too specific to
+confabulate, plus a stable result across pages, is what "the fetch really read the page and the thing
+is not there" looks like.**
 
 ## Capturing the finished frame: the whole-frame route to a headset
 
@@ -4748,8 +4922,9 @@ confirm the class before counting a site as evidence.
 
 ## Two-handed VR weapons: the second controller hides behind the first
 
-`[reported 2026-09-05]` from this account's own headset time, with two independent public solutions
-verified firsthand on 2026-09-07.
+`[reported 2026-09-05]` from this account's own headset time. **Corrected 2026-09-07** — an earlier
+version of this section described one mod's offset as *"per weapon, configured in LTX"*. **That clause
+is withdrawn**; see the method note at the end, which is the most transferable thing here.
 
 Hold a rifle the way a person actually holds one and the support hand ends up **directly behind the
 trigger hand along the headset's line of sight**. On an inside-out headset that is the worst case for
@@ -4761,42 +4936,89 @@ first headset test rather than after.
 
 Meta's own tracking write-up names the condition without quantifying it: *"Scenarios that suffered the
 worst are when the controllers are near the edge of field of view, too far, too close, or when there is
-occlusion."* `[reported]` A targeted search found **no
-vendor-published figure** for how long a controller's pose coasts on its IMU once it is occluded —
-neither Meta nor Valve appears to publish one, and the community explanations that do exist are not
-specifications. Treat "how bad, and for how long" as unknown; design so the question does not arise.
+occlusion."* `[reported]` (read firsthand 2026-09-07). A targeted search found **no vendor-published
+figure** for how long a controller's pose coasts on its IMU once occluded — neither Meta nor Valve
+appears to publish one, and the community explanations that exist are not specifications. Treat "how
+bad, and for how long" as unknown; design so the question does not arise.
 
-**The two public solutions break the same assumption in different places.** Both stop the in-game hand
-being a 1:1 map of the physical controller — that mapping is what forces the two controllers into line —
-but they break it at opposite ends:
+### The published design families
 
-| | mechanism | what the player gives up |
-| --- | --- | --- |
-| **STALKER Anomaly VR** (MarsyApp) | **Offset the IK target.** The secondary hand is *spread apart* in IK so the controllers do not cover each other for the headset cameras, with the offset configured **per weapon** in the game's LTX config files. Both hands stay live. | The virtual hand no longer sits where the physical one is — a proprioceptive mismatch that scales with the offset. |
-| **Onward** (virtual gunstock) | **Stop reading the rear hand.** *"When you bring a two handed weapon up to aim Virtual Gunstock Mode kicks in and keeps the weapon locked in position. Your front hand and body movement now controls the aim."* The occluded controller stops being an input. | Fine control: the article reports accurate scoped shooting *"with a slight loss of fine control"*. |
+Every shipped solution breaks the 1:1 mapping between physical controller and in-game hand — that
+mapping is what forces the two controllers into line — but they break it in different places, and the
+choice is really about **authoring cost**.
 
-Per-weapon configuration is the detail worth stealing from the first. A single global offset cannot be
-right for a pistol, a rifle and a launcher at once, because the correct real-world hand separation is a
-property of the weapon's geometry.
+| family | mechanism | who ships it | what it costs |
+| --- | --- | --- | --- |
+| **Stop reading the rear hand for aim** | the front hand and body drive orientation; the rear hand stabilises only | **Onward** (*Virtual Gunstock*), **H3VR** (`use gun rig mode`) | *"a slight loss of fine control"*; and it **breaks weapons whose foregrip legitimately sets the angle** — H3VR's lever actions will not cycle with it on |
+| **Offset the rear hand's IK target** | the secondary hand is *spread apart* in IK so the controllers do not cover each other | **STALKER Anomaly VR** (MarsyApp) | proprioceptive mismatch scaling with the offset |
+| **A named second-hand attach transform authored on the item** | not numbers in a config — a handle transform that is part of the asset | **Blade & Sorcery** `[hypothesis]` — reached via a search summary only, not a fetched page | per-asset authoring, but it is *content*, not a config table |
+| ~~a numeric per-weapon offset table~~ | — | **nobody publishes one** | the one studio publicly asked for it **declined** |
 
-**⚠️ One thing this account believes and has NOT confirmed publicly:** that the offset should put the
-**left hand above the right**, stacking the controllers vertically rather than separating them some
-other way. That is our own live observation `[reported 2026-09-05, n=1 observer]`. MarsyApp's own text
-says *spread apart* (`разводится`), not *above*, and no screenshot or video confirming the real-world
-hand geometry could be found. So the **direction** of the offset is open, and a project adopting this
-should treat it as a knob to find in the headset, not a constant to copy.
+**⭐ The judgement to take away is the authoring-cost argument, because a developer made it in public.**
+An H3VR player asked for per-weapon offsets so different rifles would align consistently on a physical
+gun stock. The developer's answer `[reported 2026-09-07, verified firsthand]`:
+
+> *"There's nothing I can do about this that wouldn't be incredibly time consuming, and require me to
+> generate an extra entire set of manual poses."*
+
+H3VR ships a **global** toggle instead — `use gun rig mode`, which makes every gun's forward direction
+consistent and stops the foregrip grab from determining the facing angle — with the honest caveat that
+lever actions depend on exactly that behaviour and are incompatible with it.
+
+**That objection scales with weapon count, and that is the whole of it.** For a gun sandbox with
+hundreds of firearms, a per-weapon pose set is a content programme and the global toggle wins. For a
+game with a handful of weapons — which is most of what this account mods — the objection is weak and a
+small per-weapon table is cheap. **Read the refusal as a cost argument, not as a design verdict.**
+
+**⚠️ What remains genuinely unknown about the offset itself.** MarsyApp's published material says the
+secondary hand is *spread apart* (`разводится`); it does **not** say *above*. This account's own
+observation is that the left hand should be held **above** the right, stacking the controllers
+vertically `[reported 2026-09-05, n=1 observer]`, and no screenshot or video confirming the real-world
+hand geometry could be found. So the **direction** of the offset is a knob to find in the headset, not
+a constant to copy. What is published on that mod points at a **user-calibrated runtime value** with an
+in-headset calibration tab (its roadmap lists VR Tools calibration tabs and an in-game settings
+section, and every documented console variable is global) rather than a shipped table `[hypothesis]`.
 
 **The cheap test, before writing any IK:** hold the pose in the headset with the mod's existing
-one-to-one hands and watch the rear hand. If it jitters, the offset is needed; the amount is what one
-session with a slider settles.
+one-to-one hands and watch the rear hand. If it jitters, an offset is needed; how much, and in which
+direction, is what one session with a slider settles.
 
-Sources verified firsthand 2026-09-07: MarsyApp's own development thread and Boosty posts for **Anomaly
-VR** (in Russian; the roadmap lists *"Анти-окклюзия вторичной руки (Secondary IK offset)"* as complete)
-— <https://ap-pro.ru/forums/topic/14575-anomaly-vr/> · <https://boosty.to/anomaly_vr>; **UploadVR** on
-Onward's inside-out tracking update — <https://www.uploadvr.com/onward-inside-out-tracking-update/>;
-**Meta** developer blog, *Tracking Technology Explained: LED Matching*. Credit **MarsyApp**, **Downpour
-Interactive** (Onward), **UploadVR**, **Meta**. Generalised out of
-[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr).
+### ⚠️ The method note, which is the reason this section was corrected
+
+The withdrawn clause — *"per weapon, in the game's LTX config files"* — **never appeared in the body of
+any page that was actually fetched.** It existed only in summarizer prose, and it survived a
+verification pass **because the verification question named the string it was verifying**: the fetch
+was asked to quote any sentence about "per-weapon LTX configuration of grip points", and it obligingly
+produced one. That is precisely the failure documented at
+[never name the string you are asking a fetcher to find](#-and-the-false-positive-never-name-the-string-you-are-asking-a-fetcher-to-find)
+— committed, in this case, by the check that was supposed to catch it.
+
+**Two rules follow, and they are worth more than the finding they cost:**
+
+- **The don't-name-the-string rule binds VERIFICATION fetches too, not just discovery.** A confirming
+  question is the *easiest* one to answer wrongly, because it supplies the shape of the answer. Verify
+  with an open prompt — *"summarise this thread and quote the developer's replies verbatim"* — which is
+  how the H3VR quote above was obtained.
+- **⭐ A claim that appears only in summarizer prose, and never in the body of a fetched page, is not
+  `[reported]`.** It has no source yet. That is a mechanical test anyone can apply, and it would have
+  caught this before publication.
+
+**One deliberate limit, recorded so nobody re-spends it:** that mod is closed-source, ships through its
+own launcher, and its README lives inside the archive — the likeliest home of any real key names, and
+out of reach, because this library does not download other people's mods to study them. And
+`h3vr.fandom.com` returns **HTTP 402** to direct fetches (three URL forms tried); its content reached
+us through search snippets and the Steam thread instead. Effectively checked, not directly fetched.
+
+Sources, all read online, nothing downloaded: **MarsyApp** — Anomaly VR's own development thread and
+Boosty posts (Russian): <https://ap-pro.ru/forums/topic/14575-anomaly-vr/> ·
+<https://boosty.to/anomaly_vr>. **UploadVR** on Onward's inside-out tracking update:
+<https://www.uploadvr.com/onward-inside-out-tracking-update/>. **Anton Hand / RUST LTD** and
+**[RUST]Grumplestiltskin** for the H3VR options and the developer statement, and **Knifie_Sp00nie**
+whose request made that reasoning public:
+<https://steamcommunity.com/app/450540/discussions/0/3183345176717342122/>. **WarpFrog** (Blade &
+Sorcery). **Meta** developer blog, *Tracking Technology Explained: LED Matching*. Generalised out of
+[`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr) and
+[`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr).
 
 ## A retail build that shipped its assertions names its own globals
 
@@ -4835,14 +5057,37 @@ compile out in shipping configurations (`DO_CHECK`, `NDEBUG` and equivalents), s
 retail build the string `GObjObjects` appears **seven times** `[measured 2026-09-04, n=1 binary]`, which
 is what prompted this: a build that *looks* stripped may still name its internals.
 
-**Two practical rules.** Search for the **symbol name as a substring**, never for a whole expression —
+**Three practical rules.** Search for the **symbol name as a substring**, never for a whole expression —
 `#expr` preserves the source's own whitespace, so the exact formatting is compiler- and
-version-dependent. And inlining duplicates sites, so a hit count is not a count of distinct assertions.
+version-dependent. Inlining duplicates sites, so a hit count is not a count of distinct assertions. And
+**⚠️ scan for BOTH encodings**: on an engine whose own string type is wide (UE3's `TCHAR` is
+`wchar_t`), engine *names* are UTF-16 while the assertion text the compiler emits is narrow ASCII
+`[measured 2026-09-07]` — one project's symbol scored 7 ASCII hits and **0** UTF-16, so a wide-only
+scan would have reported the technique unavailable.
 
-**Honest limits.** The macro shape is near-universal in C/C++, but *"most engines stringify"* is
-`[hypothesis]` — one engine's macro was read, not a survey. And the xref-lands-in-the-accessing-function
-claim is read off the macro's expansion, not confirmed in a disassembler; a project row is queued to test
-it, and that outcome belongs back here.
+### ✅ Executed 2026-09-07 — the claim held, with four independent corroborations
+
+The xref-lands-in-the-accessing-function step was `[inferred-static]` when this section was written,
+read off the macro's expansion rather than confirmed in a disassembler. It has now been run
+`[inferred-static 2026-09-07]`, and it is worth recording **how** it was confirmed, because that is the
+reusable part:
+
+- **Three different assertion expressions, in three different functions, all resolved to the same
+  address.** `cmp dword ptr [X+4], 0` is the `Num() == 0` assertion; `mov eax,[X]` followed by
+  `cmp dword ptr [eax+edi*4], 0` is the index-is-null assertion; the valid-index assertion uses `[X+4]`
+  as its bound. Three assertions agreeing is a far stronger result than one hit.
+- **⭐ A fourth corroboration came free from the layout.** The neighbouring global landed exactly 12
+  bytes later — `sizeof(TArray)` on 32-bit — as consecutive statics, with both showing `ArrayNum` at
+  `Data + 4`. **A structural prediction that the data confirms is worth more than another string hit**,
+  because it could have failed.
+- **`__FILE__` delivered as advertised**, giving the studio's full build path from its own machine —
+  reusable for every later hunt in the same binary.
+- One occurrence turned out to be a **decorated C++ symbol name** rather than an assertion string,
+  which is a reminder that a raw hit count mixes sources.
+
+**Honest limits that remain.** The macro shape is near-universal in C/C++, but *"most engines
+stringify"* is still `[hypothesis]` — one engine's macro was read, not a survey — and the confirmation
+above is `n=1` binary.
 
 Public sources, read online, nothing cloned or copied: **CodeRedModding**'s UE3 source mirror
 (<https://github.com/CodeRedModding/UnrealEngine3>) for the macro and the assertion sites — the engine

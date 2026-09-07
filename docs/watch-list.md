@@ -1951,3 +1951,102 @@ correction itself arrived carrying two errors that only a primary-source read ca
 guess → better source → relayed with new errors → source.** Nothing in that chain was careless; it is
 just what a claim does as it travels. The cheap defence is the one this sweep used throughout: before
 writing a claim down, read the thing it is about.
+
+### 2026-09-07 (third sweep, afternoon, dev PC) — the sweep's own published claim was withdrawn, and the failure was the one it had documented an hour earlier
+
+Delta from the 12:35 sweep. **No watch-list pass** — three sweeps in one day, and those sources were
+cleared this morning. The web budget went entirely on re-verifying a claim **this library had already
+published**, using an open prompt this time. That is the entry.
+
+**⚠️ A correction to this library, and the most useful thing in this sweep.** The
+[two-handed VR weapons](./techniques/README.md#two-handed-vr-weapons-the-second-controller-hides-behind-the-first)
+section published this morning described one mod's second-hand offset as *"per weapon, configured in
+LTX"*. **That clause is withdrawn.** It never appeared in the body of any page actually fetched — only
+in summarizer prose — and **it survived a verification pass because the verification question named the
+string it was verifying.** The check that was supposed to catch a fabrication reproduced it instead.
+Two rules now sit in the fetcher section, and they are worth more than the finding they cost:
+
+- **The don't-name-the-string rule binds VERIFICATION fetches, not only discovery fetches.** A
+  confirming question is the easiest one to answer wrongly, because it supplies the shape of the answer.
+- ⭐ **A claim that appears only in summarizer prose, and never in the body of a fetched page, is not
+  `[reported]` — it has no source yet.** A mechanical test, needing no judgement, that would have caught
+  this before publication.
+
+The section is rebuilt around what *is* published, and it is better for it. **H3VR joins Onward** in the
+"stop reading the rear hand" family, and it arrived there by a developer **publicly refusing** the
+per-weapon table on authoring cost — *"require me to generate an extra entire set of manual poses"*
+(re-fetched firsthand today with an open prompt). The transferable judgement is now stated: **that
+objection scales with weapon count**, so it is decisive for a gun sandbox and weak for a game with a
+handful of weapons, which is most of what this account mods. Blade & Sorcery's named attach-transform
+pattern is recorded as a third family and explicitly marked lower-confidence, because it too came
+through a search summary.
+
+**Three new sections, all from `/gr` drops or the estate's own live work.**
+
+- [**DirectInput is a Raw Input wrapper on Vista+**](./techniques/README.md#-directinput-ignores-injected-input-is-a-pre-vista-folk-memory--and-it-has-been-costing-us-the-wrong-diagnosis)
+  — *"DirectInput cannot see `SendInput`"* is a pre-Vista folk memory; the vendor's own documentation
+  says DirectInput reads `WM_INPUT` on a second thread. ⭐ The real trap is the **keyboard** side
+  (scancodes, not virtual keys), **and that mechanism reconciles two contradictory first-hand results in
+  this estate** — one project recording scancodes as the route that works, another recording the exact
+  opposite on its own game. Also carries the three documented injected-input detection APIs with their
+  **OS-version floors** (a pre-Windows-8 engine cannot be using the middle one), UIPI's **silent**
+  failure across an integrity boundary, and ⭐ **pointer ballistics scaling injected deltas by up to
+  4×** — a measured `dx` from one machine was about to be copied to a sibling as an engine constant.
+  The raw-input question is recorded as genuinely unresolved rather than decided.
+- [**A console that can `exec` a FILE is a full scripting channel over one keypress**](./techniques/README.md#-6-a-console-that-can-exec-a-file-is-a-full-scripting-channel-over-one-keypress)
+  — bind one key to `exec <file>` and rewrite the file from the harness between presses; the whole
+  character-entry problem disappears. ⭐ And then look for an **absolute pose-setter** before writing any
+  relative input: a camera you can set and read back is self-verifying, which retires the ballistics
+  problem entirely because there is no `dx` to scale. One project had a mouse-injection row on its board
+  with two keyboard-only routes sitting in front of it.
+- [**`unmaps == 0` has a second cause**](./techniques/README.md#-and-an-in-flight-maps-identity-is-context-resource--never-the-resource-alone)
+  — folded into the pairing-key section. On a deferred context `Map` hands back command-list scratch
+  memory and `Unmap` can legitimately be a no-op, so a zero count need not mean a blind hook.
+  Discriminator: count `Unmap` on *any* context. It also supplies the **positive** reason the
+  `(context, resource)` key is correct — one buffer can be mapped simultaneously on two deferred
+  contexts — and the cleanest statement of why a per-*thread* structure is on the wrong axis:
+  **threads are unbounded and transient; contexts are few and stable.**
+
+**✅ And a claim this library published on 2026-09-05 was executed and held.** The
+[assertion-strings section](./techniques/README.md#a-retail-build-that-shipped-its-assertions-names-its-own-globals)
+said the xref-lands-in-the-accessing-function step was `[inferred-static]` and that a project row was
+queued to test it. It ran: the target global was located **to the byte**, cross-checked by **three
+different assertion expressions in three different functions**, with a **fourth corroboration that came
+free from the layout** — the neighbouring global landing exactly `sizeof(TArray)` later, as consecutive
+statics. A structural prediction the data confirms is worth more than another string hit, because it
+could have failed. The section now carries that, plus a new practical rule: **scan for BOTH encodings**
+— on an engine whose string type is wide, names are UTF-16 while assertion text is narrow ASCII, and a
+wide-only scan scored **0** where an ASCII scan scored 7.
+
+**Project-repo harvest.** All 16 pulled. Since 12:35, **seven** repos moved:
+`alice-madness-returns-vr` (two `/gr` drops on input routes), `enslaved-vr` (the assertion-string
+execution), `prince-of-persia-2008-vr` (a repacked archive deployed; "Game Bootstrap" named across the
+Anvil family), `re-village-scope-vr` (my drop drained and one bullet of it corrected),
+`the-evil-within-vr` (the deferred-`Map` finding), `unreal-gold-vr` and `visceral-re2-vr` (my grip drop
+drained, its central premise withdrawn). Coverage backlog unchanged — a delta sweep, again.
+
+**Generalised up:** `enslaved-vr` §9c (the executed assertion result and the encoding rule);
+`the-evil-within-vr`'s 2026-09-07 `/gr` topic (the deferred-`Map` second cause);
+`alice-madness-returns-vr`'s 2026-09-07b `/gr` topic (the `exec` channel and absolute pose command);
+`visceral-re2-vr`'s 2026-09-07 grip topic (the whole corrected grip section); and the DirectInput drop,
+which reconciles control-profile results in `enslaved-vr`, `alan-wake-vr`, `doom-2016-vr` and
+`psychonauts-vr`.
+
+**Inboxes drained: one** (our own, two files, by explicit filename). **Inboxes filled: none.** Both
+findings that would have travelled downward were already in the projects that produced them, and the
+one correction owed outward — to `re-village-scope-vr`, whose lane corrected my "reproduce on the home
+PC first" caveat — **is a correction of mine that I accept without needing to file anything**: the dev
+PC has no headset, so a VR observation could only have come from the home PC. `MACHINES.md` says so
+plainly and I did not read it before writing the caution. Recorded here rather than dropped there,
+because the receiving lane already has the answer.
+
+**New credits:** **Anton Hand / RUST LTD** and **[RUST]Grumplestiltskin** (H3VR), **Knifie_Sp00nie**,
+**WarpFrog**, **Microsoft Learn**, **learncodebygaming**, **changeofpace**, **ClassicOldSong** and the
+**LizardByte / Sunshine** team.
+
+**Process note.** Three sweeps in one day produced, in order: a section, a correction to it, and a
+withdrawal of part of it. That is not churn — each step was cheaper than the last and the final text is
+the only one that would have survived contact with a reader. But the specific lesson is uncomfortable
+and worth keeping in plain sight: **this lane published a fabricated claim, and its own verification
+step is what let it through.** The defence that works is not "verify", it is **verify with a question
+that does not contain the answer**.

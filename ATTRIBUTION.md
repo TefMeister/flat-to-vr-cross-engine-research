@@ -154,6 +154,26 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   public UE3 SDK generators supply a scanning harness and **not** the addresses, which is what makes the
   assertion-string route worth taking first. Read online via the GitHub API; no code reused.
   - <https://github.com/ItsBranK/UE3SDKGenerator>
+- **Anton Hand / RUST LTD** and **[RUST]Grumplestiltskin** — **H3VR**, whose `use gun rig mode`
+  option and whose public explanation of *why* a per-weapon second-hand offset table was declined
+  ("incredibly time consuming, and require me to generate an extra entire set of manual poses") are
+  the clearest statement anyone has published of the authoring-cost trade-off behind two-handed VR
+  weapon design. Credit also **Knifie_Sp00nie**, whose request made that reasoning public. Read
+  online; nothing reused.
+  - <https://steamcommunity.com/app/450540/discussions/0/3183345176717342122/>
+- **WarpFrog** — **Blade & Sorcery**, cited only for the named second-hand attach-transform pattern,
+  and marked in the text as lower-confidence because it reached us through a search summary rather
+  than a fetched page.
+- **Microsoft Learn** — the DirectInput high-DPI mouse guidance (the `WM_INPUT` reader thread that
+  makes DirectInput a Raw Input wrapper), `SendInput`, `MOUSEINPUT` pointer ballistics,
+  `MSLLHOOKSTRUCT`, `GetCurrentInputMessageSource` and UIPI. First-party vendor documentation, read
+  online.
+- **learncodebygaming** (`pydirectinput`, and the scancode requirement it exists for),
+  **changeofpace** (`MouClassInputInjection`, the injected-flag observation), **ClassicOldSong**
+  (Apollo) and the **LizardByte / Sunshine** team (the raw-input injection failure reports) — all
+  cited in
+  [techniques → DirectInput is a Raw Input wrapper](./docs/techniques/README.md#-directinput-ignores-injected-input-is-a-pre-vista-folk-memory--and-it-has-been-costing-us-the-wrong-diagnosis).
+  Read online; no code taken.
 - **kagenocookie** — **RE-Engine-Lib**, whose published RE Engine format readers carry a
   wider-corpus field map for the `.rtex` render-target descriptor than our own six-file decode could
   support — including names for two fields both of this account's decodes had recorded as anonymous
