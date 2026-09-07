@@ -2323,10 +2323,92 @@ are consistent with one rule:
 > back to the other, and **record which won, per game**. `[hypothesis]` on that being the whole
 > explanation.
 
+> ⚠️ **Superseded in part, 2026-09-07 — read the correction two sections down before relying on this.**
+> A controlled test on one title sent scancodes to a `NONEXCLUSIVE`, foreground, 200 Hz-polling
+> DirectInput keyboard for 22 seconds and the game saw nothing. The rule is a good **first thing to
+> try**; it is not an explanation.
+
 This is the concrete form of the estate's standing rule to
 [build several input routes and measure which the game obeys](#injected-input-measure-it-against-a-control-never-against-zero):
 the two routes are not redundant, they select for different consumers.
 
+
+### ❌ Correction, 2026-09-07: a controlled test contradicts the rule above, and the reason is undetermined
+
+`[verified-live 2026-09-07, n=1 game, with controls]` This was published earlier the same day and a
+project measured against it within hours. **The counter-example is recorded before any explanation,
+because the explanation is genuinely open.**
+
+On one 2008 D3D9 title: game **foreground**; keyboard acquired **`NONEXCLUSIVE`** (the case where
+injection would normally be seen); the game polling `GetDeviceState` at roughly **200 Hz**; a key held
+down via `SendInput` **as scancodes** — the route the rule above recommends — for **22 seconds**,
+spanning four logged samples. The game's own instrumentation read `keys currently down: 0` throughout.
+**`SendInput` did not reach that game's DirectInput keyboard state.**
+
+The rule above is therefore **not general**, and this library does not yet know why. Four candidate
+explanations, each with the observation that would separate it — **none of them has been run**:
+
+| candidate | what would settle it |
+| --- | --- |
+| The vendor's "`WM_INPUT` reader thread" statement is about DirectInput's **mouse** high-DPI path specifically, and the **keyboard** path is not a Raw Input wrapper at all | inject a **mouse** delta into the same game and watch its `DIMOUSESTATE`. Mouse through, keyboard not ⇒ the split is per-device, and the rule above should be scoped to the mouse |
+| **UIPI**: the harness ran at a different integrity level, and the failure was the silent one described above | compare the two processes' integrity levels; or fire the identical injection at a control application and confirm it lands |
+| This title loads a **redistributable or shimmed `dinput8`** rather than the system one, so the modern implementation is not in play | check which module the process actually loaded, and its version |
+| Injection **shape or timing** | already weak: the key was held 22 s across four independent samples |
+
+**⚠️ Do not read this as "DirectInput cannot see injected input" either.** That is the folk memory the
+section above was written to retire, and one controlled negative on one 2008 console port does not
+restore it. What is established is narrower and worth stating exactly: **the vendor documentation does
+not license a blanket prediction, and a per-game measurement is still required.** Treat the scancode
+rule as *the first thing to try*, not as an explanation of what you observe.
+
+### ⭐⭐ And when no OS route reaches the game: write into the buffer the game asks for
+
+`[verified-live 2026-09-07, n=1 session]` Generalised out of
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr).
+
+The project above stopped fighting the input stack and went underneath it. **The device-state call is
+already hooked for diagnostics; after the real call returns and before the game sees the buffer, OR in
+a state block that the harness writes from outside the process via shared memory.** The game is asking
+"what keys are down?" — answer it.
+
+This is worth reaching for **earlier than it usually is**, because it removes every variable the
+sections above are about: no scancode-versus-virtual-key question, no pointer ballistics, no UIPI, no
+foreground requirement, no dependence on Windows delivering anything at all.
+
+**Three implementation rules, each of which was load-bearing:**
+
+- **⭐ OR, never assign.** A key the human is physically holding must never be cleared by the injector.
+  Assignment turns your harness into an input *filter* and will fight the player in any
+  live-supervised session.
+- **⭐ Apply a relative mouse delta exactly ONCE per write.** A delta left standing in the shared block
+  is re-added at the poll rate — 200 times a second here — and spins the camera forever. Device state
+  for buttons is a *level*; mouse motion is an *event*. The same block carries both, so they need
+  different lifetimes.
+- **Cover every struct flavour the game might ask for.** Here that was the 256-byte keyboard array plus
+  both the 16-byte and 20-byte mouse structures; a game that asks for the one you did not implement
+  gets nothing, silently.
+
+**Four independent readings confirmed it, which is the standard worth copying** rather than the
+technique alone: an `applied` counter in the proxy (355 in six seconds of one held key); **the game's
+own instrumentation** flipping from `0` to `1` keys down; **by eye**, two injected taps moving a menu
+highlight exactly two rows; and a **frame-difference measure of 24.08 against a 0.00–0.23 no-input
+baseline measured on the same scene**. The last one is the
+[control that turns a positive into evidence](#injected-input-measure-it-against-a-control-never-against-zero),
+and the baseline being *near zero* rather than merely *small* is what makes the reading unambiguous.
+
+**⚠️ Two method lessons from the same session, both cheap and both expensive to relearn:**
+
+- **The original injection test had been run at the TITLE SCREEN — the one place in that game that
+  polls no input at all.** Every negative from it was worthless: the test could not have gone positive.
+  The device-level hook log is what exposed it, showing zero polls at the title screen and ~200 Hz
+  during gameplay. **Before trusting an input negative, confirm the game is reading input at that
+  moment** — and note that a *console port* is exactly the kind of title whose menus wait on a gamepad
+  rather than a keyboard, which is what this one turned out to be doing.
+- **The import table settled what could not work by construction.** That executable imports
+  `DirectInput8Create` and XInput and **none** of `GetAsyncKeyState`, `GetKeyboardState`, `GetKeyState`,
+  raw input, `GetMessageA` or `ToAscii` — only `PeekMessageA`, the pump itself. So the posted-message
+  route was excluded **before** a single test was written. See
+  [read the import table before you design the input layer](#read-the-import-table-before-you-design-the-input-layer).
 ### Three documented ways a game *could* filter injected input — with their OS-version floors
 
 Worth knowing so a future negative can be diagnosed rather than guessed at:
@@ -5089,12 +5171,41 @@ reusable part:
 stringify"* is still `[hypothesis]` — one engine's macro was read, not a survey — and the confirmation
 above is `n=1` binary.
 
+### ❌ Two corrections, 2026-09-07, both against this section's own framing
+
+`[verified-numerically 2026-09-07]` Filed the same week the section was written, and both are the same
+kind of error: a claim about **two tools** stated as a claim about **a family**.
+
+- **"The public SDK generators ship no patterns" is false of the family.** It is true of the two
+  generators this section cites. But a third — a fork in the same lineage — ships **filled-in byte
+  signatures for six shipped titles**, and nothing in this account's record mentioned it. The
+  motivating argument for reaching for assertion strings *"because nobody will give you the address"*
+  is therefore weaker than it was written: **check the forks of a tool before concluding the tool's
+  ecosystem does not solve your problem.** A generator's upstream shipping `"null"` placeholders says
+  what upstream does, not what the community has published.
+- **⚠️ A symbol that no surviving assertion mentions is invisible to this technique — and that is not
+  evidence of anything.** On the same binary the sibling global returned **0 hits in both encodings**,
+  and a session spent effort explaining the anomaly. There was no anomaly: **no public locator for that
+  symbol searches for its name at all.** All six working ones scan for a **code pattern** — an absolute
+  load of the array's data pointer followed by a scale-4 indexed read — because that is what survives
+  when the name never reaches the binary. **Before explaining your own negative, find out what the
+  established toolchain actually does**; if nobody searches by name, a name search returning nothing is
+  the normal case and needs no theory.
+
+**The transferable shape of both:** this section is a *string-search* technique, and it locates exactly
+those symbols that a surviving assertion happens to name. That is a real and cheap win where it lands
+— and it is silent, not negative, everywhere else. Pair it with a code-pattern route rather than
+treating a miss as a finding. A third route worth knowing when you have one anchor already: published
+**adjacency** between engine globals, which turns a located symbol into a short bounded probe for its
+neighbours.
+
 Public sources, read online, nothing cloned or copied: **CodeRedModding**'s UE3 source mirror
 (<https://github.com/CodeRedModding/UnrealEngine3>) for the macro and the assertion sites — the engine
 source is Epic Games'; **ItsBranK**'s `UE3SDKGenerator` (MIT,
 <https://github.com/ItsBranK/UE3SDKGenerator>), whose `Configuration.cpp` ships its patterns as the
-literal string `"null"` `[verified-live 2026-09-05, n=1 API read]` and is therefore the evidence that
-the generators supply the harness and **not** the addresses. Generalised out of
+literal string `"null"` `[verified-live 2026-09-05, n=1 API read]` — evidence about **those two
+generators**, not about the family; see the corrections above, where a fork that ships real signatures
+for six titles is recorded. Generalised out of
 [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr).
 
 ## The cheapest control is the case where the correct answer is "change nothing"
@@ -5549,7 +5660,9 @@ via the GitHub API; no code taken.
   completeness rule and its static-vs-dynamic failure modes, and the instrument-can-be-the-bug case;
   and, from 2026-09-07, **Alice**'s frame-alternating both-eyes proof with its zero-spread control,
   synthetic-offset tool validation, IPD fit and convergence-plane trap, and **Prince of Persia**'s
-  CRC32 dictionary reaching past the type table into shipped UI name references;
+  CRC32 dictionary reaching past the type table into shipped UI name references, and — from the
+  2026-09-07 live session — the device-state injector, its OR-not-assign and apply-the-delta-once
+  rules, and the title-screen negative that could not have gone positive;
   generalised out of each project's `engine-research/` and `modding-notes/` folders:
   [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr) ·
   [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) ·

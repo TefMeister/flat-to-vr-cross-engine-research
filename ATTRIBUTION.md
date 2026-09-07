@@ -154,6 +154,16 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   public UE3 SDK generators supply a scanning harness and **not** the addresses, which is what makes the
   assertion-string route worth taking first. Read online via the GitHub API; no code reused.
   - <https://github.com/ItsBranK/UE3SDKGenerator>
+- **KN4CK3R** (original) and **polivilas** (fork) — **UnrealEngineSDKGenerator**, the UE3 SDK
+  generator fork that ships **real, filled-in `GNames`/`GObjects` byte signatures** for six shipped
+  titles. Credited specifically because its existence **corrects a claim this library published** —
+  that the public UE3 generators supply a scanning harness and not the addresses. True of the two
+  generators we had found; false of the family. Read online; no code taken.
+  - <https://github.com/polivilas/UnrealEngineSDKGenerator>
+- **apple1417** — **bl-sdk/unrealsdk**, independent UE3 locator signatures and the prologue-signature
+  plus detour approach that needs no vtable index; also the published global-adjacency figures that
+  make a bounded neighbour probe worth trying. Read online; no code taken.
+  - <https://github.com/bl-sdk/unrealsdk>
 - **Anton Hand / RUST LTD** and **[RUST]Grumplestiltskin** — **H3VR**, whose `use gun rig mode`
   option and whose public explanation of *why* a per-weapon second-hand offset table was declined
   ("incredibly time consuming, and require me to generate an extra entire set of manual poses") are
