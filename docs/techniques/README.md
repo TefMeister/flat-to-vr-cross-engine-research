@@ -2115,6 +2115,86 @@ Generalised from a `/gr` research hand-off on
 described in remedy 2 is written and compiled but **not yet run** — so the mechanism's confirmation on
 that title is still owed, and the tags above say so.
 
+
+## A proxy that PATCHES a vtable slot can be beaten to it — and on Steam it usually is
+
+`[verified-live 2026-09-08, n=2 launches, 4 proxy loads]` Generalised out of
+[`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr).
+
+This is the companion to *"a proxy must free the real DLL on detach"* above and to *"Recording a
+state block rewrites the device's method table"* — the same family seen from a third side. That one
+is about being **reloaded past**; this one is about being **hooked past**. A reader who needs one
+almost certainly needs the others.
+
+A `d3d9.dll` proxy installed its hook by writing into **`IDirect3D9` vtable slot 16
+(`CreateDevice`)**. Across four proxy loads, that slot was **never free**:
+
+| launch | load | owner of slot 16 |
+| --- | --- | --- |
+| via Steam | 1, 2 | `Steam\gameoverlayrenderer.dll` |
+| **direct exe** | 1 | `Steam\gameoverlayrenderer.dll` |
+| **direct exe** | 2 | `C:\Windows\SYSTEM32\apphelp.dll` |
+
+Two things transfer immediately:
+
+1. **Launching the exe directly does NOT avoid the Steam overlay.** Setting `SteamAppId` in the
+   environment and starting the exe yourself, bypassing the Steam launcher entirely, still had
+   `gameoverlayrenderer.dll` owning the slot on the first load `[verified-live 2026-09-08, n=1]`.
+   With the Steam client running, the overlay is injected regardless. If you have been assuming a
+   direct launch gives you a clean process, it does not — and note this sharpens, rather than
+   contradicts, *"Launching a Steamworks game directly"* above: the launcher can be bypassed, the
+   overlay cannot.
+2. **The slot's owner changed between two loads 350 ms apart in the same process**, with different
+   pointer values — overlay, then `apphelp.dll`. A vtable is shared per class, so something rewrote
+   it in between. **Why is not established.** Candidates: a late compatibility shim, the overlay
+   re-hooking, or a pointer left dangling by the proxy's own unload/reload that now resolves inside
+   another module. Recorded unresolved rather than guessed.
+
+### Why this is worse than it first looks
+
+The same project had already been bitten by the *other* side of this coin. On 2026-09-05, chaining
+into whatever was in the slot recursed `CreateDevice` **1,669 times in 1 ms** and killed the process
+— the pointer cached as "the real one" was another hook that chains back. A guard was added refusing
+to install when the pointer does not live inside the real `d3d9.dll`.
+
+**The guard works, and it is also fatal.** The game runs perfectly — no recursion, clean quits — and
+the mod never installs. *"The game runs, this mod does not"* is a correct safety outcome and a
+useless product one.
+
+⚠️ And the guard may be **too strict on its own terms**: `apphelp.dll` is the Windows
+application-compatibility shim engine, not a third-party hook. If a shimmed `d3d9` legitimately puts
+the entry point inside `apphelp`, then "the pointer must be inside the real `d3d9.dll`" is false by
+design, and the guard refuses a benign OS mechanism. `[hypothesis]` — consistent with what was seen,
+not demonstrated.
+
+### ⭐ The technique to prefer: return your own object, do not patch a shared table
+
+**If you own the DLL export the game calls, do not patch a shared vtable at all.**
+
+A `d3d9.dll` / `dxgi.dll` / `d3d11.dll` proxy *is* the module the game calls `Direct3DCreate9` (or
+`CreateDXGIFactory`, or `D3D11CreateDevice`) on. So hand back **your own object** implementing that
+interface, forwarding every method you do not care about to the real one. Then:
+
+- nothing is written into a table anyone else shares, so **there is no race to win or lose**;
+- other hookers keep working on the real object, layered below you, exactly as they expect;
+- it is immune to load order, to overlays, and to OS shims.
+
+It is more code than a three-line vtable patch. **It is the only version that survives an environment
+you do not control** — and on Steam, you never control it.
+
+⚠️ **The tempting stopgap is worse than it looks.** Chaining into the foreign pointer with a
+re-entrancy guard probably works — but it re-introduces exactly the failure the guard was written to
+stop, and that failure is **timing-dependent**: it appeared once in four launches, when the first
+block lived 700 ms instead of 16. A fix that is only usually safe, against a bug that is only
+sometimes visible, is not worth shipping.
+
+### Cross-check this library has not yet done
+
+The 2026-09-04 sweep read all ten of the account's proxies for the `FreeLibrary` defect. **The same
+ten are worth re-reading for this one** — which install by patching a vtable slot, and which return a
+wrapper. Any that patch are exposed to this on any Steam title. Recorded here as an open task rather
+than a result, because it has not been run.
+
 ## Hook to acquire a handle the API will not give you
 
 Some objects have a rich, well-named API and **no way to obtain an instance**. Nothing enumerates
@@ -2239,6 +2319,137 @@ chord, say — this is the only route that can send it at all.
 
 Generalised from a [`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr) modding hand-off,
 2026-09-04; the driver is ViGEmBus, credited in `ATTRIBUTION.md`.
+
+### ⭐⭐ Try the virtual pad FIRST — three games, three engines, and it beat a route that was about to cost days
+
+`[verified-live 2026-09-08, n=2 launches]` Generalised out of
+[`the-evil-within-vr`](https://github.com/TefMeister/the-evil-within-vr), with same-day corroboration
+from [`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr) and
+[`mad-max-vr`](https://github.com/TefMeister/mad-max-vr).
+
+The section above established the virtual pad as the strongest route where a game imports XInput.
+A second project has now taken that further, from the opposite direction: **it reached for the pad
+only after concluding the game could not be driven at all, and the pad drove it in ten minutes.**
+
+`the-evil-within-vr` had recorded a hard blocker on 2026-09-07 — `SendInput` does not reach the game,
+settled across two launches with the controller unplugged and foreground verified before every send;
+`Enter` would not dismiss the photosensitivity splash. The queued fix was to port a `GetDeviceState`
+injector into the game's proxy: real work, days of it. **It was not needed.** `EvilWithin.exe`
+imports `XINPUT1_3`, and a ViGEm virtual pad is that same API with **no code at all**. It drove the
+game end to end — the photosensitivity splash *that `SendInput` could not pass*, the attract screen,
+the title menu, `CONTINUE` into Chapter 1, the pause menu, and `EXIT` → confirm → clean process exit.
+The game raised a *"Controller Connected — Xbox 360 controller"* toast and switched its prompts to
+`(A) SELECT / (B) BACK`: it bound the virtual pad as a real one.
+
+**So the order to try things in is:**
+
+1. **Does the exe import `XINPUT1_*`?** If yes, a virtual pad is a ten-minute experiment and it comes
+   before writing anything. `pip install vgamepad` plus the ViGEmBus driver, and the pad exists.
+2. Only then consider an in-process route (below), and only then a `GetDeviceState` injector.
+
+Two further reasons it should outrank synthetic keyboard/mouse, beyond the three already listed:
+
+- **It is safer than a real controller.** On 2026-09-07 a physical DualSense's **stick drift walked a
+  menu highlight from `CONTINUE` onto `NEW GAME`** — a destructive item — while only `Enter`s were
+  being sent. A virtual pad's sticks sit at dead centre, so that drift is structurally impossible.
+- **A "this game ignores synthetic input" finding is not safe to record until the pad has been
+  tried.** That is exactly what happened here: a careful, correctly-measured negative about
+  `SendInput` was generalised into "this game cannot be driven", and days of work were queued off it.
+
+#### ⚠️ The trap: the first input after each pad connect is SWALLOWED
+
+Measured on The Evil Within's pause menu `[measured 2026-09-08]`: five `DPAD_DOWN` presses moved the
+highlight **three** rows; two presses in a freshly-created pad session moved **zero**. Within one pad
+lifetime, after a settle wait, each press moved exactly one row — and the first after connect moved
+none.
+
+| step (one pad lifetime) | highlight |
+| --- | --- |
+| after ~6 s settle | RESTART CHAPTER |
+| +1 `DPAD_DOWN` | RESTART CHAPTER — **swallowed** |
+| +2 `DPAD_DOWN` | OPTIONS |
+| + left stick | TITLE MENU |
+
+A keyboard-derived route saying "Down ×5 to TITLE MENU" would have put `A` on **RESTART CHAPTER**.
+Only capture-and-verify caught it. **This is the pad-route equivalent of the silent no-op** — the
+input is delivered, the count is simply wrong by one.
+
+**The working pattern:**
+
+- do a whole navigation inside **ONE** pad lifetime; never create a pad per keypress;
+- open each session with a throwaway press that **cannot move a vertical list** (`DPAD_RIGHT`) to
+  absorb the swallowed input;
+- capture and verify the highlight before every commit, always.
+
+#### ⚠️ And pad hot-plug toasts can dominate a pixel measurement
+
+Same day, different game: hot-plugging pads mid-session makes Windows draw *"Controller Connected"*
+toasts, and those toasts dominated a pixel-difference measurement so badly that they read as the two
+strongest "hits" in a button probe — **62× and 85× the control** — while the thing actually being
+measured had not moved at all `[measured 2026-09-08]`. If you add pads during a run, either wait the
+toasts out before measuring or measure something they cannot perturb. (This is a specific instance of
+"Counting events is not measuring content" above.)
+
+### A broken ViGEm bus does not close the pad route — proxy the DLL instead
+
+`[verified-numerically 2026-09-08]` Generalised out of
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr) and
+[`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr).
+
+The route above needs a working **ViGEmBus driver**. When that driver is broken or absent — as it is
+on one machine in this account — the natural conclusion is that the pad route is blocked. **It is
+not, and the distinction is worth holding:**
+
+| route | needs | blocked by a broken ViGEm bus? |
+| --- | --- | --- |
+| ViGEmBus virtual pad | a working bus driver; game reads *any* pad API | **yes** |
+| In-process `xinput1_*.dll` proxy | the game importing XInput itself | **no** |
+
+A ViGEm pad is synthesised **for the whole system** at driver level. An `xinput1_3.dll` proxy placed
+beside the exe answers the game's own XInput calls **inside the process** — no bus, no driver, no
+virtual device, and a broken ViGEm instance is irrelevant. `AliceMadnessReturns.exe` imports
+`XINPUT1_3.dll` **by ordinal 2 and 3**, the same shape `prince-of-persia-2008-vr` has and already
+ships a loading proxy for (that project needs ordinal 4 as well, so its `.def` is a superset).
+
+⚠️ **This does not demote the ViGEm route.** A virtual pad is seen by games that read DirectInput or
+enumerate devices, where a bare XInput proxy is not — the mirror image of the DirectInput caution
+above. Two routes, different preconditions; the driver-level one is still the one to try first where
+the driver works.
+
+⚠️ **An import is not a call.** The honest tag for a game in this position is **"pad route available,
+mechanism untested"** — `prince-of-persia-2008-vr`'s proxy loaded perfectly and that game **never
+called `XInputGetState` once**, which is why it now carries an entry-counter instrument. Port the
+counter with the proxy and answer it in one launch.
+
+### Check for a game flag that turns the game's own mouse acceleration off
+
+`[reported 2026-09-08]` for the flag; `[measured 2026-09-08]` for the trap it prevents.
+
+An injected mouse delta passes through **two** scalings before it becomes camera rotation: the OS
+pointer ballistics, and **the game's own mouse acceleration or smoothing** if it has any. Both are
+silent. The injection reports success, the game accepts it, and the camera lands somewhere else — by
+an amount that varies with how fast the previous deltas arrived. **A step size calibrated under those
+conditions is calibrated against the curve, not the game**, so it does not port between machines and
+may not reproduce on one.
+
+**Look for the flag before writing the calibration.** `alan-wake-vr`'s own option table contains
+`directaiming`, which Remedy's v1.03 notes describe as removing all mouse acceleration (and enabling
+`-rigidcamera` with it); that patch also reworked the low-level mouse reading to cope with low and
+variable frame rates, which matters under a VR frame budget. Meanwhile
+`alice-madness-returns-vr` hit the OS half the same day and had to measure the machine's ballistics —
+thresholds **(6, 10)**, acceleration **ON**, speed 6/20 — precisely because a step size calibrated
+there would not port.
+
+**Order:** (1) check for a game flag that disables its own acceleration; (2) only then measure the
+OS-side ballistics; (3) record in the project's notes that any committed step size **is valid only
+with that flag set** — a number without its conditions is the one that later looks reproducible and
+is not. A game reading **Raw Input** is the case where the OS half does not apply, which is another
+reason the import table comes first.
+
+⚠️ The general rule is `[hypothesis]`: it rests on one game that ships such a flag and one that hit
+the trap, not on a survey. It is cheap enough to try that it does not need to be stronger before
+being written down.
+
 
 ### Read the import table before you design the input layer
 

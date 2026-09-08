@@ -2125,6 +2125,8 @@ assume the route applies**: Alice's dossier records our *proxy's* `GetAsyncKeySt
 game's own input API, so the drop names the deciding observation — read the exe's import table — and
 gives **three outcomes with a different next step for each**.
 
+> ❌ **CORRECTED 2026-09-08 (`/gr` drop, folded in by this sweep): "blocked by a broken ViGEm bus" was too broad.** A broken bus blocks a ViGEm **virtual device**; it says nothing about a pad fabricated **inside the process**. `AliceMadnessReturns.exe` imports `XINPUT1_3.dll` **by ordinal 2 and 3** `[verified-numerically 2026-09-08]`, so an `xinput1_*.dll` proxy answers the game's own XInput calls with no bus, no driver and no virtual device — and `prince-of-persia-2008-vr` already ships a loading proxy whose `.def` is a superset of what Alice needs. The correct tag is **"pad route available, mechanism untested"**: an import is not a call, and POP's proxy loaded fine while that game never called `XInputGetState` once. Full entry: `docs/techniques/README.md` → "A broken ViGEm bus does not close the pad route".
+
 **New credits:** **KN4CK3R** and **polivilas** (UnrealEngineSDKGenerator — credited specifically because
 its existence corrects a claim published here), **apple1417** (bl-sdk/unrealsdk).
 
@@ -2219,3 +2221,78 @@ the cross-engine generalisation is `[hypothesis]` and says so, and the Anvil fam
 sibling-titles question untested rather than implying it. The one place a stronger claim was available
 — the shared-vtable pair — earned it by being **two projects failing in opposite directions from the
 same cause**, which is the bar this library was built to hold.
+
+### 2026-09-08 (sixth sweep, evening, HOME PC) — four input drops turned out to be one decision order, and this library's own ViGEm claim was too broad
+
+**First `/sr` run from the home PC.** Delta window 2026-09-07 (the fifth sweep). Run inside a
+session that had already completed `/gs` and `/gr` — noted because two of the five inbox drops
+drained here were filed by that same session's `/gr` pass an hour earlier. They still went through
+the inbox rather than being written straight in, which is the protocol working rather than being
+bypassed, but a reader should know the drop and the drain were not independent judgements.
+
+**Inbox drained: 5** — by explicit list:
+`2026-09-07-lm-sendinput-is-not-universal-inject-inside-getdevicestate.md`,
+`2026-09-08-mod-a-virtual-xinput-pad-is-the-input-route-of-first-resort.md`,
+`2026-09-08-mod-a-vtable-patch-can-be-beaten-by-the-steam-overlay.md`,
+`2026-09-08-gr-a-broken-vigem-bus-does-not-block-a-pad-route-when-the-game-imports-xinput-by-ordinal.md`,
+`2026-09-08-gr-look-for-a-game-flag-that-disables-mouse-acceleration-before-calibrating-injected-deltas.md`.
+**Filled: none.** One drop carried a `Supersedes:` header; it was read before any of the others were
+folded, per the correction rule.
+
+- **⭐⭐ The four input drops were not four findings — they were one decision order,
+  and the library did not state it.** `docs/techniques/README.md` already held the pieces
+  (`SendInput` fails on DirectInput-exclusive games; the ViGEm pad is "the strongest route"; write
+  into the buffer the game asks for) but a reader arriving at *"my synthetic input does nothing"*
+  had no ordering. Now stated: **check the import table → if `XINPUT1_*`, try a virtual pad
+  before writing anything → then an in-process XInput proxy → then a `GetDeviceState`
+  injector.** The evidence for putting the pad first is strong and came the hard way:
+  `the-evil-within-vr` had recorded a correct, carefully-controlled `SendInput` negative, generalised
+  it to "this game cannot be driven", and queued **days** of injector work — then a virtual pad
+  drove the game end to end, through *the exact splash screen `SendInput` could not pass*
+  `[verified-live 2026-09-08, n=2 launches]`. Three games on three engines now bind a virtual pad as
+  a real controller.
+- **❌ This library's own claim was corrected.** The fifth sweep recorded Alice's virtual-pad
+  route as "blocked by a broken ViGEm bus on this machine". **Too broad**: a broken bus blocks a
+  ViGEm *virtual device*, and says nothing about a pad fabricated *inside the process*. Alice
+  imports `XINPUT1_3.dll` by ordinal, so a DLL proxy needs no bus, no driver and no virtual device
+  `[verified-numerically 2026-09-08]`. The watch-list entry now carries the correction inline, and
+  `techniques/` gained the two-route table. **Second sweep running in which this library's own
+  published claim met a measurement and lost** — which is the mechanism working, and worth
+  saying plainly rather than quietly editing.
+- **⚠️ A trap recorded that nearly destroyed a save.** The **first input after each pad
+  connect is swallowed** `[measured 2026-09-08]`: five `DPAD_DOWN` moved a menu highlight three
+  rows. A keyboard-derived route saying "Down ×5" would have put `A` on **RESTART CHAPTER**.
+  Pattern now in the library: one pad lifetime per navigation, open with a throwaway `DPAD_RIGHT`
+  that cannot move a vertical list, capture and verify before every commit. Filed beside it: pad
+  hot-plug **toasts** dominated a pixel-difference probe at 62× and 85× the control while
+  the measured thing had not moved.
+- **New section: a proxy that patches a vtable slot can be beaten to it.** On a Steam machine
+  `IDirect3D9` slot 16 was **never free** across four proxy loads — owned by
+  `gameoverlayrenderer.dll`, and once by `apphelp.dll`
+  `[verified-live 2026-09-08, n=2 launches, 4 loads]`. **Launching the exe directly does not avoid
+  the overlay**, which sharpens the existing "Launching a Steamworks game directly" section rather
+  than contradicting it: the launcher can be bypassed, the overlay cannot. The preferred technique
+  — **return your own COM object instead of patching a shared table** — is now written up
+  with the reason the tempting stopgap (chain + re-entrancy guard) is worse than it looks: the
+  failure it re-introduces is timing-dependent and appeared in only one of four launches. Recorded
+  unresolved: why the slot owner changed between two loads 350 ms apart.
+- **New: check for a game flag that kills the game's own mouse acceleration** before calibrating any
+  injected delta — tagged `[hypothesis]` as a general rule, because it rests on one game that
+  ships such a flag (`alan-wake-vr`'s `directaiming`) and one that hit the trap
+  (`alice-madness-returns-vr`, which had to measure the machine's pointer ballistics), not on a
+  survey.
+- **Repos with `engine-research` / `external-research` changes since the last sweep:**
+  `alan-wake-vr` (10), `doom-2016-vr` (8), `alice-madness-returns-vr` (6), `mad-max-vr` (5),
+  `prince-of-persia-2008-vr` (5), `unreal-gold-vr` (2), and one each in `burnout-paradise-vr`,
+  `enslaved-vr`, `the-evil-within-vr`. **Harvested this sweep: the input and proxy-mechanics
+  material above**, from `the-evil-within-vr`, `alan-wake-vr`, `alice-madness-returns-vr`,
+  `prince-of-persia-2008-vr`, `doom-2016-vr` and `mad-max-vr`.
+- **⚠️ NOT done this sweep, and the next one should not assume it was: no web sweep.**
+  The watch-list sources were **not** checked. The session was already carrying `/gs` and `/gr` and
+  the five inbox drops were worth more than a thin pass at both; the delta harvest above is
+  therefore in-house only. **Dossiers newly covered in full: none.** The next sweep starts with the
+  web sources and inherits an unchanged in-house bookmark.
+- **⭐ Open task recorded rather than run:** the 2026-09-04 sweep read all ten of the account's
+  proxies for the `FreeLibrary` defect. **The same ten need re-reading for the vtable defect** —
+  which patch a shared slot and which return a wrapper. Any that patch are exposed on any Steam
+  title. Not run here; it is a read of ten repos and deserves its own pass.

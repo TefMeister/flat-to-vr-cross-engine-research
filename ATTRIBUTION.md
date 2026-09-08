@@ -267,6 +267,11 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   [measured virtual-pad input route](./docs/techniques/README.md#known-input-routes-by-engine-family):
   a virtual Xbox 360 pad it creates is bound by an XInput game as a genuine controller, focus-
   independently and with nothing injected. <https://github.com/nefarius/ViGEmBus>
+- **vgamepad** (Yann Bouteiller) — the Python binding over ViGEmBus that the account's virtual-pad
+  work is written against; it is what makes "try the pad first" a ten-minute experiment rather than a
+  build. Named because this library now recommends that ordering, not because anything here depends on
+  it — the technique is a few lines against the driver either way.
+  <https://github.com/yannbouteiller/vgamepad>
 - **ZNix** and the OpenComposite community forks — **OpenComposite / OpenOVR** (**GPL-3.0**),
   the OpenVR→OpenXR reimplementation. <https://gitlab.com/znixian/OpenOVR>
 - **Matthieu Bucchianeri (mbucchia)** — **OpenXR Toolkit** (**MIT**; development ended,
