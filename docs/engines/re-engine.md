@@ -462,6 +462,20 @@ Credit **Ekey** (REE.PAK.Tool, whose published format description made the descr
   The hold is what rules out a per-frame writer; what remains is that the write never lands. Do not open a
   hunt for a writer on this API before running that ladder — see
   [techniques → a read-back that returns the same number under every write](../techniques/README.md#a-read-back-that-returns-the-same-number-under-every-write-is-three-hypotheses-not-one).
+- **Player movement speed is TWO levers, not one — plan for both.** The obvious lever is the motion
+  layer's playback rate (`via.motion` `TreeLayer.set_Speed`, with a `PlaySpeed` property on the
+  component above every layer). `visceral-re2-vr` recorded that, because RE Engine locomotion is
+  root-motion driven, a playback-rate clamp therefore scales travel, leg cycle and footstep events
+  together "by construction". **Two independent public implementations decline that assumption**: both
+  pair the layer write with a **return-value hook on the movement driver's own speed getter**
+  (`app.MovementDriver.getMoveSpeed` in Requiem; the `app.ropeway.*` equivalent in RE2 is not named by
+  any public source found so far), applying the same factor to both, with separate walk and run
+  factors `[reported 2026-09-09, from source, n=2 independent implementations]`. If clamping the layer
+  rate alone moved the character, neither author would have written the second half. **Treat "the
+  animation rate drags travel with it" as `[hypothesis]` on this engine until measured**, and expect a
+  speed feature to need both halves kept in sync. ⚠️ Evidence about the implementers, not a
+  measurement of the engine. Credit **Junh2x** and **Namsku**; general form:
+  [read a public mod for how many levers it writes](../techniques/README.md#read-a-public-mod-for-how-many-levers-it-writes-not-just-which-one).
 
 ## See also
 

@@ -267,6 +267,18 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   [measured virtual-pad input route](./docs/techniques/README.md#known-input-routes-by-engine-family):
   a virtual Xbox 360 pad it creates is bound by an XInput game as a genuine controller, focus-
   independently and with nothing injected. <https://github.com/nefarius/ViGEmBus>
+- **`vigem-client`** (the Rust binding over ViGEmBus) — its API documentation is the source for the
+  documented **readiness wait** between plugging a virtual target in and updating it, which this
+  library now recommends alongside (not instead of) the measured throwaway-press habit.
+  <https://docs.rs/vigem-client>
+- **Junh2x** — public Requiem movement-speed mod, read for structure only; the evidence that a
+  movement-speed feature on RE Engine is a pair of levers rather than one.
+  <https://github.com/Junh2x/RE9-Movement-Speed-Mod>
+- **Namsku** — public RE Engine trainer, read for structure only; the second, independent
+  implementation of that same pairing. <https://github.com/Namsku/re-engine-trainer>
+- **Simon Coenen** — *DOOM Eternal — Graphics Study*, read as the closest sibling reference to
+  id Tech 6 and cited for what a frame-breakdown study does and does not document.
+  <https://simoncoenen.com/blog/programming/graphics/DoomEternalStudy>
 - **vgamepad** (Yann Bouteiller) — the Python binding over ViGEmBus that the account's virtual-pad
   work is written against; it is what makes "try the pad first" a ten-minute experiment rather than a
   build. Named because this library now recommends that ordering, not because anything here depends on

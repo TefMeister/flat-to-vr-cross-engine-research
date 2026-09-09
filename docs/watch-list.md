@@ -2296,3 +2296,74 @@ folded, per the correction rule.
   proxies for the `FreeLibrary` defect. **The same ten need re-reading for the vtable defect** —
   which patch a shared slot and which return a wrapper. Any that patch are exposed on any Steam
   title. Not run here; it is a read of ten repos and deserves its own pass.
+
+### 2026-09-09 (seventh sweep, morning, dev PC) — the in-house delta was this session's own `/gr` output, and the pad trap gained a documented half-explanation
+
+**Delta window 2026-09-08 22:31 (the sixth sweep's own commit).** Ran inside a session that had
+already completed `/gs` and `/gr`.
+
+**⚠️ Independence caveat, stated plainly because it is the whole shape of this run.** Every game
+repo was checked by commit timestamp against the sixth sweep's commit, and **the only in-house
+changes since it are this same session's two `/gr` commits, made minutes earlier**
+`[verified-numerically 2026-09-09]`. So the two in-house items generalised below were filed and
+harvested by one session — the drop and the drain are not independent judgements, the same caveat
+the sixth sweep recorded for a different reason. The eight repos that changed on 2026-09-08
+(`alan-wake-vr`, `alice-madness-returns-vr`, `burnout-paradise-vr`, `doom-2016-vr`, `enslaved-vr`,
+`mad-max-vr`, `prince-of-persia-2008-vr`, `the-evil-within-vr`, `unreal-gold-vr`) all changed
+**before** that cutoff and were harvested by the sixth sweep; re-reading them here would have been
+re-reading, not delta.
+
+**Inbox drained: none — it was empty** (`README.md` only). **Filled: none, deliberately** — see the
+last bullet.
+
+**In-house, generalised up (2 items, both into `techniques/README.md`, both also folded into their
+engine-family page):**
+
+- **⭐ Read a public mod for how MANY levers it writes, not just which one.** From
+  `visceral-re2-vr`. That project planned its movement-speed feature on a recorded conclusion that
+  RE Engine locomotion is root-motion driven, so a motion-layer playback-rate clamp scales travel,
+  leg cycle and footsteps together *"by construction"*. Two independent public implementations
+  decline that assumption: both pair the layer write with a **return-value hook on the movement
+  driver's own speed getter**, at the same factor
+  `[reported 2026-09-09, from source, n=2 independent implementations]`. If one lever implied the
+  other, neither author would have written both. The transferable rule is the **count of write
+  sites**, which is cheaper to read than the API name and says something the API name cannot.
+  Also into `engines/re-engine.md`, where "the animation rate drags travel with it" is now tagged
+  `[hypothesis]` for this family. ⚠️ Evidence about the implementers, not a measurement of the
+  engine.
+- **A frame-breakdown "graphics study" documents PASSES, not CONVENTIONS.** From `doom-2016-vr`,
+  whose critical path guesses a projection convention at one launch per guess. Three named sources
+  were read against exactly that question — Courrèges' *DOOM (2016)*, Coenen's *DOOM Eternal*
+  (id Tech 7) and the *idTech 666* SIGGRAPH talk — and **none documents reversed-Z, depth format,
+  near/far handling or matrix layout** `[reported 2026-09-09, n=3 named sources]`. The boundary is
+  the useful part: capture-based studies give the pass inventory and compositing order and cannot
+  give the maths conventions, so the two question classes want different shelves. Also into
+  `engines/id-tech-6.md`, pointing that project at its own `cramZNear` / `flipProjection` field
+  names instead. ⚠️ A searched negative on named sources, not proof of absence.
+
+**Web, checked (1 targeted source, chosen by the in-house delta rather than alphabetically):**
+
+- **The virtual-pad trap gained a documented half-explanation — and the half it does not explain is
+  the important one.** ViGEm's client API documents a readiness step between plugging a virtual
+  target in and updating it (*"It may take some time before the target is ready to accept updates"*;
+  early updates *"may return `TargetNotReady`"*) `[reported 2026-09-09]`. Every pad route should do
+  that wait. **But the documented failure is an error return and the measured trap was a silent
+  drop**, so the two are different symptoms: driver-not-ready predicts a failing update call,
+  game-has-not-enumerated-yet predicts a succeeding one with the input still lost — and the measured
+  case behaved like the second. The section now carries both candidates with the test that separates
+  them, and **keeps the throwaway-press habit**: the wait removes a documented failure, the
+  throwaway press covers the game-side half that no API reports. Retiring the habit on the strength
+  of the wait would trade a measured protection for a documented one guarding something else.
+  `[hypothesis]` that readiness timing explains any of the observed drop.
+
+**Dossier coverage:** unchanged — no project's dossier needed a full read this run, because no
+project changed inside the window.
+
+**No drops filed, and the reason is a measurement rather than a preference.** This session's `/gs`
+pass measured the estate's inbox backlog at **25 standing drops, 18 of them STALLED** — the owning
+lane has committed in that repo since the drop landed — a stalled fraction that has gone 42% → 44%
+→ **72%** across three sweeps `[measured 2026-09-09]`. The pad-readiness finding is engine-agnostic
+and every project reads it from `techniques/README.md`, which is where it now lives; adding
+per-project pointers would have enlarged a backlog that is currently the estate's sharpest problem
+without telling anyone anything the library does not already say. **The bottleneck is draining, not
+detection.**
