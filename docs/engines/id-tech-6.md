@@ -192,6 +192,22 @@ untried static angle. The `ringcam` write path remains compile-verified and neve
   count was compatible with both readings, so it was never evidence for either.** The discriminator is
   one field, the memory type's property flags. General form:
   [a legal-but-unnecessary call is not evidence of a mechanism](../techniques/README.md#-the-inverse-a-legal-but-unnecessary-call-is-not-evidence-of-a-mechanism).
+- **The projection/depth convention is NOT publicly documented — do not queue research for it.**
+  `doom-2016-vr`'s critical path has to guess a projection convention (reversed-Z, infinite far,
+  row/column major, handedness and their combinations) at one game launch per guess, so a published
+  statement of id Tech 6's depth convention would collapse that guess-space for free. Three named
+  sources were read against exactly that question — Adrian Courrèges' *DOOM (2016) — Graphics Study*,
+  Simon Coenen's *DOOM Eternal — Graphics Study* (id Tech 7, the direct successor) and id Software's
+  own *"The Devil is in the Details: idTech 666"* SIGGRAPH 2016 talk — and **none documents reversed-Z,
+  the depth format, near/far handling or the matrix layout** `[reported 2026-09-09, n=3 named sources]`.
+  The studies describe the depth pre-pass by purpose only; one states outright that it stays
+  high-level by design. ⚠️ A searched negative on named sources, not proof no public statement exists.
+  ⇒ **read the engine's own projection instead**, and start from its own vocabulary: the render view
+  carries `projectionMatrix`, `inverseProjectionMatrix`, `explicitProjectionMatrix` /
+  `useExplicitProjectionMatrix`, and — most suggestive here — `cramZNear` and `flipProjection`, which
+  are themselves statements that the engine has explicit near-plane and projection-flip opinions.
+  General form:
+  [a frame-breakdown graphics study documents passes, not conventions](../techniques/README.md#a-frame-breakdown-graphics-study-documents-passes-not-conventions).
 
 ## See also
 

@@ -2381,6 +2381,34 @@ input is delivered, the count is simply wrong by one.
   absorb the swallowed input;
 - capture and verify the highlight before every commit, always.
 
+##### 2026-09-09 (`/sr`): the driver documents a readiness wait — and it does NOT fully explain this
+
+ViGEm's client API documents an explicit readiness step between plugging a virtual target in and
+updating it: plug in, **wait until ready**, then update. Its own wording is *"It may take some time
+before the target is ready to accept updates"*, and updating early *"may return `TargetNotReady`
+errors"* `[reported 2026-09-09, from the vigem-client API documentation]`. **Any pad route should do
+that wait**, and a route that never had one is missing a documented step.
+
+**But read the failure shapes before calling this the cause.** The documented failure is an *error
+return* to the caller; the trap above is a **silent** drop — the update reported success and the
+input never reached the game. Those are different symptoms, which splits the trap into two
+candidates that want different fixes:
+
+| candidate | what it predicts | how to tell |
+| --- | --- | --- |
+| **driver not ready** | the update call itself fails with `TargetNotReady` | check the return value of every update, including the first |
+| **game has not enumerated the device yet** | updates all succeed; the game simply was not listening yet | updates return success and the input is still lost |
+
+The measured case behaved like the second — which is the more awkward one, because no API tells you
+when the *game* has finished enumerating a new controller. **So add the readiness wait, and keep the
+throwaway-press habit anyway**: the wait removes a real documented failure, and the throwaway press
+is the only thing that covers the game-side half. Retiring the habit on the strength of the wait
+would be trading a measured protection for a documented one that guards a different thing.
+
+`[hypothesis]` that readiness timing explains any part of the observed drop; `[reported]` only that
+the API documents the wait. Credit the **ViGEm** project and the `vigem-client` binding's authors:
+<https://docs.rs/vigem-client>.
+
 #### ⚠️ And pad hot-plug toasts can dominate a pixel measurement
 
 Same day, different game: hot-plugging pads mid-session makes Windows draw *"Controller Connected"*
@@ -5967,6 +5995,83 @@ Credit **praydog** — [REFramework](https://github.com/praydog/REFramework), wh
 the evidence for every code claim above, and whose 2023 fix is the design worth copying. Read online
 via the GitHub API; no code taken.
 
+## Read a public mod for how MANY levers it writes, not just which one
+
+The usual way a public mod is mined is: find the mod that does the thing you want, learn the API
+name it uses, stop. **The count is evidence too, and it is usually cheaper to read than the API.**
+
+A mod that writes **two** levers and sets them to **the same value** is telling you, without saying
+so, that the engine does not couple them. If one implied the other, the author would not have
+written both — they had the game in front of them and you do not.
+
+**The case this came from.** `visceral-re2-vr` planned its movement-speed feature on a recorded
+conclusion that RE Engine locomotion is root-motion driven, so clamping the motion layer's playback
+rate would scale travel, leg cycle and footstep events **together** — "by construction". Reading the
+reference implementation rather than only its API showed the author does not rely on that at all:
+the shipping mod pairs the motion-layer speed write with a **return-value hook on the movement
+driver's own speed getter**, applying the same factor to both. A second, independent public
+implementation of the same feature arrives at the identical pairing, with separate walk and run
+factors `[reported 2026-09-09, from source, n=2 independent implementations]`.
+
+**The transferable habits:**
+
+- **Count the write sites before you copy the API name.** One lever means the engine couples the
+  rest; two levers at one value means it does not, and your plan needs both.
+- **A second independent implementation is worth more than a second source.** Two authors who never
+  read each other converging on the same shape is corroboration; two articles describing one mod is
+  not. Look for a *trainer*, a *diagnostic script* or a *different game on the same engine* rather
+  than another write-up of the mod you already have.
+- **"By construction" is a claim, and it is the kind that never gets tested.** It sounds like a
+  property of the engine and is usually a property of nobody having checked. When a plan rests on
+  one, find the sentence and tag it — `[hypothesis]` until measured is the honest state.
+- **⚠️ This is evidence about the authors, not a measurement of the engine.** Two people writing
+  belt-and-braces code is strong reason to plan for two levers; it is not proof the single lever
+  fails. It downgrades a "by construction" claim to a hypothesis; it does not disprove it.
+
+Generalised from `visceral-re2-vr` (2026-09-09). Credit **Junh2x** and **Namsku**, whose public
+repositories are the evidence; both read for structure only, nothing copied.
+
+## A frame-breakdown "graphics study" documents PASSES, not CONVENTIONS
+
+Frame-by-frame "graphics study" articles are among the best public sources this estate has, and
+several projects cite them. **They answer a narrower question than they look like they answer**, and
+knowing the boundary saves a whole research pass.
+
+**What they reliably give:** the pass inventory and its order, what each pass renders and into which
+target, which buffers are read where, and where the UI is composited. That is exactly what
+`doom-2016-vr` used one for to establish that DOOM 2016's HUD is drawn to its own target and
+composited last — a real answer to a real question.
+
+**What they do not give:** the maths conventions. Depth direction (reversed-Z or not), infinite far
+plane, depth format, row- versus column-major, handedness, the layout of the per-view constant
+buffer. A capture-based study reads the *API calls and the images*; the projection convention is a
+property of code that never appears in either.
+
+**The case this came from.** `doom-2016-vr`'s critical path is a projection convention it has to
+guess at, one game launch per guess. A published statement of id Tech 6's depth convention would have
+collapsed that guess-space for free. Three named sources were read against exactly that question —
+the two best-known DOOM/DOOM Eternal graphics studies and id Software's own SIGGRAPH renderer talk —
+and **none of them documents it** `[reported 2026-09-09, n=3 named sources]`. One of the two studies
+says outright that it stays high-level by design.
+
+**The transferable habits:**
+
+- **Match the source class to the question class.** Pass inventory, target formats and compositing
+  order → a capture-based study. Matrix conventions, near/far handling, precision choices → the
+  engine's own field and cvar names, a leaked or open-sourced predecessor, or a live read. Asking a
+  study for a convention is not a hard search, it is the wrong shelf.
+- **Record the negative with the sources named.** "Not documented" is only useful if the next reader
+  can see *which* sources were checked; otherwise it reads as "someone gave up" and gets re-searched.
+- **A convention negative argues FOR the read-it-live route** rather than competing with it. When
+  the lookup is unavailable, "read what the engine actually holds" stops being the more expensive
+  option and becomes the only one.
+- **The engine's own vocabulary is the cheap lever nobody checks.** Field names such as a near-plane
+  "cram" or a projection "flip" are themselves statements that the engine has explicit opinions about
+  those things — worth reading before assuming any convention.
+
+Generalised from `doom-2016-vr` (2026-09-09). Credit **Adrian Courrèges**, **Simon Coenen**, and
+**Tiago Sousa & Jean Geffroy**.
+
 ## Sources
 
 - **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, the log-before-the-call habit, and the exclusive-mode DirectInput wall that `SendInput` cannot cross; generalised out of [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research) §9a/§9b; the byte-identity read-only-tree rule from the same dossier (2026-09-02)
@@ -5980,6 +6085,19 @@ via the GitHub API; no code taken.
   intra-frame stale joint matrix, the non-refcounted re-entrancy token, the loader-open-as-positive-control
   habit and the wrong-character-identity caution; generalised out of
   [`visceral-re2-vr/engine-research/`](https://github.com/TefMeister/visceral-re2-vr/tree/main/engine-research)
+- **Visceral — RE2 VR** (this account) — additionally, from 2026-09-09, the count-the-write-sites
+  rule and the "by construction" caution; generalised out of
+  [`visceral-re2-vr/external-research/`](https://github.com/TefMeister/visceral-re2-vr/tree/main/external-research)
+- **DOOM 2016 VR** (this account) — the source-class boundary of frame-breakdown graphics studies,
+  recorded as a searched negative on named sources; generalised out of
+  [`doom-2016-vr/external-research/`](https://github.com/TefMeister/doom-2016-vr/tree/main/external-research)
+- **Junh2x** — public Requiem movement-speed mod, read for structure only; the evidence that the
+  speed feature is a pair of levers rather than one: <https://github.com/Junh2x/RE9-Movement-Speed-Mod>
+- **Namsku** — public RE Engine trainer, read for structure only; the second independent
+  implementation of the same pairing: <https://github.com/Namsku/re-engine-trainer>
+- **Simon Coenen** — *DOOM Eternal — Graphics Study*, read as the closest sibling reference to
+  id Tech 6 and cited here for what a study of that kind does and does not document:
+  <https://simoncoenen.com/blog/programming/graphics/DoomEternalStudy>
 - **MarsyApp** — **Anomaly VR** (STALKER Anomaly), whose own development thread and Boosty posts
   document a per-weapon **secondary-hand IK offset** specifically to stop the two controllers occluding
   each other for the headset cameras. Read online (in Russian), described in our own words; no code or
