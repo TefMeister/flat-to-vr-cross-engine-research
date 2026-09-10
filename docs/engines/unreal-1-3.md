@@ -631,6 +631,87 @@ before recording a per-shader gap.** Full method, controls and the tool-validati
 Generalised out of
 [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr).
 
+### ⭐⭐ 2026-09-09: on UE3, action bindings may live in a SECOND ini — and one title ships a working first-person camera on a letter key
+
+`[verified-live 2026-09-09, n=1 launch]`, on Alice: Madness Returns. **This is the single
+highest-value check any UE3 project on the estate can run, and it costs one `grep` before a launch.**
+
+⚠️ **This is a studio habit, not a UE3 convention** `[reported 2026-09-10]`. Public UE3
+documentation puts bindings in `<Game>Input.ini` under `[Engine.Input]`, with `DefaultInput.ini` as
+the shipped template — the second file below, and its `KeyBindArray` row syntax, appear nowhere in
+it. **So do not hunt for a same-named file in another UE3 title; glob and grep the vocabulary
+instead.** That a studio can put the half you need somewhere the engine docs never mention is the
+transferable part.
+
+`<Game>Input.ini` is the file everyone reads, and on at least one UE3 title it holds **only axes and
+aliases**. The *action* bindings live in a second file in the same directory — there,
+`AliceControlLayout.ini`:
+
+```
+KeyBindArray1=(Name="T",  Command="EnterFPSByRS | OnRelease ToggleCloseFollowCamera")
+KeyBindArray1=(Name="XboxTypeS_RightThumbstick",  Command="ToggleGhost | OnRelease ToggleCloseFollowCamera |EnterFPS")
+```
+
+That is **a working first-person camera in the retail build, on `T`, needing no mod, no rebind and no
+console** — on a project that had spent four sessions on camera control and had correctly established
+that the build exposes no developer console. Its primary home is a right-stick click, the controller
+chord this page already warns keyboard probing will never find; what was new is that it was *also* on
+a plain letter key, and nobody pressed it because the file naming it was never opened.
+
+**The generalisable half, which matters for `enslaved-vr` directly:** *"the console is absent in this
+build"* does not imply *"the game's commands are unreachable"*. **A key binding that names an engine
+command is a command channel with no console in the path.**
+
+**⛔ But reading is not writing** `[disproved 2026-09-09]`. The same session bound three unused
+commands to three free keys in both copies of the layout file, game closed — nothing happened, and
+the rows survived in the file. Ambiguous, so a command **known to work** was moved to a new key: `G`
+given the exact command `T` carries. `G` did nothing; `T` still entered first person seconds later in
+the same run. **This game reads its shipped layout and ignores rows added to it**; the loading
+mechanism is not established `[hypothesis]`. Whether other UE3 titles re-read it is a separate
+question per title, and the check costs one relaunch.
+
+⚠️ The same file also names `ChangeCameraMode`, `ToggleCloseFollowCamera`, `TogglePOI`,
+`ToggleGhost`, `togglephysicsmode`, `BugItForGameController` and `StatUnitAndStatFPS`. Only
+`EnterFPSByRS` was actually run — **the rest are leads, not evidence** `[reported 2026-09-09]`.
+
+Method and the general rule: [techniques → enumerate every input config the game
+ships](../techniques/README.md#enumerate-every-input-config-the-game-ships--and-read-them-dont-write-them).
+Generalised out of
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr).
+
+### ⭐ 2026-09-09: on UE3, hunt assertion strings BEFORE prologue bytes — measured, not argued
+
+`[verified-numerically 2026-09-09, n=1 binary]`, on Enslaved. This settles the ordering the
+`DO_CHECK` section above left open.
+
+A widely used UE3 SDK skips the unstable `ProcessEvent` vtable index — right call, since the two
+published indices disagree (60 and 67) — and scans for the function's own prologue instead. **Those
+published bytes do not fit a 2013 UE3 PC port**: `ProcessEvent` there has **one** `push imm32`, not
+two (the build uses the older `_except_handler3` frame, so the handler comes from the scope table),
+and `sub esp,0x54`, not `0x50`. A scanner built from the published bytes **matched exactly one
+function in 23 MB, and it was the wrong one.**
+
+**A prologue pattern encodes a compiler's exception scheme and a build's frame size, not the
+function.** Its failure mode is the expensive kind — it returns nothing, which reads as *"the
+function is absent"* rather than *"wrong compiler"*.
+
+The assertion route from the `DO_CHECK` section found the same function **in one pass**: the only
+VIRTUAL function among `UnCorSc.cpp`'s assertion-bearing functions — 1835 `.rdata` vtable slots
+against **0** for every other candidate — asserting `!HasAnyFlags(RF_Unreachable)` at
+`UnCorSc.cpp:6470`, returning `ret 0Ch`.
+
+⛔ **And do not quote a `ProcessEvent` vtable index for Enslaved.** A derived **64** — which sat
+neatly between the two published values and read as corroboration — is withdrawn
+`[disproved 2026-09-09]`: adjacent vtables in that binary abut with no separator, so runs of
+`.rdata` code pointers merge and every derived index shifts.
+
+Full write-up and the general lesson: [techniques → a retail build that shipped its
+assertions](../techniques/README.md#a-retail-build-that-shipped-its-assertions-names-its-own-globals).
+Generalised out of [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr). Credit the `unrealsdk`
+project and the UE3 SDK-generator community for the skip-the-index framing, which is the half that
+held.
+
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Unreal Engine 2 / 3" row.

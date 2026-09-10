@@ -2367,3 +2367,88 @@ and every project reads it from `techniques/README.md`, which is where it now li
 per-project pointers would have enlarged a backlog that is currently the estate's sharpest problem
 without telling anyone anything the library does not already say. **The bottleneck is draining, not
 detection.**
+
+### 2026-09-10 (eighth sweep, dev PC) — five drops drained, and the estate's most useful finding of the week was a file nobody had opened
+
+In-house delta from 2026-09-09 (the seventh sweep's date). Ran in the same session as a `/gs` pass and
+a `/gr` estate sweep, so one of the five drops drained here is that `/gr`'s own output.
+
+**Inbox drained — five files, by explicit list, nothing globbed:**
+
+| file | folded into |
+| --- | --- |
+| `2026-09-09-mod-a-shared-constant-register-can-carry-two-matrices.md` | `techniques` → *Stability is not identity* (new) |
+| `2026-09-09-mod-an-inverse-pair-check-identifies-fields-but-not-major-order.md` | `techniques` → *An identity that the WRONG answer also satisfies* (new) |
+| `2026-09-09-mod-a-shipped-game-can-hide-a-first-person-camera-in-a-second-input-ini.md` | `techniques` → *Enumerate EVERY input config…* (new) + `engines/unreal-1-3.md` (new §) |
+| `2026-09-09b-mod-correction-read-those-inis-do-not-write-them.md` | folded **with** its target, as one section; the correction is inside it, not after it |
+| `2026-09-10-gr-a-published-byte-signature-encodes-a-compiler-not-a-function.md` | `techniques` → the `DO_CHECK` section, new subsection + `engines/unreal-1-3.md` (new §) |
+
+**The correction was read before anything was drained**, as the protocol requires — see the
+`inbox/README.md` change below, which is why that mattered more than usual this time.
+
+**What was generalised up, and from where:**
+
+- **`alice-madness-returns-vr` → *Stability is not identity*.** A D3D9 proxy read `p00` from
+  `SetVertexShaderConstantF(StartRegister=0)`, cached it, and found it stable to four decimals across
+  33,300 frames. Two matrices shared that register; the periodic report sampled the wrong one, whose
+  `p00` was **506× smaller** than the camera's, and a whole disparity derivation was built on it
+  before the phantom "505.8× scale factor" was withdrawn `[disproved 2026-09-09]`. Carries the cheap
+  defence (`|row3.xyz| == 1` and `row0 ⊥ row3`, with `|row0|/|row3|` scale-free so it reads `p00`
+  *through* a scale), its known limit (a narrow-FOV camera passes), and the half that transfers
+  furthest: **report the spread, not a cached "the" value**, and **a diagnostic that states a
+  conclusion needs a test on the branch that picks the conclusion.**
+- **`doom-2016-vr` → *An identity that the WRONG answer also satisfies*.** The
+  `projection × inverse-projection = I` check rejects **200,000 of 200,000** random pairs and is a
+  genuinely strong field identification — and **cannot separate a transposed inverse near a unit near
+  plane**, because `d = zn·c` makes the inverse's lower-right block nearly symmetric there (error
+  1e-4 at `zn=1`, 19 at `zn=0.05`). Generalised as: of any consistency check, ask **which wrong
+  answers also pass** before quoting what it establishes.
+- **`alice-madness-returns-vr` → *Enumerate EVERY input config the game ships*.** The estate's most
+  useful single finding this week: a **working first-person camera in the retail build, on the `T`
+  key**, in `AliceControlLayout.ini` — a second file in a directory the project had read several
+  times, on a project that had spent four sessions on camera control. The generalised half is that
+  *"the console is absent"* does not imply *"the commands are unreachable"*: **a key binding naming
+  an engine command is a command channel with no console in the path.** Its correction is folded in
+  as part of the same section rather than appended: **reading is not writing** — added rows were
+  ignored, proven by moving a command *known to work* onto a free key and watching it do nothing
+  `[disproved 2026-09-09]`.
+- **`enslaved-vr` → the `DO_CHECK` section, and the ordering it left open is now measured.** The
+  `unrealsdk` published `ProcessEvent` prologue **matched exactly one function in 23 MB and it was
+  the wrong one** — one `push imm32` not two (older `_except_handler3` frame), `sub esp,0x54` not
+  `0x50`. **A prologue pattern encodes a compiler's exception scheme and a build's frame size, not
+  the function**, and its failure mode reads as *"the function is absent"* rather than *"wrong
+  compiler"*. The assertion route found it in one pass. Also recorded: **a derived vtable index of 64
+  that sat neatly between the two published values (60, 67) is an artefact** `[disproved 2026-09-09]`
+  — plausibility was doing the verification.
+
+**Web sweep — one targeted search, and it changed a claim I was about to publish.** Checked public
+UE3 binding documentation (BeyondUnreal / Unreal Wiki, Epic's developer forums) against the input-ini
+finding. **`ControlLayout.ini` and its `KeyBindArray` row syntax are not a stock UE3 convention** —
+the documented home is `<Game>Input.ini` under `[Engine.Input]`, with `DefaultInput.ini` as the
+shipped template `[reported 2026-09-10]`. That downgrades "look for a second file like Alice's" and
+**upgrades the glob**: the transferable part is that a studio may put the half you need somewhere the
+engine docs never mention, so search by vocabulary, never by filename. Both the technique section and
+the UE3 page say so explicitly. The rest of `watch-list.md` was **not** re-checked this pass — the
+in-house delta was large enough to fill the sweep, and saying so is more useful than a thin pass over
+everything.
+
+**⚠️ One defect fixed in this repo's own process docs.** `inbox/README.md` told curators to run
+`grep -rn "^Supersedes:"`, which **cannot see a header written in bold** — `**Supersedes:** …`, which
+markdown renders identically and nothing forbids. Six files estate-wide use the bold form
+`[reported 2026-09-08]`. `/gs` fixed this inside its own automated check on 2026-09-08, after a real
+correction was missed that way; **the human-facing instruction was never updated to match**, so a
+curator following this repo's README could still drain a claim and meet its withdrawal afterwards.
+Now `grep -rniE "^\*{0,2}Supersedes:"`, verified to match both forms. Author guidance is unchanged —
+write it plain — but the check must not depend on the author getting that right.
+
+**Dossiers/topics read by delta:** `alice-madness-returns-vr`, `doom-2016-vr`, `enslaved-vr` (the
+changed material behind the four drops). Every other project repo was pulled; none had
+`engine-research`/`external-research` changes in the window that were not already represented by a
+drop.
+
+**Inboxes filled: none.** Two candidates were considered and rejected on purpose. The UE3 input-config
+rule would go to `enslaved-vr` — but that project's `engine-research/inbox/` **already holds both the
+finding and its correction**, dropped there directly by the `/lm` session on 2026-09-09, so a pointer
+would be a duplicate. And nothing in this pass answered a dead end in a project not already holding
+the drop it came from. **The estate's bottleneck remains draining, not detection** — 36 undrained
+files at this morning's `/gs`, 15 of them stalled.
