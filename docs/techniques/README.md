@@ -5575,6 +5575,76 @@ generators**, not about the family; see the corrections above, where a fork that
 for six titles is recorded. Generalised out of
 [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr).
 
+### ⭐⭐ Executed again 2026-09-09 — it beat a published byte signature outright, and the byte signature was worse than useless
+
+The section above framed byte signatures as the brittle default this route improves on. That has now
+been **measured head to head on one binary, and the byte route did not merely lose — it returned a
+confident wrong answer** `[verified-numerically 2026-09-09, n=1 binary]`.
+
+A widely used UE3 SDK skips the unstable `ProcessEvent` vtable index and scans for the function's own
+prologue instead. Published shape: `push ebp` / `mov ebp,esp` / `push -1` / `push <scopetable>` /
+`push <handler>` / `mov eax,fs:[0]` / `push eax` / `sub esp,0x50` / ... The same function in one 2013
+UE3 PC port begins:
+
+```
+55 8b ec 6a ff 68 d0 ca 91 01 64 a1 00 00 00 00 50 83 ec 54
+```
+
+Two constants differ, and neither is about the function:
+
+| published | actual in this build | why |
+| --- | --- | --- |
+| **two** `push imm32` | **one** | this build uses the older `_except_handler3` frame, so the handler comes from the scope table rather than a second push |
+| `sub esp,0x50` | `sub esp,0x54` | a different local-frame size |
+
+**A scanner built from the published bytes matched exactly ONE function in 23 MB of code, and it was
+the wrong one.**
+
+> **A published prologue byte-pattern is not a property of the function. It is a property of one
+> compiler's exception scheme and one build's local-frame size** — both of which change per build,
+> per compiler version and per optimisation setting, while the function itself does not.
+
+**And its failure mode is the expensive kind: it returns nothing, which reads as *"the function is
+absent"* rather than *"this signature is for a different compiler."*** The researcher who trusts the
+pattern concludes something wrong about the binary rather than about the pattern.
+
+What survived the test and what did not:
+
+- ✅ The **strategy** transferred completely — the vtable index is not stable across titles, so detour
+  the function's own address instead of taking a slot.
+- ⚠️ The **invariant** transferred — "an SEH + stack-cookie frame". That is a shape, not bytes.
+- ❌ The **bytes** did not transfer at all.
+
+**The assertion route found the same function in ONE pass**: among the functions bearing assertions
+from one named source file, the only VIRTUAL one — 1835 `.rdata` vtable slots against **0** for every
+other candidate — asserting a named condition at a named source line. That is the three properties
+this section already claims, working end to end: compiler-independent (the string literal is data the
+compiler cannot rewrite), self-describing (the assertion text names the source file, so you learn
+*what* you found), and self-validating (the `__LINE__` immediate is a second independent check that
+the match is the intended call site).
+
+**So the ordering is now measured rather than argued:** where a build shipped its assertions, hunt
+assertion strings **first** and keep prologue scanning as the fallback for builds with assertions
+compiled out — not the other way round.
+
+#### ⛔ A second warning from the same session: the derived number that "corroborates"
+
+The same work briefly derived a `ProcessEvent` vtable index of **64**, which sat neatly between the
+two published UE3 values (60 and 67) and therefore *looked like corroboration*. It was an artefact
+`[disproved 2026-09-09]`: it came from treating runs of code pointers in `.rdata` as vtables, and
+adjacent vtables in that binary abut with no separator, so runs merge and every derived index shifts.
+
+**A derived value that falls plausibly between two published values is the hardest kind of wrong
+number to catch, because the plausibility is doing the verification.** Derive it a second way, or do
+not quote it.
+
+Generalised from [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr)
+(`external-research/topics/2026-09-07b-public-ue3-locators-find-gnames-by-code-pattern-and-one-fork-ships-working-signatures.md`
+§5), measured by that project's `/pd` lane 2026-09-09 with no launch. Credit the `unrealsdk` project
+and the UE3 SDK-generator community for the published signature and for the skip-the-index framing,
+which is the half that held.
+
+
 ## The cheapest control is the case where the correct answer is "change nothing"
 
 `[verified-live 2026-09-05, n=4 flat launches]` Generalised out of
@@ -6071,6 +6141,232 @@ says outright that it stays high-level by design.
 
 Generalised from `doom-2016-vr` (2026-09-09). Credit **Adrian Courrèges**, **Simon Coenen**, and
 **Tiago Sousa & Jean Geffroy**.
+
+## Stability is not identity: a shared constant register can carry two matrices
+
+`[disproved 2026-09-09]` for the assumption; `[verified-numerically 2026-09-09]` for the defence.
+Seen on UE3/D3D9, but nothing about it is UE3-specific — it applies wherever a proxy or hook reads
+projection parameters out of an intercepted constant-buffer or constant-register write.
+
+A D3D9 proxy intercepted `SetVertexShaderConstantF(StartRegister=0, count>=4)` — documented as the
+engine's view-projection matrix — pulled the projection's horizontal scale `p00` out of it, cached
+it, and printed it in a periodic log line.
+
+**The cached value was stable to four decimal places across 33,300 frames.** That read as strong
+evidence it was the camera's. It was not. **Register 0 was written by more than one matrix**, and
+the periodic report sampled whichever wrote it *last* in the frame — consistently a different,
+non-camera one. The camera's own matrix, logged once at startup by a separate diagnostic, had a
+`p00` **506x larger**.
+
+The cost was a day: a disparity derivation compared measured screen offset against the wrong number,
+found it "380x too small", invented a units mismatch to explain the gap, and queued "apply the
+505.8x scale factor" as the project's top task. Applying it would have multiplied eye separation by
+~506 and then looked like a tuning problem rather than a wrong premise.
+
+> **A value that never changes is evidence it comes from one source. It is not evidence about
+> *which* source.**
+
+### The cheap defence: two scale-sensitive shape tests
+
+A world-to-clip matrix `P*V` built from a symmetric projection and a **rigid** view has two
+signatures an arbitrary 4x4 does not:
+
+- **`|row3.xyz| == 1`** — row 3 produces `clip.w`, so for a rigid view it is just the view-forward
+  direction;
+- **`row0.xyz` perpendicular to `row3.xyz`** — row 0 is `p00 * right`, and right is perpendicular to
+  forward.
+
+Two square roots and a dot product per write. Two properties make the pair useful rather than
+redundant:
+
+1. **A uniformly scaled camera matrix FAILS this, deliberately.** That is precisely the case where a
+   scale factor genuinely *is* needed, so it must stay visible instead of being absorbed silently.
+2. **`|row0.xyz| / |row3.xyz|` is scale-free** — a uniform `k` multiplies both and cancels — so it
+   recovers `p00` *through* an unknown scale. Use the ratio to read the value and the shape tests to
+   decide whether the matrix is the camera's.
+
+⚠️ **Known limit, found by a test that first got it wrong:** a matrix with a tiny `p00` and a perfect
+shape is a valid **narrow-FOV** camera and passes. The shape test narrows the question; what settles
+it is reporting the **range** of values seen. Two camera-shaped matrices three orders of magnitude
+apart cannot both be the camera.
+
+### The half that transfers furthest is about instruments, not matrices
+
+- **Never report a cached "the" value for a register several writers share — report the SPREAD.**
+  One field labelled `p00=` implied a uniqueness that did not exist. The replacement prints
+  `camera=... last=... range=[min .. max]` plus a count of camera-shaped writes, so one launch
+  answers *"how many different matrices arrive here?"* instead of quietly answering a different
+  question.
+- **A diagnostic that prints a number *and* its interpretation is far more useful than one printing
+  only the number — and far more dangerous.** The interpretation is what gets read; the number is
+  not. This one printed *"the matrix is uniformly scaled by ~1x ... the unit-mismatch hypothesis is
+  CONFIRMED"* — self-contradictory on its face, since "scaled by ~1x" **is** "not scaled" — and it
+  was believed for a day because the sentence was confident and the number beside it was never
+  re-derived. **If a diagnostic states a conclusion, the branch that picks the conclusion deserves
+  its own test.**
+
+See also *"The instrument can be the bug"* and *"Prove the test can fail: mutation-check a numerical
+verification before trusting it"* — this is the same family, arriving from the reporting side rather
+than the measurement side.
+
+Generalised from [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr)
+(`modding-notes/2026-09-09-the-505x-scale-factor-is-a-phantom-two-matrices-share-c0.md`), 2026-09-09,
+`/pd`, no launch.
+
+## An identity that the WRONG answer also satisfies: the inverse-pair check finds fields, not major order
+
+`[verified-numerically 2026-09-09]`. A property of perspective projections, not of any one engine.
+
+Proving that some 64 bytes in memory really are an engine's projection matrix — rather than sixteen
+plausible floats at a computed address — is much easier when the engine stores `projectionMatrix`
+and `inverseProjectionMatrix` **adjacently**, as many do. Multiply them and require the identity.
+
+**It is a genuinely strong test.** Measured against random data, **0 of 200,000 random matrix pairs
+pass**, while a real pair passes at every plausible near/far ratio — including reverse-Z with an
+infinite far plane, and a 1.3-million-to-one depth range in float32. Multiply in **both** orders and
+take the worse error: a coincidence that satisfies one is very unlikely to satisfy the other.
+
+### ⚠️ What it does not tell you, and the algebra that says why
+
+A test written to assert that a **transposed** inverse — the shape a row/column-major mix-up
+produces — would be *rejected* instead **passed**. The reason is structural, not a sloppy tolerance.
+For the standard form
+
+```
+P = [[a,0,0,0],
+     [0,b,0,0],
+     [0,0,c,-1],
+     [0,0,d, 0]]
+```
+
+the inverse's lower-right block is `[[0, 1/d], [-1, c/d]]`, and the usual mapping
+`c = zf/(zn-zf)`, `d = zn*zf/(zn-zf)` gives **`d = zn*c`**. So when the **near plane is near 1**,
+`1/d` is near `-1`, that block is very nearly **symmetric**, and its transpose is almost itself. No
+tolerance loose enough to accept a genuine float32 inverse can separate them.
+
+Measured both ways rather than argued:
+
+| near plane | transposed-inverse error | verdict |
+| --- | --- | --- |
+| `zn = 1`, `zf = 10000` | **1e-4** | indistinguishable — the transpose passes |
+| `zn = 0.05`, `zf = 65536` | **19** | clearly rejected |
+
+### What to carry
+
+- **The check identifies WHICH FIELDS you found**, and that is worth a lot: it converts a computed
+  address into an identification, and it is the difference between *"these floats look
+  projection-ish"* and *"these two adjacent buffers are a matrix and its inverse"*.
+- **It says nothing about row- vs column-major, or handedness.** Read those off the numbers — which
+  element carries the `-1`, and what the depth row does. **Print the raw matrix and state the limit
+  in the output**, not only in a header comment: a tool that prints a bare verdict here quietly
+  invites the wrong conclusion.
+- **The discriminating power depends on the near plane**, which is not a knob anyone chooses for this
+  purpose. If a project ever does need the transpose separated this way, measure in a scene whose
+  near plane is far from 1 — but reading the `-1`'s position is simpler and exact.
+
+**The general form, which is why this earns library space rather than a footnote in one project:**
+the failure mode is quiet and flattering — the check *passes*, prints something confident, and the
+convention is still unknown. Of any consistency check, ask **"which wrong answers also pass?"**
+before quoting what it establishes.
+
+Generalised from [`doom-2016-vr`](https://github.com/TefMeister/doom-2016-vr)
+(`modding-notes/2026-09-09-read-the-engines-own-projection-instead-of-guessing-it.md`; host tests in
+that project's `proxy-vulkan/test/rvtest.c`, 116 checks, 0 failures), 2026-09-09, `/pd`, no launch.
+
+## Enumerate EVERY input config the game ships — and read them, don't write them
+
+`[verified-live 2026-09-09, n=1 launch]` for the finding, and `[verified-live 2026-09-09, n=1 launch]`
+for the correction that follows it. Observed on one UE3 title.
+
+⚠️ **The split is a STUDIO habit, not an engine convention — which is exactly why globbing beats
+knowing a filename** `[reported 2026-09-10]`. Public UE3 documentation puts key bindings in
+`<Game>Input.ini` under `[Engine.Input]`, with `DefaultInput.ini` as the shipped template; the
+second file in the case below carries a name and a row syntax that appear nowhere in that
+documentation. So **do not go looking for a file with a particular name in another title** — the
+transferable part is the glob and the vocabulary grep, and the fact that a studio may put the half
+you need somewhere the engine docs never mention.
+
+A project had spent four sessions on camera control and had established — correctly, with five
+candidate causes excluded — that its build exposes no developer console. It had read
+`<Game>Input.ini` several times. It had **never opened the second file in the same directory**,
+which is where that game keeps its *action* bindings; the file it kept reading holds only axes and
+aliases.
+
+The second file contained this, in the retail build, shipped, needing no mod and no rebind:
+
+```
+KeyBindArray1=(Name="T",  Command="EnterFPSByRS | OnRelease ToggleCloseFollowCamera")
+KeyBindArray1=(Name="XboxTypeS_RightThumbstick",  Command="ToggleGhost | OnRelease ToggleCloseFollowCamera |EnterFPS")
+```
+
+**A working first-person camera, on the `T` key, the whole time.** Its primary home is a right-stick
+click — a controller chord, exactly the case this library already warns keyboard probing will never
+discover. What was new is the second half: it was *also* on a plain letter key, and the reason nobody
+pressed it is that the file naming it was never opened.
+
+**Three rules already in this library each nearly caught this, and none did:**
+
+1. *"Titles on this engine often reach debug features by a controller chord rather than a key."* True
+   here — and it stopped at *"so use a pad"* rather than *"so read where the chords are declared"*.
+2. *"A binding surviving in a shipped ini is not evidence the feature is live."* Also true, and it is
+   a rule about **not over-trusting** an ini, which quietly discourages reading more of them.
+3. *"The console is absent in this build"* was established well — and for about a day it was read as
+   *"the game's commands are unreachable"*, which does not follow. **A key binding that names an
+   engine command is a command channel with no console in the path.**
+
+### The rule
+
+> **Before concluding a camera or debug feature is absent from a game, enumerate EVERY
+> input-related config the game ships and read all of them** — not just the one named
+> `<Game>Input.ini`. Glob `*Input*`, `*Control*`, `*Layout*`, `*Bind*`, `*Key*` across **both** the
+> live per-user config tree and the game-folder template tree, and grep the union for **feature
+> vocabulary** — `FPS`, `FirstPerson`, `Camera`, `Debug`, `Toggle`, `BugIt`, `Stat`, `Ghost`,
+> `Physics` — rather than for key names.
+
+The cost is one `grep` over a handful of text files, before any launch. What it found here was the
+single most useful capability discovered on that project.
+
+### ⛔ The correction, measured hours later: reading is not writing
+
+The same finding was initially framed as a **channel**, and a sibling note said outright that some
+missing-console capability "may be one rebind away". **That part is disproved**
+`[disproved 2026-09-09]`.
+
+Three unused commands were bound to three free keys in both copies of the layout file, game closed.
+Nothing happened, and the added rows survived in the file afterwards. That is ambiguous — added rows
+ignored, or those particular commands absent — so **a command known to work was moved to a new key**:
+`G` given the exact command `T` already carried.
+
+```
+before   : third-person
+after G  : third-person      <- the working command, on a new key
+after T  : FIRST-PERSON      <- seconds later, same run
+```
+
+**The game reads its shipped layout and ignores rows added to it.** The loading mechanism is not
+established `[hypothesis]`.
+
+> **Such a file tells you what the build CAN DO, and sometimes hands you a key that already invokes
+> it. Do not assume you can add to it.** Whether a game re-reads that file is a separate question
+> with its own answer per title, and *"the rows are still there afterwards"* does not mean they were
+> read. **The check costs one relaunch: put a command you have already seen work onto a new key.**
+> If it fires, the file is writable; if it does not, you have learned that before building anything
+> on it.
+
+**Why the correction is worth as much as the finding.** The failure was not carelessness about the
+commands — each individual name was correctly tagged as a lead. It was that the **mechanism** claim
+inherited the confidence of the observation sitting next to it. *"This file lists commands beside
+keys"* is an observation. *"This file is how commands get bound to keys"* is a claim about who reads
+it, and it needs its own evidence. **A verified observation lending unearned confidence to an
+adjacent structural claim** is engine-agnostic and worth naming.
+
+⚠️ Everything else in that file — `ChangeCameraMode`, `ToggleCloseFollowCamera`, `TogglePOI`,
+`ToggleGhost`, `togglephysicsmode`, `BugItForGameController`, `StatUnitAndStatFPS` — remains a
+**lead, not evidence** `[reported 2026-09-09]`. Only one command was actually run.
+
+Generalised from [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr),
+2026-09-09, `/lm`, two launches.
+
 
 ## Sources
 

@@ -28,10 +28,12 @@ Supersedes: 2026-08-27-mod-never-dispatch-engine-commands-from-render-hooks.md
 So before folding anything into `docs/`, run:
 
 ```
-grep -rn "^Supersedes:" inbox/ --exclude=README.md
+grep -rniE "^\*{0,2}Supersedes:" inbox/ --exclude=README.md
 ```
 
 (`--exclude=README.md` keeps the example above from matching itself.)
+
+⚠️ **Use that exact pattern, not the plainer `grep -rn "^Supersedes:"` this file recommended until 2026-09-10.** A header written in **bold** — `**Supersedes:** …`, which markdown renders identically and nothing here forbids — was invisible to the plain pattern, and six files across the estate use the bold form `[reported 2026-09-08]`. The estate’s `/gs` sweep fixed this in its own automated check on 2026-09-08 after a real correction was missed that way; the human-facing instruction here was not updated at the same time, so a curator following it could still drain a claim and meet its withdrawal afterwards. Author guidance is unchanged — **write the header plain** — but the check must not depend on the author getting that right.
 
 Draining oldest-first without that check writes a claim into the curated library and only then
 meets the correction that withdraws it. That is not hypothetical: a 2026-08-27 finding was still
