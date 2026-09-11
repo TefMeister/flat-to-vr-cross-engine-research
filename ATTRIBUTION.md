@@ -198,6 +198,50 @@ community knowledge, and individuals alike; if we missed you, that's a mistake t
   technique reused.
   - <https://www.nexusmods.com/skyrimspecialedition/mods/23416>
 
+### Added by the 2026-09-11 sweep
+
+For the three-stereo-regimes structure, the UE1 `FSceneNode` finding, the quad-2D-layer end state, the
+culling law's second engine, and the first-person weapon ladder:
+
+- **NVIDIA GameWorks** — the archived *3D Vision Automatic* best-practices documentation, still the
+  clearest first-party statement of separation/convergence and of the rule that screen-space 2D belongs
+  at convergence depth while world-referenced HUD takes its object's depth.
+- **bo3b (Bo3b Johnson)** — *Bo3b's School for Shaderhackers* and the 3Dmigoto wiki, for the canonical
+  `w`-proportional stereo formula, `StereoParams`, and *Auto Crosshair* (the published per-frame
+  depth-finding algorithm for world-anchored UI). **DarkStarSword** — `3d-fixes` and its UI-depth
+  tooling. **Helix**, **Losti**, **DHR** and the HelixMod community — the HUD-depth key conventions,
+  and DHR specifically for the 2013 Far Cry 2 fix. **davegl1234** and contributors — *geo-11*, for
+  per-draw weapon convergence filtered by index-buffer and texture hash; mirrored by **ThreeDeeJay**.
+- **Ralf**, author of **vorpX**, and the forum users **Eola667**, **CowPox** and **cercata** — for
+  stating on the record that head rotation cannot be decoupled from the game camera in a FullVR style,
+  for describing the incomplete-geometry symptom, and for the Far Cry 2 DirectVR report.
+- **LukeRoss** — the *R.E.A.L.* mod, for the hybrid game-camera-plus-render-fix architecture, the
+  dominant-eye weapon alignment, dynamic crosshair depth, and the candour about FOV patching breaking
+  streaming and the game contesting camera ownership.
+- **Magnus Norddahl (dpjudas)** — *UT99VulkanDrv* (and the vendored Unreal 226 Gold headers that made
+  the UE1 render-device contract readable) and *SurrealEngine*. **Smirftsch** and the **OldUnreal** team
+  — *XOpenGLDrv*, the 227 patch, and the v227 video-renderer documentation including `NoDrawTile`.
+  **mmdanggg2** and **Chris Dohnal** — *D3D9DrvRTX*, for the alternative tile idiom and for promoting
+  sprites into real world geometry. **Han** (OldUnreal) — the 2016 rendering-redesign thread.
+- **GhwstVR** — *UT99 Quest*, for the quad 2D layer, the reverse-mapped controller pointer, and the
+  honest note about its per-eye draw cost. **the Khronos OpenXR Working Group** —
+  `XrCompositionLayerQuad`.
+- **NVIDIA GameWorks** again — `dxvk-remix`'s *Anti-Culling System* documentation, including its honest
+  limits. **praydog** — UEVR, its write-up and its culling cvars. **cybereality / Denis Reischl** and
+  contributors — *Vireio Perception* and VRBoost. **the opentrack contributors** — issues #113, #120,
+  #803, for the documented failure modes of mouse-emulated head tracking. **DR-89** — *fear-vr*.
+  **BerZerker96** — the *6DOF Head-Tracking Mods Hub*. **fholger (Holger Frydrych)** — the Far Cry 1
+  VR mod. **FoxAhead** — *Far Cry 2 Multi Fixer*.
+- **Crytek**, with **Carl Jones** and **Sean Patrick Tracy** (GDC Online 2010) — CryEngine 3's
+  near-geometry stereo handling. **Microsoft** — the Direct3D FVF documentation behind the
+  `D3DFVF_XYZRHW` trap, and the `SendInput`/`INPUT` documentation behind the struct-size rule.
+  **"admin" at xdPixel** — *Decoding a Projection Matrix*. **Flax Engine** documentation, and the
+  Unreal and gamedev.net community threads on viewmodel FOV and Z-clipping. **Epic Games** — the
+  Unreal engines, whose own `FSceneNode` sub-rect turned out to be the per-eye handle.
+
+Generalised in part out of this account's own projects: `unreal-gold-vr`, `XIII2003-vr`, `far-cry-2-vr`,
+`psychonauts-vr` and `manhunt-2003-vr`.
+
 ## Tools, drivers & communities
 
 - **Fire-Head** — **MHNoDRM**, the community write-up documenting Manhunt (2003)'s 16 SecuROM-remnant
