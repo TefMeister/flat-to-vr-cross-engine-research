@@ -64,6 +64,58 @@ submits both every frame.
   while asserting nothing, because its sample matrix was not classified as perspective and every
   comparison reduced to `0 == 0`. It now asserts non-vacuity first.
 
+### ⭐⭐ 2026-09-10/11: the first headset run, and what it establishes about this engine
+
+`far-cry-2-vr` was worn for the first time on 2026-09-10. **Per-eye stereo parity and head rotation both
+work** (alternate-eye rendering through a `winmm` proxy and an OpenVR bridge, with equal frames submitted
+per eye measured in the same run) `[verified-live 2026-09-10, n=1]`. Two defects fell out, and both are
+engine-level facts rather than implementation slips:
+
+- **⭐⭐ Dunia culls for its own camera.** With head rotation applied at the view-projection layer, the
+  wearer reported *"looking behind me things don't render, there is no black void but only ground and
+  sky, nothing else is showing until i turn with my mouse, then things pop into existance"*
+  `[verified-live 2026-09-10, n=1]`. **Note the symptom shape: ground and sky still draw, objects do
+  not** — so this engine culls per-object while drawing terrain and skybox globally, which is much
+  easier to misread as streaming or LOD than the hard black wedge other engines give. The full
+  cross-engine treatment, including why only two of the three available routes can cure it, is in
+  `techniques/` → *"The void behind the player"*.
+- **⭐⭐ The first-person weapon takes the world's separation and doubles.** At a realistic IPD the world
+  fused while the weapon showed as two; lowering global separation helped without resolving it
+  `[verified-live 2026-09-10, n=1]`. Standard cause — the viewmodel is drawn with its own projection
+  (own FOV, much nearer near-plane), so one global figure cannot serve both. Ladder of fixes in
+  `techniques/` → *"A frame has at least THREE stereo regimes"*.
+- Also observed, and correct rather than broken: fixed-eye debug modes freeze one eye in a headset by
+  design (only that eye is submitted, so the other holds its last frame), and **~16% of uploads failed
+  the camera-position solve** while rotation worked — a per-pass subset that receives rotation without
+  the positional offset.
+
+#### ⚠️ Public prior art exists for this engine, and two items change the cost of the work
+
+- **vorpX's DirectVR reportedly works in Far Cry 2** — a user reports it functioning but only from
+  in-game "bed" saves rather than menu saves, **and that weapons are *"not in scale with the rest of
+  game elements"***, plus black bands `[reported 2026-09-11, vorpX forum, 2020-07-29]`. Two consequences:
+  **something already locates a Dunia camera-rotation address**, so writing rotation into the engine's
+  own camera is not speculative here; and **the weapon depth problem in this game is an already-known
+  symptom**, not a novel discovery.
+- **HelixMod's Far Cry 2 (DX9) 3D Vision fix** (DHR, 2013-01-04) fixes the crosshair and the effect
+  passes (smoke, water, dust, fire) and binds `O`/`P` convergence presets for aiming — with
+  DarkStarSword later switching convergence on right-mouse-held. ⚠️ **It does not claim to fix the
+  weapon model**, which independently supports "low convergence was good enough under 3D Vision" rather
+  than "the weapon was never a problem".
+- **⚠️ `Far Cry 2 Multi Fixer` (FoxAhead) patches Dunia in process memory at runtime** rather than
+  editing files, explicitly to survive Steam's integrity checks. **Anyone patching this engine should
+  read it first — it is both a precedent and a collision check.**
+- Community reports place an `fFOV` desired-FOV multiplier in **`25_cameras.xml`** in Dunia game data
+  `[reported 2026-09-11, unverified]` — cheap to confirm for anyone who can read the archives.
+
+⚠️ **No public Far Cry 2 VR mod exists** beyond the vorpX profile, and **no published Dunia camera
+yaw/pitch addresses or view-matrix offsets** could be found — so the memory route has an existence proof
+and no published coordinates. The open-source **Far Cry 1 VR mod** (fholger) is **not transferable**: it
+builds against the CryEngine Mod SDK with engine-level access.
+
+Generalised from [`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr), its 2026-09-10 headset run
+and its 2026-09-11 research pass.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Ubisoft Dunia" and "CryEngine" rows, including the

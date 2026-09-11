@@ -712,6 +712,110 @@ project and the UE3 SDK-generator community for the skip-the-index framing, whic
 held.
 
 
+### ⭐⭐ 2026-09-11: on UE1, `FSceneNode`'s sub-rect IS the eye — and the 2D defect is one fix, not one per entry point
+
+Two sibling projects on this family wore a headset on 2026-09-10 and produced **the same class of
+defect in opposite directions**, which is what makes this a family finding rather than two bug reports:
+
+- **UE1 (Unreal Gold), our own D3D11 render device:** the HUD, explosions and projectile sprites were
+  drawn **once across the whole window** instead of once per eye half — 2D given *no* stereo treatment.
+  Wearer: *"explosions were coming from the sides and were off, so was the guns projectiles"*.
+- **UE2 (XIII), our patched D3D8 device:** the HUD and menu were drawn **with the world's per-eye
+  offset** — 2D given the *wrong* treatment. Wearer: *"both eyes line up fine in game but not in the
+  menu … hud elements don't line up, like a objective marker that is supposed to point exactly what
+  drawer to open, it slides around my view"*. `[reported 2026-09-10, n=1 wearer each]`
+
+#### The UE1 answer is architectural, and it was in the engine's own interface the whole time
+
+The UE1 render-device contract is public — the Unreal 226 Gold headers are vendored in dpjudas's
+UT99VulkanDrv. `UnRenDev.h` gives `DrawComplexSurface`, `DrawGouraudPolygon`, `DrawTile`, `Draw3DLine`,
+`Draw2DLine`, `Draw2DPoint`, `Lock`, `Unlock`, `SetSceneNode` — and **no eye or stereo concept appears
+anywhere in it.** Every call's only spatial context is the `FSceneNode*`.
+
+`UnRender.h` documents `FSceneNode` as *"a temporary object representing a portion of the world view to
+render"*, carrying (in the engine's own comments) `X, Y` frame size, **`XB, YB` = "offset of top-left
+active viewport"**, `FX, FY`, `FX2, FY2` half-size, a `Mirror` sign (±1.0), `NearClip`, `ViewPlanes[4]`,
+`ComputeRenderSize()` and `ComputeRenderCoords()` `[inferred-static 2026-09-11]`.
+
+**That sub-rect is a per-eye context the engine already maintains** — it exists for editor panes,
+mirrors and warp-zone child frames. And two live render devices confirm that a correctly structured UE1
+device uses it rather than the window:
+
+- **XOpenGLDrv** (Smirftsch / OldUnreal) sets the viewport from the frame rect in `SetSceneNode` —
+  `glViewport(Frame->XB, Viewport->SizeY - Frame->Y - Frame->YB, Frame->X, Frame->Y)` — builds the
+  frustum from `Frame->FX`/`FY`, and positions tile vertices as `RFX2 * Z * (X - Frame->FX2)` /
+  `RFY2 * Z * (Y - Frame->FY2)`: **relative to the current frame's centre, inside the current frame's
+  viewport.** **UT99VulkanDrv** (Magnus Norddahl) does the same.
+- **D3D9DrvRTX** (mmdanggg2, on Chris Dohnal's D3D9Drv) takes the other idiom and adds the origin
+  explicitly: `RPX1 = X + Frame->XB`, `RPY1 = Y + Frame->YB`.
+
+**⇒ Drive the eye passes with a half-width `FSceneNode` per eye (`XB = 0`, then `XB = SizeX/2`, with
+`X = SizeX/2`) and every 2D entry point becomes correct at once** — including `Draw2DLine` and
+`Draw2DPoint`, which have the identical problem and are easy to forget
+`[hypothesis 2026-09-11 — mechanism read from source, sufficiency untested]`. This is the family's
+instance of the general rule now recorded in `techniques/` ("look for a sub-viewport concept the engine
+already has"), and UE1 is the cleanest example of it anywhere in this library.
+
+#### On UE1 the `Z` argument looks like a free 2D-vs-3D discriminator — but the retail renderer is unproven
+
+This matters because the HUD and the explosions need **opposite** treatment and may share a path. In
+**SurrealEngine** (dpjudas's open UE1 reimplementation): `RenderCanvas.cpp` draws **all** canvas / HUD /
+menu / font / console tiles at **`Z = 1.0f`**; `VisibleCorona.cpp` takes a **world** position, transforms
+and perspective-divides it, and submits it **through `DrawTile` with real depth**; `VisibleSprite.cpp`
+draws `DT_Sprite` actors as **world-space camera-facing quads** via `DrawGouraudPolygon`
+`[inferred-static 2026-09-11]`.
+
+⚠️ **For the retail/227 `URender` this is NOT settled** — that subsystem is not public. Two things
+point at sprites using `DrawTile` there: `DrawTile` carries both a `FSpanBuffer* Span` and a real `Z`,
+which only make sense for occluded in-world billboards (the HUD passes `Span = NULL`, `Z = 1`); and
+**Han** (OldUnreal) proposed in 2016-05 giving sprites *"dedicated interfaces separate from DrawTile"*,
+which only reads as a change if they already use it.
+
+**Two cheap tests, for anyone on this family:** log `Z` and `Span != NULL` per `DrawTile` for one frame
+with an explosion on screen (`Z != 1.0` ⇒ already projected with that eye's transform, so it must be
+drawn *inside* the eye pass and **never replayed with a flat shift** — replaying it is precisely what
+puts explosions out at the sides); and run stock with **XOpenGLDrv's `NoDrawTile`** switch, which shows
+which elements travel that path with no code of your own.
+
+#### ⚠️ What UE1/UE2 do NOT give you
+
+- **227k's release notes contain nothing about stereo, eyes, or render-device interface extensions** —
+  only Canvas validity checks, crosshair scale and texture types. Its one tile-related addition is a
+  `WorldPosition` parameter on the **UnrealScript-side** `Canvas.DrawTile` — script-side, not
+  device-side `[reported 2026-09-11]`.
+- **⚠️ No public UE1 or UE2 render device does stereo at all.** UT99 Quest is an engine-level
+  ARM64/OpenXR rebuild rather than a `URenderDevice`; DXU24 (Deus Ex) translates UE1 to UE5 at runtime;
+  D3D9DrvRTX, XOpenGLDrv, UT99VulkanDrv and SurrealEngine are **all mono**. No source, thread or commit
+  describing per-eye state tracking inside a UE1/UE2 device was found. The vorpX thread *"Unreal Engine
+  1 games working in Stereo 3D?"* (2016-04) reached no conclusion. **So this account's two devices have
+  no precedent to copy — and equally, nobody has published a reason they cannot work.**
+- **No public documentation of UE2's `FRenderInterface` / `D3D8Drv` internals** — not how Canvas tiles
+  are submitted, not whether they use an ortho matrix or pre-transformed vertices, not
+  `SetTransform`/`TT_CameraToScreen`. The UDN "Two" pages cover Canvas *UnrealScript*, UnrealEd and
+  terrain, not the C++ render interface. This compounds the existing note above that UE2's headers were
+  never public.
+- **⚠️ No HelixMod or 3Dmigoto fix exists for any UE2 game** — both tools are D3D9/D3D11 and UE2's
+  D3D8 path is outside their reach. **There is no UE2 HUD-depth fix to copy.** The UE3 and UE4 universal
+  fixes (already covered above for UE3) are the nearest relatives, and the *technique* transfers even
+  though the code cannot. Closest relative of all is **Vireio Perception's `D3DProxyDeviceUnreal`**,
+  whose feature list includes *"HUD and GUI resizing and 3D depth adjustment"* with the HUD on a
+  secondary render target — but the current master is a rewritten v4 silent on the subject, and the two
+  MTBS3D pages documenting the 2.x modes **403 automated fetch**. Recorded as an unverified browser
+  lead, **not** as a negative result.
+
+#### The end state for both generations is the same, and one project can reach it sooner
+
+**Render the 2D layer once into a texture and submit it as a quad in the world** — the approach UT99
+Quest ships, and the one OpenXR standardises as `XrCompositionLayerQuad`. Full reasoning in
+`techniques/` → *"The end state is not a per-eye 2D shift at all"*. ⭐ **Relevant to the split within
+this family: a project already running over OpenXR can use that layer type directly**, whereas one
+presenting half-SBS to a desktop compositor cannot — so on this engine family the OpenXR path reaches
+the good 2D design earlier, which is a reason to prefer it beyond per-view poses.
+
+Generalised from [`unreal-gold-vr`](https://github.com/TefMeister/unreal-gold-vr) and
+[`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr) — their 2026-09-10 headset runs and the
+2026-09-11 research passes in each project's `external-research/topics/`.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Unreal Engine 2 / 3" row.

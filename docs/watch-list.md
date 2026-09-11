@@ -2452,3 +2452,139 @@ finding and its correction**, dropped there directly by the `/lm` session on 202
 would be a duplicate. And nothing in this pass answered a dead end in a project not already holding
 the drop it came from. **The estate's bottleneck remains draining, not detection** — 36 undrained
 files at this morning's `/gs`, 15 of them stalled.
+
+### 2026-09-11 (ninth sweep, dev PC) — the headset round produced a structural finding, not a list of bugs
+
+Delta since the eighth sweep (2026-09-10). Run alongside `/gs` and `/gr` in one session, in that order.
+
+**In-house delta: the 2026-09-10 evening headset round on the home PC — eight games worn back to back,
+102 commits in the window.** Eight project boards changed. That is the entire harvest for this sweep,
+and it was unusually productive because **three unrelated engines produced the same defect on the same
+evening**, which is precisely the signal this library exists to catch.
+
+#### What was generalised up, and out of which projects
+
+1. **⭐⭐ `techniques/` → new: "A frame has at least THREE stereo regimes, and one transform cannot
+   serve all of them."** Out of `unreal-gold-vr` (UE1: screen-space 2D given **no** transform — `DrawTile`
+   maps to full-window clip space, so HUD/explosions/projectiles draw once across the window),
+   `XIII2003-vr` (UE2: screen-space 2D given the **world's** transform — the HUD and an objective marker
+   slide and refuse to fuse) and `far-cry-2-vr` (Dunia: the **near-field viewmodel** given the world's
+   transform — two guns at a realistic IPD, with per-eye parity measured healthy in the same run).
+   Written as a symptom table — regime × correct treatment × what it looks like when it gets the world's
+   transform × what it looks like when it gets none — plus the reason one global separation cannot work
+   (disparity is a function of distance *in the projection that draws it*), and a still-head diagnostic
+   that separates the three before any code.
+   ⚠️ **One honest complication recorded in the section:** the UE1 behaviour is **byte-identical to a
+   simplification this library already recommends on purpose** during a flat side-by-side proof. A
+   deliberate choice and a bug can be the same code; the section now says to write down which one you
+   shipped.
+2. **⭐ The same section, extended from first-party sources by the same session's `/gr` work** — and the
+   three-bucket structure arrived **independently** from NVIDIA's archived *3D Vision Automatic*
+   documentation, which states the rule outright (*"to render an object without separation … render
+   these objects at convergence depth"*, and world-referenced HUD at *"an apparent depth value"*
+   matching its object). Added: that **"no offset" is NOT the rule** (it pins 2D at exact screen depth,
+   which is what 3D Vision does by accident and is uncomfortable) so a 2D bucket needs a **third**
+   treatment; the community convention of **exposing HUD depth on a key rather than hard-coding it**;
+   3Dmigoto's **Auto Crosshair** as the published per-frame depth-finder for world-anchored UI; and
+   **two detection rules** — identify ortho from the matrix (`m32 == 0`, `m33 == 1`), **but
+   `D3DFVF_XYZRHW` pre-transformed vertices bypass the transform pipeline entirely and cannot be
+   stereoised by any matrix edit**, which no amount of matrix inspection will reveal.
+3. **⭐⭐ The same section, new end-state subsection: "it is a quad in the world."** Out of
+   **UT99 Quest** (GhwstVR, 2026) — the only Unreal-family project found that actually ships stereo —
+   which renders the 2D layer once and maps it to a plane in the world, with the controller pointer
+   running the mapping backwards for clicks; and **OpenXR's `XrCompositionLayerQuad`**, the standardised
+   form of the same construct. Recorded with **why it dominates** (rendered once so there is no eye
+   state in the 2D path; correct by construction; comfortable by placement; pointer input for free) and
+   with its honest unpaid cost in that project's own words. ⭐ **New library-level point:** a project
+   already on OpenXR can use that layer type **directly**, which a half-SBS-to-desktop-compositor path
+   cannot — a reason to prefer OpenXR beyond per-view poses, and it had not been written down here.
+4. **⭐⭐ The structural root cause, now stated as a reusable move:** the fixed-function-era render APIs
+   have **no eye parameter anywhere**, so a stereo implementation must carry that state itself — and
+   whatever carries it becomes the thing 2D draws silently miss. **But UE1 turned out to provide the
+   handle already:** `FSceneNode` carries `XB`/`YB` ("offset of top-left active viewport"), the engine's
+   own sub-rect for editor panes, mirrors and warp-zone child frames, and **XOpenGLDrv and
+   UT99VulkanDrv both position 2D relative to the current frame's centre inside the current frame's
+   viewport rather than the window.** Generalised as: **before inventing eye-state, look for a
+   sub-viewport, split-screen, mirror or render-to-texture concept the engine already has** — an engine
+   that ever supported split-screen or a rear-view mirror already has a per-region view context, and
+   routing the eyes through it fixes every 2D path at once instead of one entry point at a time.
+5. **⭐⭐ `techniques/` → "The void behind the player" — the claim is upgraded from one project to a
+   law.** Until now it rested on `psychonauts-vr` alone (UE2), which made it a well-measured anecdote.
+   **It reproduced on `far-cry-2-vr` (Dunia)** — unrelated engine, renderer generation and injection
+   route. ⚠️ **And the symptom differs in a way that matters for diagnosis:** Psychonauts gave a
+   hard-edged black field; Far Cry 2 gave **ground and sky with no objects**, because a renderer that
+   culls per-object while drawing terrain and skybox globally leaves a *populated-looking* scene with
+   its contents missing — far easier to misread as streaming or LOD. **So the razor-straight black edge
+   is no longer the entry condition for this diagnosis**; the appearance-independent test is "does the
+   missing content appear when you turn the game's own camera to the same angle?"
+6. **⭐ `techniques/` → new: "Your driver must write its VR verdict to a FILE."** Out of `XIII2003-vr`
+   (a VR host logging only through `OutputDebugString` — invisible without attaching a debugger, which
+   is exactly what you are not doing in a headset) and `unreal-gold-vr` (a status command printing to an
+   in-game console that renders nothing, in a game whose log file is **buffered** and therefore 0 bytes
+   until the process exits). **Both mods were working or nearly working and the session could not tell.**
+   Corollary recorded separately because it bit one of them twice: **a buffered log is not a log during
+   the session** — every mid-session reading taken from it was taken from nothing.
+7. **`techniques/` → "Three rules that belong beside every `SendInput`" (was Two).** Drained from the
+   inbox — see below.
+8. **`engines/unreal-1-3.md`** — new family section carrying the UE1 `FSceneNode` answer, the `Z`-vs-`Span`
+   discriminator (with SurrealEngine's split between HUD tiles at `Z = 1.0` and world coronas through
+   `DrawTile` with real depth, and the explicit caveat that **the retail 227 `URender` is unproven**),
+   XOpenGLDrv's `NoDrawTile` as a zero-code classification test, and four documented **absences**:
+   227k's notes add nothing device-side for stereo; **no public UE1 or UE2 render device does stereo at
+   all**; UE2's `FRenderInterface`/`D3D8Drv` internals are undocumented; and **no HelixMod or 3Dmigoto
+   fix exists for any UE2 game** because both tools are D3D9/D3D11.
+9. **`engines/dunia.md`** — new section on the first headset run, plus the public prior art that changes
+   the cost of the work: **vorpX's DirectVR reportedly works in Far Cry 2** (so something already
+   locates a Dunia camera-rotation address) **and weapons "not in scale" is already a known vorpX
+   symptom in this game**; DHR's 2013 HelixMod fix, which notably does *not* claim to fix the weapon;
+   and **FoxAhead's Far Cry 2 Multi Fixer, which patches Dunia in process memory at runtime** — a
+   precedent and a collision check for anyone patching this engine.
+
+#### Inbox drained — one file, by explicit name
+
+`ls inbox/` returned exactly one file besides `README.md`, recorded before folding anything in and
+deleted by name only:
+
+- `2026-09-10-mod-sendinput-returns-zero-when-the-struct-size-is-wrong.md` (from `/lm`,
+  `manhunt-2003-vr`, dev PC) → folded into `techniques/` as the **third** rule beside every `SendInput`.
+  The mechanism: `INPUT` is **28 bytes at 32-bit and 40 at 64-bit**, so a hand-written size makes
+  `SendInput` **return 0 with `GetLastError() == 87` and insert nothing**, and a 64-bit scripting host
+  against 32-bit sample code makes that the *default* outcome rather than an unusual slip. **The rule
+  kept is the second half** — assert the return value equals the number of events passed, every call —
+  with its cost recorded: the false conclusion was plausible *and* reproducible, it motivated building
+  an in-process DirectInput hook, and **every `SendInput` result on that project across six weeks had
+  to be withdrawn at once; not one had been a test.** Folded in beside the existing UIPI and
+  pointer-ballistics rules, which share its shape.
+
+⭐ **`Supersedes:` check ran first** (`grep -rn "^Supersedes:" inbox/ --exclude=README.md`) — none, so
+no correction risked being drained after the claim it withdraws.
+
+#### No drops filed down — and that is a judgement, not an omission
+
+This sweep produced nothing to hand down that was not already landing in the same projects from the
+same session's `/gr` pass, which filed four `engine-research/inbox/` drops of its own
+(`visceral-re2-vr`, `far-cry-2-vr`, `unreal-gold-vr`, `XIII2003-vr`). Duplicating any of it here would
+put two files in one inbox for one finding, which the one-inbox-per-finding rule exists to prevent.
+
+#### Coverage bookmark for the next sweep
+
+Dossiers read in full this pass: none — the delta was board files and this morning's `/gr` output, not
+dossiers. Projects whose boards changed in the window and were read: `alice-madness-returns-vr`,
+`XIII2003-vr`, `unreal-gold-vr`, `far-cry-2-vr`, `visceral-re2-vr`, `re-village-scope-vr`,
+`psychonauts-vr`, `enslaved-vr`, `doom-2016-vr`, `manhunt-2003-vr`, `mad-max-vr`. **Still never covered
+in full by any sweep:** `the-evil-within-vr`, `prince-of-persia-2008-vr`, `alan-wake-vr`,
+`burnout-paradise-vr`.
+
+#### ⚠️ Web sources: three refused automated fetch, and that is not a negative result
+
+Recorded so nobody treats them as checked-and-empty: the two **MTBS3D** pages documenting Vireio
+Perception's 2.x HUD/GUI depth modes, and the **ModDB** D3D9DrvRTX page, all returned **HTTP 403**.
+Vireio's `D3DProxyDeviceUnreal` is the closest public relative to this account's two patched Unreal
+render devices, so that is a live browser lead, not an absence. Two further pages — bo3b's *Canonical
+Stereo Code* (404 at the indexed URL) and CryEngine's *Tips, Tricks and Experiences using Stereo-3d*
+(now redirects) — were read only via search-index snippets, and the claims resting on them are flagged
+as weaker sourcing where they appear.
+
+**Estate note, unchanged in direction but worse in degree:** this morning's `/gs` counted **24 undrained
+inbox files, 19 of them STALLED** — the highest stalled count that log has recorded. **The bottleneck
+remains draining, not detection**, and this sweep deliberately added nothing to it.

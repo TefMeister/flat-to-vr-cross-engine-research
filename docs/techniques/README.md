@@ -602,6 +602,197 @@ you lose the console you need to drive the test. Restore the full-window viewpor
 a HUD that appears in one half only is the restore logic missing a path, not a stereo bug. Moving the
 HUD into the world is a later milestone. (Unreal Gold, M2 design decision, `[compile-verified 2026-09-02]`.)
 
+### ⭐ A frame has at least THREE stereo regimes, and one transform cannot serve all of them
+
+This is the single most repeated defect in this account's 2026-09-10 headset round — **three
+projects on three unrelated engines, all in one evening, each having applied one regime's transform
+to another.** It is worth stating as structure rather than as three bug reports, because the
+symptoms are distinctive enough to diagnose from a wearer's description alone.
+
+| Regime | What it is | Correct treatment | Symptom when it gets the WORLD's transform | Symptom when it gets NO transform |
+| --- | --- | --- | --- | --- |
+| **World geometry** | the scene, at scene distances | per-eye view **and** projection offset | — (this is the baseline) | flat cardboard, no depth |
+| **Near-field viewmodel** | the first-person weapon, hands, held items — drawn with its **own** projection, typically a different FOV and a much nearer near-plane | its own, **much smaller**, separation; or drawn mono; never the world's figure | **doubles** — two guns — and reducing global separation cannot fix it without flattening the world | sits at screen depth, looks pasted on but fuses |
+| **Screen-space 2D** | HUD, menus, subtitles, sprites and billboards that were authored in window pixels | a **fixed** comfortable depth, identical in both eyes | **slides around the view** and refuses to fuse; worst on anything meant to point at a world object | drawn once across the whole window — appears off to the sides, and in one eye's half |
+
+**The three live cases, so the table is not theory:**
+
+- **Screen-space 2D given NO transform.** Unreal Engine 1 (Unreal Gold), a from-scratch D3D11
+  render device: `DrawTile()` — the UE1 entry point through which *all* 2D passes, including
+  explosion and projectile sprites — maps the tile's pixel rect straight to full-window clip space,
+  so every 2D element is drawn once across the whole window rather than once per eye half. Wearer:
+  *"explosions were coming from the sides and were off, so was the guns projectiles"*
+  `[reported 2026-09-10, n=1]`. ⚠️ Note the trap: this is the **same behaviour** the library
+  recommends on purpose during a flat side-by-side proof (see the paragraph above) — correct for a
+  monitor test, wrong the moment a headset is involved. A deliberate simplification and a bug can be
+  byte-identical; write down which one you shipped.
+- **Screen-space 2D given the WORLD's transform.** Unreal Engine 2 (XIII), a patched D3D8 render
+  device: the HUD and menu receive the per-eye offset. Wearer: *"both eyes line up fine in game but
+  not in the menu … hud elements don't line up, like a objective marker that is supposed to point
+  exactly what drawer to open, it slides around my view"* `[reported 2026-09-10, n=1]`. The renderer
+  already counts orthographic draws in their own bucket, which is the hook the fix needs.
+- **Near-field viewmodel given the WORLD's transform.** Dunia (Far Cry 2), alternate-eye rendering
+  through a `winmm` proxy: the world fused well enough to judge at a realistic IPD while the
+  first-person weapon appeared doubled, and lowering the global separation helped without resolving
+  it. Wearer: *"pressing 5 brings the eyes closer together but not close enough, i can still see 2
+  weapons"* `[verified-live 2026-09-10, n=1]` — with per-eye frame parity itself measured healthy in
+  the same run, which is what rules out a plain stereo fault and points at a second projection.
+
+**Why one global separation cannot work, stated once:** stereo disparity for a point is a function
+of its distance expressed in the *projection that draws it*. A viewmodel drawn with a nearer
+near-plane and a different FOV maps the same world-space eye offset to a much larger screen-space
+disparity, so the figure that fuses a 20-metre wall drives a 40-centimetre gun past the eyes'
+fusion limit. This is why the stereo-3D community treats per-pass separation and convergence as the
+normal case rather than an advanced feature.
+
+**The diagnostic that separates the three cheaply, before any code:** ask what happens to the
+element when the head is *still*. World geometry and a correctly-handled viewmodel both sit still
+and fuse; 2D given the world's transform still refuses to fuse; 2D given nothing sits in the wrong
+place but fuses fine. Then ask whether it moves *with* the head — that separates "anchored to the
+window" from "anchored in the world".
+
+Generalised from [`unreal-gold-vr`](https://github.com/TefMeister/unreal-gold-vr),
+[`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr) and
+[`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr), all first or second headset runs on
+2026-09-10.
+
+#### ⭐ The vendor wrote the rule down, and the community named the knob
+
+The three-regime structure above was derived from our own three failures. It is not ours, and it is
+worth recording that it arrived independently from a first-party source, because that moves it from
+"pattern we noticed" to "documented practice we had not read".
+
+**NVIDIA's archived GameWorks *3D Vision Automatic* best-practices documentation** (Rev. 1.0.220830,
+©2014–2022) describes the same mechanism most injectors in this account re-implement — the driver
+duplicates render targets, splits each draw in two, and appends a clip-space footer to vertex shaders,
+**`position.x += Separation * (position.w − Convergence)`**, separation's sign flipped per eye — and
+then states the 2D rule directly `[reported 2026-09-11, first-party vendor documentation]`:
+
+> *"2D Rendering is typically the area of the rendering engine that requires the most care to get right
+> for a successful stereoscopic title."*
+
+> *"To render an object without separation, at the same screen-space position in the left and right
+> eye, the best approach is to render these objects at **convergence depth**."*
+
+And, separately and explicitly, **world-referenced HUD elements are to be drawn at *"an apparent depth
+value"* matching the object they represent** — which is the table's middle row stated by the vendor.
+
+**⚠️ Note what that rule does NOT say.** It says *convergence depth*, not *zero offset*. Rendering a
+HUD with no eye offset pins it at exact screen depth — which is what 3D Vision Automatic ends up doing
+by accident via its own heuristics, and is uncomfortable. The correct treatment of a screen-space 2D
+bucket is therefore a **third** thing, not the absence of the first two: substitute a perspective
+projection at one chosen distance `D` for the whole bucket, so the parallax every pixel of it receives
+is `Separation * (D − Convergence)` — constant across the element, identical frame to frame, and
+**tunable by a single number**.
+
+The shader-hacking community's name for that number is **HUD depth**, and **its convention is to expose
+it on a key rather than hard-code it** — HelixMod and 3Dmigoto fixes bind it routinely. Take the
+convention, not just the formula: a fixed depth that turns out wrong in a headset costs a rebuild, and
+a bound key costs a keypress.
+
+**For the hard case — a world-anchored element submitted through the 2D path — there is a published
+algorithm.** 3Dmigoto's **Auto Crosshair** *finds* the right depth each frame: build a ray from each
+eye, walk 255 samples outward from the near plane, convert depth-buffer samples with
+`world_z = far*near / (((1−z)*near) + (far*z))`, compare against
+`w = (separation*convergence)/(separation − offset)`, and take the last non-intersecting offset as the
+element's X shift. Worth knowing exists before anyone builds a worse version of it.
+
+**Two detection rules, and the second is the one that bites:**
+
+- **Identify an orthographic projection from the matrix, not from the draw.** An orthographic matrix
+  has `m32 == 0` and `m33 == 1`, so `w` stays 1 and the perspective divide is a no-op; a perspective
+  matrix has a non-zero `m32` whose sign encodes handedness. In D3D8/9 fixed-function terms:
+  `GetTransform(D3DTS_PROJECTION)` with `_34 ≈ 0`, `_44 ≈ 1` `[reported 2026-09-11]`.
+- **🚨 But pre-transformed vertices are invisible to that test and immune to the fix.**
+  `D3DFVF_XYZRHW` vertices **bypass the transform pipeline entirely** — Microsoft's own FVF
+  documentation describes them as already being in 2D window coordinates — so such a draw is
+  screen-space by construction and **cannot be stereoised by any matrix manipulation at all.** It needs
+  an explicit per-eye offset in pixels. On any fixed-function-era renderer, establish which of the two
+  the 2D path uses **before** designing the fix, because the two designs share nothing
+  `[reported 2026-09-11, first-party docs]`.
+
+#### ⭐⭐ The end state is not a per-eye 2D shift at all — it is a quad in the world
+
+Everything above corrects 2D *in place*. The strongest public approach stops doing that: **render the
+2D layer once into a texture, then draw or submit that texture as a quad at a chosen distance in the
+world.**
+
+**UT99 Quest** (GhwstVR, 2026) — the only Unreal-family project found that actually ships stereo —
+describes exactly this: *"The 2D layer is a quad"*, *"they get mapped onto a plane sitting in the world
+so they have real depth, and the controller pointer runs that same mapping backwards to work out what
+you clicked"*, with menus *"on a panel a couple of metres out, anchored where you opened them"* and the
+HUD horizon-locked `[reported 2026-09-11]`.
+
+**OpenXR standardises the same construct as `XrCompositionLayerQuad`**, which the Khronos specification
+describes as *"useful for user interface elements or 2D content rendered into the virtual world"*.
+
+Why it dominates the alternatives, stated once so no project re-derives it:
+
+- **It is rendered once, not replayed per eye** — so there is no eye-state to track inside the 2D path,
+  which is exactly the thing that has no API for it (see below).
+- **It is correct in both eyes by construction**, not by a formula that can be mis-signed.
+- **It is comfortable by construction** — depth is a placement decision, not a parallax calculation.
+- **The reverse mapping gives you pointer input for free**, which a screen-space HUD cannot offer a
+  motion controller at all.
+- **⭐ A project already on OpenXR can use the layer type directly**, with no compositor work of its
+  own. That is a real advantage of an OpenXR path over an OpenVR or half-SBS one, and it had not been
+  written down here.
+
+⚠️ **The honest cost, from the same project:** *"The engine currently does a full draw pass per eye
+where it only needs one per frame."* Promoting the 2D layer out of the per-eye path does not by itself
+fix the per-eye cost of everything else.
+
+#### ⚠️ And the structural reason all of this keeps happening: the render API has no eye
+
+Worth stating plainly, because it is the root cause shared by every case above. **A render-device or
+graphics-API interface from the fixed-function era has no eye parameter anywhere in it**, so a stereo
+implementation must carry that state itself — and whatever it carries it in becomes the thing that 2D
+draws silently miss.
+
+**One engine family turned out to provide the handle anyway, and it is worth looking for the
+equivalent elsewhere.** Unreal Engine 1's `URenderDevice` has no eye concept, but every call takes an
+`FSceneNode*`, documented in the engine's own headers as *"a temporary object representing a portion of
+the world view to render"* and carrying **`XB`/`YB` — "offset of top-left active viewport"** — plus
+frame size, half-size, a `Mirror` sign, near clip and view planes. That sub-rect exists because the
+engine already needed it for editor panes, mirrors and warp-zone child frames; **it is therefore a
+ready-made per-eye context that the engine itself maintains**, and two live render devices
+(XOpenGLDrv, UT99VulkanDrv) position 2D relative to the current frame's centre inside the current
+frame's viewport rather than relative to the window `[inferred-static 2026-09-11]`.
+
+**The transferable move: before inventing eye-state, look for a sub-viewport, split-screen, mirror or
+render-to-texture concept the engine already has.** An engine that ever supported split-screen, a
+rear-view mirror, a security monitor or an editor preview already has a per-region view context, and
+routing the eyes through it makes every 2D path correct for free instead of one path at a time.
+
+Generalised from [`unreal-gold-vr`](https://github.com/TefMeister/unreal-gold-vr) and
+[`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr) research, 2026-09-11, with first-party
+vendor documentation and the UT99 Quest project as the public sources.
+
+### ⚠️ Your driver must write its VR verdict to a FILE — twice in one evening this cost whole launches
+
+Two unrelated projects lost headset launches on 2026-09-10 for the same reason: **the one fact the
+run existed to establish was written somewhere the run could not read it.**
+
+- A VR host that logged only through `OutputDebugString` — invisible without a debugger attached,
+  and attaching one is exactly what you are not doing while wearing a headset.
+- A render device whose status command printed to an in-game console that **renders nothing
+  on screen**, in a game whose log file turns out to be *buffered* and therefore 0 bytes until the
+  process exits.
+
+In both cases the mod was working or nearly working, and the session could not tell. The rule is
+small and absolute: **on initialisation, every driver writes a plain-text line to a known file
+path saying which runtime it found, whether it initialised, and at what resolution — flushed
+immediately, before anything else can crash.** It is the same principle as "log before the call,
+and flush" above, applied to the one question a headset run cannot answer by looking. A wearer
+cannot read a debugger, cannot alt-tab comfortably, and should never be asked to.
+
+Corollary worth its own line, because it bit one of these twice: **a buffered log is not a log
+during the session.** If the file is empty while the game runs and complete the moment it exits,
+every mid-session reading taken from it was taken from nothing.
+
+Generalised from [`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr) and
+[`unreal-gold-vr`](https://github.com/TefMeister/unreal-gold-vr), 2026-09-10.
+
 ---
 
 ## Driving a live game from a hook
@@ -781,6 +972,37 @@ Generalised from [`psychonauts-vr/engine-research/`](https://github.com/TefMeist
 open-source mod loader). `[reported]` rather than measured: the two-gate structure is read from public
 documentation of the level format plus a located, partially-disassembled visibility function, and the
 paired yaw-vs-position sweep described above has not yet been run.
+
+### ⭐ Confirmed on a SECOND, unrelated engine — so this is a law, not one game's quirk
+
+Until 2026-09-10 everything above rested on a single project (Psychonauts, Unreal Engine 2), which
+made it a well-measured *anecdote*. It has now reproduced on **Dunia (Far Cry 2)**, a completely
+unrelated engine, renderer generation and injection route — a `winmm.dll` proxy with an OpenVR
+bridge editing the view-projection it intercepts. Verbatim from the wearer's first headset run:
+*"looking behind me things don't render, there is no black void but only ground and sky, nothing
+else is showing until I turn with my mouse, then things pop into existence"*
+`[verified-live 2026-09-10, n=1]`.
+
+**One detail differs and it is worth knowing, because it changes the diagnosis.** Psychonauts
+produced a hard-edged *black* field — the boundary test above. Far Cry 2 produced **ground and sky
+but no objects**. Both are the same cause, but the symptom depends on what the engine culls at which
+granularity: a renderer that culls per-object while still drawing terrain and skybox globally leaves
+a *populated-looking* scene with the contents missing, which is much easier to misread as a
+streaming or LOD problem than a flat black wedge is. **So do not make the razor-straight black edge
+the entry condition for this diagnosis.** The reliable test is the one that does not depend on the
+artifact's appearance: *does the missing content appear when you turn the game's own camera (the
+mouse) to the same angle your head was at?* If yes, the engine culled for its camera and your
+rotation never reached it.
+
+The conclusion this upgrades: **if you rotate the view downstream of the engine's culling, you will
+hit this on any engine, and you cannot fix it downstream.** The head rotation has to reach the
+game's *own* camera — whatever writes the rotation the engine culls and draws against — which is
+what makes "find the camera the engine actually reads" (below) a prerequisite rather than a
+refinement. Two first-hand engines now, plus the same lesson landing a third time inside the same
+evening's notes.
+
+Generalised from [`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr) (first headset run,
+2026-09-10) alongside the Psychonauts work below.
 
 ### Do not rotate twice
 
@@ -2727,7 +2949,7 @@ Worth knowing so a future negative can be diagnosed rather than guessed at:
 The OS floor is the useful column: if the game predates Windows 8 it cannot be using the middle row,
 which removes a whole class of "the game detects us" theories without any experiment.
 
-### ⚠️ Two rules that belong beside every `SendInput` in this library
+### ⚠️ Three rules that belong beside every `SendInput` in this library
 
 - **UIPI failure is SILENT.** Input may only be injected into a process at an equal or lesser
   integrity level, and when it is blocked **neither the return value nor `GetLastError` reports it**
@@ -2741,6 +2963,35 @@ which removes a whole class of "the game detects us" theories without any experi
   machine's* pointer settings as much as of the game, and this account came close to copying one to a
   sibling project as though it were an engine constant. Pin the values via `SystemParametersInfo` at
   harness start, or calibrate against a read-back.
+
+- **🚨 The call can fail outright and look identical to a game that ignores you — because the
+  `INPUT` struct is a different size in a 32- and a 64-bit process.** `INPUT` is **28 bytes at
+  32-bit and 40 at 64-bit** (a `DWORD type`, four bytes of alignment padding, then a 32-byte union
+  whose largest member is `MOUSEINPUT`). Declare it at the wrong size — trivially easy in P/Invoke,
+  where the size is often written by hand — and `SendInput` **returns 0 with `GetLastError() == 87`
+  (`ERROR_INVALID_PARAMETER`) and inserts nothing at all**
+  `[verified-numerically 2026-09-10]`; the identical calls succeed once the size is right
+  `[verified-live 2026-09-10, n=6]`. **The 64-bit host is what makes this the default outcome rather
+  than an unusual slip:** PowerShell, Python and Node are 64-bit today, while much of the sample
+  code people start from was written for a 32-bit process.
+  - **Fix: compute the size, never hardcode it** (`Marshal.SizeOf` / `ctypes.sizeof`), and if you
+    must use an explicit layout, put the union at offset 8 and let the runtime size the struct.
+  - **The rule worth carrying is the second half: assert the return value equals the number of
+    events you passed, on every call.** A silently failing input API and a genuinely ignored one are
+    indistinguishable from outside, and only one of them is a fact about the game. Any input route
+    whose failure mode is "nothing happens" needs a success signal that does not depend on watching
+    the screen.
+  - **What it cost, which is the reason it is a rule and not a footnote.** On `manhunt-2003-vr` the
+    false conclusion survived because it was *plausible* — games really do ignore `SendInput` when
+    they read DirectInput or Raw Input — and perfectly reproducible. It motivated building an
+    in-process DirectInput hook to inject state directly: real work, justified by a measurement that
+    never happened. **Every `SendInput` result recorded on that project across six weeks had to be
+    withdrawn at once; not one of them had been a test.** The same project produced the same *class*
+    of defect twice in one day: an in-process hook guarded its device-vtable patch with a single
+    global flag, so only the **first** device created was instrumented, the two devices did not share
+    a vtable, and the uninstrumented one's zero reads were recorded as "the game never reads the
+    keyboard". **An instrument that is not measuring looks exactly like a subject that is not
+    responding.** Generalised out of `manhunt-2003-vr` (`/lm`, dev PC, 2026-09-10).
 
 ### And one thing that is genuinely unresolved — recorded as unresolved
 
