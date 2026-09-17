@@ -37,6 +37,7 @@ Each is distilled from public projects credited in
 - [The executable can name its own compressed formats and type hashes](#the-executable-can-name-its-own-compressed-formats-and-type-hashes)
 - [A D3D9 `Reset` can disarm a device hook, silently and late](#a-d3d9-reset-can-disarm-a-device-hook-silently-and-late)
 - [Test a runtime-compiled shader without the game: one file, two compilers](#test-a-runtime-compiled-shader-without-the-game-one-file-two-compilers)
+- [Windowed mode for unattended runs: config, registry or command line](#windowed-mode-for-unattended-runs-config-file-registry-or-command-line--never-the-in-game-menu)
 
 ---
 
@@ -133,6 +134,25 @@ answers to "how do I get two views out of this renderer", which is normally the 
    so shearing the pixel-stage matrix *as well* would apply the offset twice. `[inferred-static
    2026-09-03]` A dormant stereo path may be partly live in the bytecode even when it is dead at the
    driver, and the stages are usually asymmetric by design.
+
+
+**Four more shapes, from one week of first looks (2026-09-13 to 09-16).** Leftover stereo or VR code
+turned out to be common, but it came in four different kinds, and **each kind has a different first
+test**. Classify before planning:
+
+| Kind | Example | What it gives you | First test |
+| --- | --- | --- | --- |
+| **A render stereo toggle for a dead driver** | **Hard Reset** (Road Hog Engine): `r_stereo_enable` and `r_stereo_eye_separation`, built for 3D Vision via NVAPI | Probably the shaders' stereo maths, not a working output | Flip it live and look. It *is* live, with no restart, and gives a white/magenta picture with a quarter-size foreign buffer in one corner `[verified-live 2026-09-14, n=3 cycles]` — caution 4 above, seen on a real screen |
+| **A VR runtime interface missing one module** | **Portal** (Source): Valve's VR client ships whole in `client.dll` — 36 `vr_*` cvars, `exec sourcevr_%s.cfg`, the `SourceVirtualReality001` interface — and exactly one module, `sourcevr.dll`, is named by `engine.dll` but not shipped `[inferred-static 2026-09-14]` | A complete engine-side VR path that is waiting for one DLL | Read the interface the client expects; the module you would supply is the whole job |
+| **Gameplay-side VR code, no renderer** | **Metro Exodus** (4A Engine): `-vr_profile`, `vr_hand_speed`, `vr_grab_lerp_dur`, `oculus_touch_presets`, VR weapon classes — most likely the *Arktika.1* lineage `[inferred-static 2026-09-13]` | Hands, grabbing, aim and comfort logic, not stereo | Check whether the flags are reachable at all before counting on them |
+| **A stereo term in the shaders** | **Tomb Raider 2013** (Foundation): the `SceneBuffer` cbuffer has a named `StereoOffset` (float4 at +1344) beside the view matrix `[inferred-static 2026-09-14]`; the game shipped official 3D Vision support `[reported 2026-09-17]` | Proof the shaders can shift an eye, not that anything still writes the value | Read the constant back in a running frame; a public 3D Vision/geo-11 setup is a live oracle for its sign and units |
+
+The general point: **"the engine has VR/stereo code" is four different claims.** Only the second kind
+is close to an engine-side VR path; the first and fourth still leave the headset work to you, and the
+third leaves the rendering to you.
+
+Generalised from [`hard-reset-vr`](https://github.com/TefMeister/hard-reset-vr), [`portal-vr`](https://github.com/TefMeister/portal-vr),
+[`metro-exodus-vr`](https://github.com/TefMeister/metro-exodus-vr) and [`tomb-raider-2013-vr`](https://github.com/TefMeister/tomb-raider-2013-vr).
 
 ## The clip-space stereo footer: geometry stereo without ever finding the camera
 
@@ -4772,6 +4792,83 @@ machine, four launches.
 
 Generalised from [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr), 2026-09-05.
 
+#### …"dynamic" is not the same as "handled": a caller that never checks for NULL
+
+`[verified-live 2026-09-14, n=1 clean run after 4 crashes]` The table above says a missing export
+reached through `GetProcAddress` degrades into the game's own error message. **That holds only when the
+caller checks the result.** Dead Space 2 does not, for some of its calls, and a stage-1 `d3d9.dll` proxy
+exporting only `Direct3DCreate9` stopped the game launching outright:
+
+```
+Exception code: 0xc0000005   Fault offset: 0x00000000   Faulting module: unknown   (BEX / DEP)
+```
+
+**Fault offset zero with no owning module is a call through a NULL function pointer.** About six
+seconds into start-up the game looks up `D3DPERF_GetStatus`, `D3DPERF_SetOptions` and `DebugSetMute`,
+gets NULL back from the proxy, and calls it anyway — **before `Direct3DCreate9` is ever reached**, so
+nothing the mod does is visible yet. The competing theory, that the DRM rejected an unsigned DLL, is
+`[disproved 2026-09-14]`: the same unsigned proxy runs the game once its export table is complete.
+
+**So there is a third row for that table:** *dynamic lookup, unchecked caller* → a hard crash early in
+start-up, with no log, that reads exactly like "the protection blocked us".
+
+**The fix needs no guessing: export everything the real DLL exports, and forward what you do not
+implement.** `d3d9.dll` exports **seventeen** functions. Seven are undocumented (`PSGPError`,
+`PSGPSampleTexture`, `DebugSetLevel`, `DebugSetMute`, `Direct3DShaderValidatorCreate9`,
+`Direct3D9EnableMaximizedWindowedModeShim` and the `On12` pair), so **do not write typed C wrappers
+for them**: on 32-bit `stdcall` the callee cleans the stack, and a guessed argument count corrupts the
+caller's frame silently. Forward them with signature-agnostic thunks — save state, log the first call,
+restore every register and flag, and jump with the stack byte-identical.
+
+⭐ **The audit that makes this a pattern, not an anecdote** `[inferred-static 2026-09-14]`: the
+account's six `d3d9` proxies exported **1, 1, 1, 2, 9 and 17** functions. The one with exactly two
+(Alice) is the signature of meeting this once, patching the single export that bit, and moving on.
+Every proxy below 17 is a **latent** crash: harmless on its own game today, and a start-up crash on
+the first game that happens to call one of the missing exports.
+
+Generalised from [`dead-space-2-vr`](https://github.com/TefMeister/dead-space-2-vr), 2026-09-14.
+
+#### …and an export can be called before your `DllMain` has run
+
+`[verified-live 2026-09-17, n=2 games]` On two unrelated engines (CryEngine in Prey, Dawn in Deus Ex:
+Mankind Divided), a `dxgi.dll` proxy's `SetAppCompatStringPointer` export (ordinal 8) was called by
+Windows' application-compatibility shim **`AcGenral.dll`** while the proxy was **still being loaded —
+before its `DllMain` had run**. Confirmed in a debugger: the return address was inside `AcGenral`, and
+the jump target was 0.
+
+The chain of traps, each one measured:
+
+1. A proxy that fills its forwarding table in `DllMain` **jumps to address 0** and the game crashes at
+   start-up `[verified-live 2026-09-17, n=1]`.
+2. Loading the real `System32\dxgi.dll` from inside that early call **fails with error 1168**
+   (`ERROR_NOT_FOUND`) `[verified-live 2026-09-17, n=2]`.
+3. Taking a lock around that load **deadlocks**, because the real `dxgi.dll`'s own load calls straight
+   back into the proxy's export `[verified-live 2026-09-17, n=1]`.
+
+**What worked** `[verified-live 2026-09-17, n=2]`: answer an export that arrives before the real DLL is
+loaded with a harmless default (0, on x64), **do not** mark the real DLL as resolved, and retry the load
+on the next call and in `DllMain` — with no lock held. The real DLL then resolved 20 of 20 exports and
+both games reached their menus.
+
+It did **not** happen on proxies from the same generator for `d3d11`/`d3d9` (Heavy Rain, Borderlands,
+Burnout Paradise) or on Bulletstorm's `dxgi` proxy `[verified-live 2026-09-17, n=4]`, so it is most
+likely driven per executable by the compatibility-shim database `[hypothesis]`. **The lesson that
+transfers: a proxy's export stubs must be safe to call at any moment, including before initialisation.**
+Lazy resolution on first call is the robust shape; resolution in `DllMain` is the fragile one.
+
+Generalised from [`prey-2017-vr`](https://github.com/TefMeister/prey-2017-vr) and
+[`deus-ex-mankind-divided-vr`](https://github.com/TefMeister/deus-ex-mankind-divided-vr), 2026-09-17.
+
+#### Run the proxy outside the game before it ever meets the game
+
+The Dead Space 2 afternoon above was not lost to the missing export. It was lost because **a crash in
+our own code could not be told apart from the game's protection**: the only place the proxy had ever run
+was inside a protected game. A small self-test that loads the proxy in a process of our own and calls
+its exports — including undocumented forwards, and including a call made before initialisation, the
+Prey/Dawn case — removes that whole class of doubt. **A crash in the harness is ours; a crash only in
+the game is the game's.** The account's shared proxy generator now carries such a test, which reproduces
+the early-call crash on purpose `[compile-verified 2026-09-17]`.
+
 ## A vtable patch is a LIFETIME commitment — restore it before anything can unload you
 
 `[inferred-static 2026-09-04, n=1 title]` The companion hazard to the state-block rewrite above, and
@@ -6619,6 +6716,33 @@ Generalised from [`alice-madness-returns-vr`](https://github.com/TefMeister/alic
 2026-09-09, `/lm`, two launches.
 
 
+## Windowed mode for unattended runs: config file, registry or command line — never the in-game menu
+
+A 1280×720 window makes two machines with different monitor shapes produce the same numbers, and
+keeps a game drawing when something steals focus. Getting there by the in-game options menu is the
+fragile route: **"Keep these settings?" countdowns revert the change when nobody clicks in time**, and
+synthetic input frequently lands too late. Heavy Rain and Prey both reverted that way
+`[verified-live 2026-09-17, n=4]`. The config, registry and command-line routes all worked first time
+`[verified-live 2026-09-17]`:
+
+| Engine / game | Route |
+| --- | --- |
+| CryEngine (Prey 2017) | `system.cfg` → `r_Fullscreen=0` |
+| Dawn (Deus Ex: Mankind Divided) | registry `HKCU\…\Graphics` → `Fullscreen=0` |
+| Criterion (Burnout Paradise Remastered) | `%LOCALAPPDATA%\…\config.ini` `[Display]` → `WindowMode=1`, `Width`, `Height` |
+| Unreal Engine 3 (Borderlands, Bulletstorm) | command line `-windowed ResX=1280 ResY=720` |
+
+⚠️ **UE3 caveat:** Borderlands rewrote `ResX`/`ResY` in its user ini at launch, but honoured the same
+values on the command line `[verified-live 2026-09-17, n=1]`. Prefer the command line on UE3.
+
+**Rule:** find the setting's storage first (config file, registry, launch argument), back it up, write
+it, and **measure the window** to prove it took. Use the menu only when no stored form exists.
+
+Generalised from the 2026-09-17 first live looks on [`prey-2017-vr`](https://github.com/TefMeister/prey-2017-vr),
+[`deus-ex-mankind-divided-vr`](https://github.com/TefMeister/deus-ex-mankind-divided-vr), [`heavy-rain-vr`](https://github.com/TefMeister/heavy-rain-vr),
+[`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr), [`borderlands-goty-vr`](https://github.com/TefMeister/borderlands-goty-vr) and
+[`bulletstorm-vr`](https://github.com/TefMeister/bulletstorm-vr).
+
 ## Sources
 
 - **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, the log-before-the-call habit, and the exclusive-mode DirectInput wall that `SendInput` cannot cross; generalised out of [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research) §9a/§9b; the byte-identity read-only-tree rule from the same dossier (2026-09-02)
@@ -6721,6 +6845,7 @@ Generalised from [`alice-madness-returns-vr`](https://github.com/TefMeister/alic
   [3D Vision Automatic background](https://archive.docs.nvidia.com/gameworks/content/technologies/desktop/nv3dva_background.htm) ·
   [stereoscopic issues](https://archive.docs.nvidia.com/gameworks/content/technologies/desktop/nv3dva_stereoscopic_issues.htm) ·
   [nvapi_lite_stereo.h](https://github.com/NVIDIA/nvapi/blob/main/nvapi_lite_stereo.h)
+- **MGS5VR** and **fnvvr** (nikamigaming-create) — read for technique only; see the [case study](../case-studies/mgs5vr-and-fnvvr.md): [MGS5VR](https://github.com/nikamigaming-create/MGS5VR) · [fnvvr](https://github.com/nikamigaming-create/fnvvr)
 - Inspection tools: [RenderDoc](https://renderdoc.org/) · [PIX](https://devblogs.microsoft.com/pix/)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

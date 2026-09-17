@@ -16,7 +16,7 @@ sibling project's dossier — under [`engines/`](./engines/).
 | **Bethesda Creation Engine 2** (Starfield) | D3D12 | **starfield2vr** (mutars) | Public adapter; Reflex-marker frame timing. See [case study](./case-studies/creation-engine-2.md). |
 | **Ubisoft AnvilNext 2.0** (Assassin's Creed) | D3D12 | **anvilengine2vr** (mutars) | Public multi-title adapter; two-hook frame timing. See [case study](./case-studies/anvil-per-eye-camera.md). |
 | **Unity** | D3D11/12 (Vulkan/GL) | **UUVR** (universal) / per-game BepInEx plugins | Managed C# + built-in XR = easiest big engine class. Mono easier than IL2CPP. See [Unity games](./unity/). |
-| **Valve Source** (SDK 2013 titles) | D3D9 | **HL2VR** (SDK mod) / per-game (L4D2VR) | Source SDK 2013 = near-source access for its titles. See [source-available](./source-available/). |
+| **Valve Source** (SDK 2013 titles) | D3D9 | **HL2VR** (SDK mod) / per-game (L4D2VR) | Source SDK 2013 = near-source access for its titles. See [source-available](./source-available/). | **Portal (2007)** ships Valve's own VR client in `client.dll` minus `sourcevr.dll` — see [techniques](./techniques/README.md#dormant-native-stereo-paths).
 | **GoldSrc** (Half-Life 1) | OpenGL | **Lambda1VR** (via Xash3D-FWGS) | Open reimplementation makes it source-port territory. |
 | **id Tech 1–4 & kin** (Doom, Quake 1–3, Doom 3, RTCW, Jedi Knight) | OpenGL | **Source-port VR conversions** (GZ3Doom/QuestZDoom, Quake VR, dhewm3-based, Team Beef ports) | GPL source releases — VR is built inside the engine. See [source-available](./source-available/). |
 | **id Tech 5** (STEM/Evil Within) | D3D11 | None turnkey | 64-bit D3D11; strong candidate for a new adapter. Typically Z-up basis. Per-draw MVP. Source NOT released (unlike id Tech 1–4). |
@@ -24,6 +24,16 @@ sibling project's dossier — under [`engines/`](./engines/).
 | **Ubisoft Dunia** (Far Cry 2) | D3D9 | vorpX (generic) for 3D | Older D3D9; manual for true 6DoF. No public VR prior art; Ubisoft's own [Dunia shader-pipeline architecture talk (REAC 2023)](https://enginearchitecture.realtimerendering.com/downloads/reac2023_dunia_shader_pipeline.pdf) is a citable reference for the renderer lineage if building a from-scratch adapter. |
 | **CryEngine** (original Far Cry, 2004) | D3D9 | **farcry_vrmod** (fholger) via the official CryEngine Mod SDK | Vendor-SDK route, same family as Source SDK 2013 — not injection. Only proven for the *original* Far Cry, a different (older, open-SDK) engine from Far Cry 2's closed Dunia. See [source-available](./source-available/). |
 | **RenderWare 3.6** (Manhunt, GTA III-era) | D3D8/9 | None turnkey | Widely-licensed 2000s middleware; fixed-function pipeline (no shader constant buffers). Packed/self-protecting retail binaries in this era are common — see [case study](./case-studies/packed-binary-live-memory-scan.md) for the static-fails/live-succeeds pattern. See [engine page](./engines/renderware.md). |
+| **Xbox 360 static recompilation** (ReXGlue SDK) | D3D12 (Vulkan backend in SDK) | None | Console-only games rebuilt as native Windows programs from their `.xex`; stereo can be added in source. See [family page](./engines/rexglue-static-recomp.md). |
+| **CryEngine (Arkane fork)** (Prey 2017) | D3D11, loaded at run time (not a static import) | None known | Windowed via `system.cfg` `r_Fullscreen=0`; its `dxgi` proxy met the pre-`DllMain` export call (see techniques). |
+| **Eidos Montréal Dawn** (Deus Ex: Mankind Divided) | D3D11 (a D3D12 mode reported) | None known | Windowed via registry `Fullscreen=0`; same pre-`DllMain` `dxgi` trap as Prey. |
+| **Kojima Productions Decima** (Death Stranding DC) | D3D12 | None known | D3D12; no stereo result on this account yet. |
+| **4A Engine** (Metro Exodus EE) | D3D12, ray tracing always on | None turnkey | Exe carries leftover **VR gameplay** code (Arktika.1 lineage); ray-traced lighting may complicate a second eye `[hypothesis]`. |
+| **Crystal Dynamics Foundation** (Tomb Raider 2013) | resolved at run time — `d3d11`/`dxgi`/`d3d9` named in strings, none imported | Official 3D Vision; geo-11 reported | Shaders carry a named `StereoOffset` constant. |
+| **CD Projekt REDengine 2** (The Witcher 2) | D3D9 (static import) | None known | Fixed module base; debug console, debug menu and free camera named in the binary. |
+| **Radical Titanium** (Prototype) | D3D9 | None known | Real code in an unprotected DLL; camera class reachable from Lua. |
+| **Flying Wild Hog Road Hog Engine** (Hard Reset) | D3D9 | 3D Vision toggle (dead driver) | `D3DXGetShaderConstantTable` import names constants; `r_stereo_enable` live but its output is garbage today. |
+| **Quantic Dream in-house** (Heavy Rain) | D3D11 (static import) | None known | Windowed only via the in-game menu, whose 15-second keep-settings countdown reverts unattended; stored afterwards in `user_setting.ini`. |
 | **Bespoke / older custom engines** | D3D9 and older | Case-by-case | Usually fully manual; vorpX/geo-11 for seated 3D if D3D9+. |
 | **Anything Direct3D 8 or older** | D3D8/7 | Wrapper first | Needs a D3D8→9/11 shim before modern stereo tooling applies. |
 
