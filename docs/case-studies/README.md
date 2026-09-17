@@ -18,6 +18,8 @@ first-party analysis, published openly in the linked project repos.
 | **id Tech 6** (DOOM 2016) | *none — our own static recon* | [Finding a **dormant** inherited stereo path, and reading the engine's own doc-comments](./id-tech-6-dormant-stereo.md) |
 | **RenderWare 3.6** (Manhunt 2003) | *none — our own static+live recon* | [Packed/self-protecting binaries: why a static file patch fails, and how an in-process DLL scans live memory instead](./packed-binary-live-memory-scan.md) |
 
+| **Fox Engine** (MGS V) and **Gamebryo** (Fallout: New Vegas) | **[MGS5VR](https://github.com/nikamigaming-create/MGS5VR)**, **[fnvvr](https://github.com/nikamigaming-create/fnvvr)** (nikamigaming-create) | [Same-frame stereo by re-calling the scene draw; per-eye previous-frame matrices; enclosing-FOV crop; fail-closed hooks; 32→64-bit OpenXR host; headset-free simulator testing](./mgs5vr-and-fnvvr.md) |
+
 ## Why case studies matter
 
 The [porting checklist](../porting/) tells you *what* to do; the case studies show *how three

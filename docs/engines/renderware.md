@@ -22,6 +22,7 @@ orientation row. Curated by the cross-project research sweep.*
 | Game | Engine dossier | Project repo |
 | --- | --- | --- |
 | Manhunt (2003) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/manhunt-2003-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`manhunt-2003-vr`](https://github.com/TefMeister/manhunt-2003-vr) |
+| Dead Space 2 (2011) — Visceral's RenderWare Studio lineage; static recon 2026-09-13/14 | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/dead-space-2-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`dead-space-2-vr`](https://github.com/TefMeister/dead-space-2-vr) |
 
 ## Shared findings
 

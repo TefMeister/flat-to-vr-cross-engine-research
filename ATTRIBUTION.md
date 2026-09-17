@@ -242,6 +242,28 @@ culling law's second engine, and the first-person weapon ladder:
 Generalised in part out of this account's own projects: `unreal-gold-vr`, `XIII2003-vr`, `far-cry-2-vr`,
 `psychonauts-vr` and `manhunt-2003-vr`.
 
+### Added by the 2026-09-17 sweep
+
+- **nikamigaming-create** (astr0h on Discord) — **MGS5VR** (**MIT**) and **fnvvr** (**no licence — all
+  rights reserved**, viewable, not reusable). Read for technique only: same-frame stereo by re-calling
+  the scene draw, per-eye previous-frame matrices, enclosing-FOV crop, fail-closed hook validation, the
+  32→64-bit OpenXR host, and headset-free simulator testing. No code copied from either.
+  See the [case study](./docs/case-studies/mgs5vr-and-fnvvr.md).
+  - <https://github.com/nikamigaming-create/MGS5VR> · <https://github.com/nikamigaming-create/fnvvr>
+- **The ReXGlue SDK authors and contributors** — Xbox 360 static recompilation; **psxrestore** —
+  **Condemned2Recomp** (BSD-3-Clause). Read online and built from source by the account owner; no code
+  copied into this library. Public interviews and explainers (readonlymemo.com and others) for the
+  description of the route. **The Xenia project** — the GPU backend lineage those runtimes use.
+  - <https://github.com/rexglue/rexglue-sdk> · <https://github.com/psxrestore/Condemned2Recomp> ·
+    <https://readonlymemo.com/rexglue-xbox-360-recompilation-interview/>
+- **Microsoft** — the application-compatibility shim infrastructure (`AcGenral.dll`) behind the
+  pre-`DllMain` export call.
+
+Generalised in part out of this account's own projects: `dead-space-2-vr`, `prey-2017-vr`,
+`deus-ex-mankind-divided-vr`, `heavy-rain-vr`, `borderlands-goty-vr`, `bulletstorm-vr`,
+`burnout-paradise-vr`, `hard-reset-vr`, `portal-vr`, `metro-exodus-vr`, `tomb-raider-2013-vr`,
+`condemned-2-vr` and `the-darkness-vr`.
+
 ## Tools, drivers & communities
 
 - **Fire-Head** — **MHNoDRM**, the community write-up documenting Manhunt (2003)'s 16 SecuROM-remnant
