@@ -16,13 +16,27 @@ orientation row. Curated by the cross-project research sweep.*
 
 | Game | Engine dossier | Project repo |
 | --- | --- | --- |
-| Burnout Paradise Remastered — project paused 2026-08-25 (third-party-launcher gating) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/burnout-paradise-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr) |
+| Burnout Paradise Remastered — resumed 2026-09-16; runs with our proxy 2026-09-17 | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/burnout-paradise-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr) |
 
 ## Shared findings
 
-*Seeded 2026-08-26; grown by the research sweep as cross-project truths emerge. Nothing has been
-generalised up to this page yet — the per-project dossiers linked above are the current source of
-truth for this family.*
+*Seeded 2026-08-26; grown by the research sweep as cross-project truths emerge.*
+
+### A passive graphics proxy loads under Denuvo `[verified-live 2026-09-17, n=3 launches]`
+
+A full-export **32-bit `d3d11.dll`** proxy beside `BurnoutPR.exe` loaded under Denuvo Anti-Tamper plus
+the EA app, resolved 51 of 51 real exports, logged `D3D11CreateDeviceAndSwapChain`, and the game reached
+its main menu. Denuvo hides the executable's own code from reading (and probably from a debugger); it
+did **not** stand between the game and the graphics runtime, which is where a proxy sits. The
+licensing layer was left untouched throughout.
+
+### Windowed mode lives in a config file
+
+`%LOCALAPPDATA%\Criterion Games\Burnout Paradise Remastered\config.ini`, `[Display]`:
+`Width=1280`, `Height=720`, `WindowMode=1` `[verified-live 2026-09-17]`. See the cross-engine rule in
+[techniques](../techniques/README.md#windowed-mode-for-unattended-runs-config-file-registry-or-command-line--never-the-in-game-menu).
+
+Source: [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr), `modding-notes/2026-09-17-first-live-look.md`.
 
 ## See also
 

@@ -24,6 +24,8 @@ orientation row. Curated by the cross-project research sweep.*
 | XIII (2003) — UE2.x | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/XIII2003-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr) |
 | Enslaved: Odyssey to the West (Premium Edition) — UE3 + Ninja Theory's NTEngine layer | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/enslaved-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr) |
 | Alice: Madness Returns (2011) — UE3 | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/alice-madness-returns-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr) |
+| Borderlands GOTY Enhanced (2009 / 2019 remaster) — UE3; first static look 2026-09-15 | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/borderlands-goty-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`borderlands-goty-vr`](https://github.com/TefMeister/borderlands-goty-vr) |
+| Bulletstorm: Full Clip Edition (2011 / 2017) — UE3; first live look 2026-09-17 | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/bulletstorm-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`bulletstorm-vr`](https://github.com/TefMeister/bulletstorm-vr) |
 
 ## Shared findings
 

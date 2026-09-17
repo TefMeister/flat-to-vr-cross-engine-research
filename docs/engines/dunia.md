@@ -20,6 +20,7 @@ orientation row. Curated by the cross-project research sweep.*
 | Game | Engine dossier | Project repo |
 | --- | --- | --- |
 | Far Cry 2 (2008) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/far-cry-2-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr) |
+| Far Cry 3: Blood Dragon (2013) — Dunia 2; first static look 2026-09-15 | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/far-cry-3-blood-dragon-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`far-cry-3-blood-dragon-vr`](https://github.com/TefMeister/far-cry-3-blood-dragon-vr) |
 
 ## Shared findings
 

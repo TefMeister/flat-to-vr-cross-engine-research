@@ -2588,3 +2588,63 @@ as weaker sourcing where they appear.
 **Estate note, unchanged in direction but worse in degree:** this morning's `/gs` counted **24 undrained
 inbox files, 19 of them STALLED** — the highest stalled count that log has recorded. **The bottleneck
 remains draining, not detection**, and this sweep deliberately added nothing to it.
+
+### 2026-09-17 (tenth sweep, HOME PC) — a week of first looks turned "the engine has stereo code" into four different claims
+
+**Window:** since the 2026-09-11 sweep. **Clone root:** this machine's `-sr` root held 22 of 38 repos;
+the 16 missing game repos were added by `git clone --local` from the canonical root (origin re-pointed
+at GitHub), so this sweep could see the whole estate.
+
+#### In-house delta
+
+32 game repos had `engine-research/` or `external-research/` changes in the window; the heaviest were
+`re-village-scope-vr` (30 commits), `visceral-re2-vr` (17), `dead-space-2-vr` (11), `the-darkness-vr`
+and `XIII2003-vr` and `alice-madness-returns-vr` (8 each). Sixteen projects are **new since the last
+sweep**, mostly at M0 (first static look). Read this pass: the identity/status and stereo/VR/renderer
+lines of all sixteen new dossiers; `condemned-2-vr` §1–4 and `the-darkness-vr` §1–6 in full. **Not read
+beyond their status lines:** the re-village, visceral, XIII, Alice and manhunt deltas — next sweep's
+first job.
+
+#### Generalised up
+
+1. **`techniques/` → proxy exports, three new sub-sections:** a dynamic lookup whose caller never checks
+   for NULL crashes at start-up with fault offset 0 (from `dead-space-2-vr`), with the account-wide audit
+   of `d3d9` proxy export counts (1/1/1/2/9/17); an export called by `AcGenral.dll` **before `DllMain`**
+   on two engines (from `prey-2017-vr`, `deus-ex-mankind-divided-vr`); and the self-test-outside-the-game
+   rule.
+2. **`techniques/` → dormant stereo paths:** four kinds of leftover stereo/VR code, each with its own
+   first test — dead-driver toggle (`hard-reset-vr`), runtime interface missing one module (`portal-vr`),
+   gameplay-only VR code (`metro-exodus-vr`), shader stereo term (`tomb-raider-2013-vr`).
+3. **`techniques/` → new section:** windowed mode by config/registry/command line, never the in-game
+   menu, with the per-engine routes from the six 2026-09-17 first live looks.
+4. **New family page `engines/rexglue-static-recomp.md`** (Condemned 2, The Darkness): the route, the two
+   seams (output at `IssueSwap`, render at the constant-register write), and the practical traps.
+5. **`engines/criterion-burnout.md`:** first shared findings — a passive `d3d11` proxy loads under
+   Denuvo; windowed config location. Family tables for UE1–3, Dunia and RenderWare gained their new
+   siblings; `engines-index.md` gained ten engine rows.
+6. **New case study `case-studies/mgs5vr-and-fnvvr.md`**, credited in `ATTRIBUTION.md`; both repos
+   confirmed public via the GitHub API (MGS5VR MIT, fnvvr unlicensed).
+
+#### Inbox drained — three files, by explicit name
+
+`2026-09-14-mod-d3d9-proxy-must-export-all-17.md` → item 1 ·
+`2026-09-16-mod-lessons-from-mgs5vr-and-fnvvr.md` → item 6 ·
+`2026-09-17-mod-dxgi-proxy-early-call-and-windowed-routes.md` → items 1, 3, 5.
+`Supersedes:` check ran first: none.
+
+#### Web
+
+- Watch-list tool releases (UEVR, REFramework, geo-11, starfield2vr, anvilengine2vr, vrframework):
+  **no new release since the last sweep.** ReXGlue SDK: nightly builds continue (latest 2026-09-15).
+- ReXGlue coverage (readonlymemo interview and others) confirms the Xenia GPU backend lineage
+  `[reported]`; **no VR/OpenXR work on ReXGlue found.**
+- Tomb Raider 2013's official 3D Vision support and a geo-11 re-enable how-to found →
+  **dropped to `tomb-raider-2013-vr/engine-research/inbox/`**. ⚠️ The MTBS3D how-to returned **HTTP 403**
+  to automated fetch — a browser lead, not a negative.
+- `Demez/SourceEngineVR` (OpenVR base code for Source SDK mods) checked for Portal: it is SDK-mod code,
+  not a `sourcevr.dll` replacement for retail Portal, so no drop.
+
+#### Coverage bookmark
+
+Never covered in full by any sweep: `the-evil-within-vr`, `prince-of-persia-2008-vr`, `alan-wake-vr`,
+`burnout-paradise-vr`, and all sixteen new projects except `condemned-2-vr` and `the-darkness-vr`.
