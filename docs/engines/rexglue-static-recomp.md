@@ -62,6 +62,26 @@ relevant to OpenXR — noted so nobody chases it.
 - **An idle front end plays an attract trailer** that looks like gameplay. Verbose file logging settles
   it: the trailer opens a video file and no level file `[verified-live 2026-09-16]` (The Darkness).
 
+### The Darkness, 2026-09-18: two findings that transfer
+
+From `the-darkness-vr` (dossier, 2026-09-18) `[verified-live 2026-09-18]`:
+
+- **Put the eye offset in the camera, not the projection.** Per-light scissor rectangles, culling and
+  the lighting eye position are computed on the host from the unshifted camera, so a projection-only
+  offset lit two heads differently per eye; moving it into the camera removed the defect over 21 frames
+  (different scene moment, so suggestive). General form in `techniques/` → "An eye offset inside the
+  projection matrix is invisible to every decision the CPU makes".
+- **Alternate-eye through a recompile needs the world held still for the second eye.** With the
+  simulation running, a pair's two eyes were ~130 ms apart in a moving car. A clock pin that holds the
+  guest's time on the second frame is built and engaging; the pair rate is then half the guest frame
+  rate. See `techniques/` → "Anything that must match between the eyes must advance once per FRAME".
+
+**Condemned 2's engine family has public VR prior art on PC:** three LithTech Jupiter EX mods (DR-89's
+fear-vr, and condemned-vr and FEAR2VR as recorded in phunkaeg's playbook). The recompiled binary shares
+no addresses with them, but fear-vr's rule — the smallest safe second-eye hook sits below all client
+updates and above the pure world render — is a question to ask of the recompiled frame
+`[hypothesis]`. Detail: `condemned-2-vr/external-research/topics/2026-09-23-three-vr-mods-on-the-same-lithtech-jupiter-ex-engine.md`.
+
 ## See also
 
 - [engines index](../engines-index.md) — the ReXGlue row.

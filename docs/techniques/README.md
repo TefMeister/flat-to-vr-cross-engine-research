@@ -4630,6 +4630,16 @@ matched that prediction, arrived at by a different person, a different method an
 earlier. Two independent routes to the same pass list is a much stronger position than either alone,
 and it promotes *"watch for anything odd"* into a ranked list with shadows at the top.
 
+**Update 2026-09-23 — the pattern is common, not occasional.** One `/gr` pass on 2026-09-17 found that
+**7 of 14 newly researched projects already had a public 3D Vision fix or an official 3D path**: Dead
+Space 2 (official, plus a HeliX `ShaderOverride` fix), Borderlands GOTY Enhanced (DJ-RK, 3DMigoto,
+D3D11), Far Cry 3: Blood Dragon (HeliX, D3D9 only), Prototype (HeliX), Deus Ex: Mankind Divided (3D Fix
+Manager), Tomb Raider 2013 (official 3D Vision) and Death Stranding DC (RealVR) `[reported 2026-09-17]`.
+So **checking for one belongs in every project's first static look**, before any logging proxy runs:
+its list of overridden shaders names which ones rebuild world position and which effects are screen
+space, and its settings often name the constant that carries the projection `[hypothesis]`. Read the
+fix files online; copy nothing. From `/gr`'s per-project topics dated 2026-09-17 in those seven repos.
+
 ## A proxy DLL must export everything the target actually imports
 
 The proxy-DLL foothold — drop a same-named `d3d9.dll` / `dinput8.dll` / `winmm.dll` beside the exe,
@@ -6742,6 +6752,111 @@ Generalised from the 2026-09-17 first live looks on [`prey-2017-vr`](https://git
 [`deus-ex-mankind-divided-vr`](https://github.com/TefMeister/deus-ex-mankind-divided-vr), [`heavy-rain-vr`](https://github.com/TefMeister/heavy-rain-vr),
 [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr), [`borderlands-goty-vr`](https://github.com/TefMeister/borderlands-goty-vr) and
 [`bulletstorm-vr`](https://github.com/TefMeister/bulletstorm-vr).
+
+## Anything that must match between the eyes must advance once per FRAME, never once per eye
+
+When a game is made to draw the world twice — a second camera, a replayed pass, or alternate-eye
+frames — every piece of per-frame state the engine advances while drawing is now advanced twice, or
+advanced between the two eyes. The eyes then disagree about something that is not the viewpoint, and
+the wearer sees it as blinking shadows, jittering foliage, grain that differs per eye, or an object in
+two places. Four independent sources name the same fault `[reported]`:
+
+- **dariulone's CyberpunkVR Port** (REDengine 4, MIT) renders the second eye as a real second engine
+  camera, and computes the effects that must not differ **once per frame and shares them**: sun shadow
+  cascades, the shader clock, foliage wind and the reflection march. Its README names this as what
+  stops blinking shadows and jittering foliage. It also identifies views by a stable camera-name hash,
+  not by draw order. <https://github.com/dariulone/cyberpunk-vr-port>
+- **KisakCOD-VR**, as summarised in vaas993's theHunter VR prior-art notes: audio, timers and particles
+  built and submitted twice under full-rate stereo replay; per-frame work must run once per frame.
+- **phunkaeg's VR Modding Playbook**, chapter 14: *"a once-per-frame mutable packet double-advancing"*
+  is its diagnosis for a subtle per-eye difference in grain or noise.
+- **Our own `the-darkness-vr`** (alternate-eye through ReXGlue): with the simulation running, the two
+  eyes of a pair were ~130 ms apart in a moving car, so disparity could not be told from motion;
+  **holding the world still on the second eye's frame** became a prerequisite rather than polish
+  `[verified-live 2026-09-18]`.
+
+**Checklist when one eye flickers against the other:** list everything the frame advances — clocks,
+random seeds, wind, particle steps, shadow cascade fitting, temporal history, streaming — and confirm
+each advances exactly once per displayed pair. The same rule governs any setting you ramp: advance it
+once per real frame, never inside the per-eye loop (vaas993's scope-fade note makes exactly this point:
+a value that differs between eye 0 and eye 1 is instant double vision).
+
+## Two things that must agree must travel as ONE snapshot — never as two routes
+
+A recurring class of VR fault is one object, or two quantities that must match, reaching the screen by
+two different routes, one of which can fail or lag silently. It shows up as a one-frame flicker, a
+periodic swap, or a picture that "hops". Evidence from four places:
+
+- **vaas993's theHunter VR** `[reported]`: a scope's glass and mask flickered against each other every
+  few seconds. They were one disc drawn twice — the glass through a constant buffer that could silently
+  fail to resolve, the mask through the rasterizer, which could not. On a failed frame one moved and the
+  other did not. Fix: send both down the same route. Their rule: *same object, same code path — not
+  equivalent paths, the same one.*
+  <https://github.com/vaas993/theHunterCotW-VR/blob/main/docs/THE_FLICKER_POSTMORTEM.md>
+- **Our `re-village-scope-vr`**, three instances in one week: the scope picture was drawn from the
+  game's camera pose while the crop maths read the headset pose (§9cn); the crop was handed from the
+  game thread to Present as loose separate values, readable mid-write (§9cl); and for one tick the
+  picture's map was built from **the other eye's** projection, caught by hand four times (§9co)
+  `[verified-live 2026-09-22]`.
+- **FC2VR**, as taught in the playbook's chapter 17 (rule R4a): *publish the eye pair, never half of
+  one.*
+- **The playbook's failure atlas**, FAIL-STR-062: hands or gun snapping between two poses in one eye
+  only means the pairing is clean and the writer is inside that eye's pass.
+
+**The rule:** anything that must agree — a picture and the crosshair drawn over it, a lens and its mask,
+a crop and the frame it crops, the two views of a pair — is written as **one frame-stamped snapshot**
+and read whole by the consumer, which refuses a snapshot that does not match the frame it is drawing.
+Two "equivalent" paths are a latent bug even while they agree.
+
+## An eye offset inside the projection matrix is invisible to every decision the CPU makes
+
+Shifting each eye inside the projection matrix is geometrically exact for the draws that read that
+matrix. But engines make many camera-dependent decisions on the CPU from the **unshifted** camera:
+culling, per-light screen rectangles, the eye position handed to lighting shaders, level-of-detail.
+Those then disagree with the picture, differently for each eye.
+
+- **Our `the-darkness-vr`** `[verified-live 2026-09-18]`: with the offset in the projection, two heads
+  rendered red-lit in one eye and dark in the other, locked to the eye for 12 alternations. The per-light
+  scissor rectangles were built from sphere tangents with the eye at the centre, so each light was cut in
+  the wrong place, in opposite directions per eye `[hypothesis for the mechanism]`. Moving the offset
+  into the **camera** made the defect disappear over 21 labelled frames (not the same scene moment, so
+  suggestive, not settled).
+- **The playbook**, chapter 15 (IL-2 1946 VR teardown), states the general form: feeding the renderer
+  an asymmetric per-eye matrix while the engine culls from a symmetric scalar FOV gives two frusta, one
+  of them wrong; and its cross-engine map lists "the engine owns culling, not your frustum" among the
+  problems every surveyed engine forced.
+
+**Rule of thumb:** put the eye offset where the engine's own camera lives, so every consumer — GPU and
+CPU — sees the same eye. Use a projection-only shift as a quick first picture, not as the shipping route.
+Units change when you move it: in The Darkness 0.6 in the projection moved geometry 47–190 px while 0.6
+at the camera moved nothing visible.
+
+## A "read-only" hook on the hot path of the feature you ship is not read-only
+
+Our `re-village-scope-vr` loaded a diagnostic REFramework Lua script that hooked the game's per-frame
+scope update only to capture the gun object: it read one argument and returned everything unchanged.
+With it loaded, the VR scope picture showed sky in every direction and the plugin's own geometry check
+was sane on 116 of 259 log lines; with only that script removed, 49 of 49, matching a known-good session
+`[verified-live 2026-09-21, n=1 launch plus the wearer's confirmation]`. The mechanism is not
+established `[hypothesis: the hook trampoline on a per-frame managed method interacting with the VR
+framework's double submit]`; the effect is solid.
+
+Two rules follow. **Capture objects from something rare and unrelated** (a shot, an equip), never from
+the hot path of the thing you are rendering. **Remove every probe the moment its question is answered**
+— a disproved probe left loaded is live code on the hot path. And a trap in the diagnosis: the corrupted
+reading first looked like evidence about the wearer ("the rifle was pointing 54° away from your gaze").
+When a wearer's report and a log line disagree, check whether the log line is downstream of the fault.
+
+## Find the step that BUILDS the thing before changing any step that CARRIES it
+
+From our `re-village-scope-vr` spread work (RE Engine detail in `engines/re-engine.md`): a value can be
+measured perfectly at a step that merely **carries** it, and changing it there does nothing because the
+object it describes already exists. Four builds failed this way with the correct call order already
+written down. The method that worked, engine-agnostic: measure first (log the angle between the
+intended and actual direction per event); trace the call order and say which step **constructs** the
+object; identify the altered value by **arithmetic on logged data**, computing the clean value yourself;
+make every lever re-measure after it writes and log both numbers; and ask for several samples of a
+random effect, not one. This is also the lanes plugin's `docs/PROTOCOL.md` §11.
 
 ## Sources
 

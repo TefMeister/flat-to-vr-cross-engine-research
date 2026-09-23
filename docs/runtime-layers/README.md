@@ -85,6 +85,58 @@ VR title or VR mod ── SteamVR + VRto3D driver ──► 3D display (SbS/TaB/
 flat game ── ReShade + SuperDepth3D ──► 3D display (z-buffer stereo)
 ```
 
+## Headset-free testing: OpenXR-Simulator and its forks
+
+A mod whose output goes through **OpenXR** can be tested with no headset by pointing it at a desktop
+OpenXR runtime that shows both eyes in a window.
+
+- **fholger's OpenXR-Simulator** (MIT; fholger also wrote the Crysis and Far Cry VR mods): a small
+  runtime rendering side-by-side stereo in a window, with mouse-and-keyboard pose control and D3D11,
+  D3D12 and OpenGL backends; tested with Unity, Unreal through UEVR, and the Steam overlay `[reported,
+  from its README]`. <https://github.com/fholger/OpenXR-Simulator>
+- **Downstream forks** (fholger → elliotttate → webhead2oo9) add, by their READMEs `[reported
+  2026-09-18]`: a **Vulkan** backend; **headset profiles** with measured per-eye FOV, panel resolution
+  and IPD for ten headsets, so a projection bug that only shows at one FOV becomes reproducible at a
+  desk; frame timing measured from `xrEndFrame` submissions rather than window repaints (p50/p95 on a
+  key); a **32-bit** build; activation per process through `XR_RUNTIME_JSON` so the machine's real
+  runtime is untouched; and GDI presentation on the D3D12 path to avoid fighting the Steam overlay.
+  <https://github.com/webhead2oo9/OpenXR-Simulator>
+- **An MCP server** in that fork gives an agent per-eye screenshots, frame diagnostics and a check for
+  flicker in quad layers separately from world motion — i.e. the session's own eyes on a VR frame.
+  ⭐ An `openxr-simulator` MCP server is **registered in the home PC's Claude Code session** as of
+  2026-09-23 `[measured 2026-09-23: its tools are listed in-session; which fork it wraps not checked]`.
+- **The probe pattern** from the same account (written for BetterVR): a standalone program that
+  replays one mod's exact OpenXR call sequence and exits 0 if the runtime can serve it — turning a class
+  of headset-only failures into a desk check.
+
+**The limit:** these are OpenXR runtimes. They help only a mod whose VR output goes through OpenXR, not
+one that draws stereo into the game's own swap chain. phunkaeg's playbook adds the matching warning
+(chapter 09): *a substitute runtime that enforces less than production passes things the headset then
+fails*, so a simulator pass is not headset acceptance.
+
+## Frame warping as a plug-in: PureDark's AFW
+
+**PureDark's UEVR fork** adds *Alternate Frame Warping*: the game draws fewer pictures and the missing
+ones are made by warping pictures that exist — one eye from the other, this frame from the last, or
+both. The author reports roughly 60–80% more performance in VR, some artefacts, ~500 MB more VRAM,
+D3D12 only `[reported]`. <https://github.com/PureDark/UEVR> (branch `AFW`, releases
+`UEVR_AFW_v1.0-beta.1` to `beta.6`, July–August 2026).
+
+What the public files show `[inferred-static 2026-09-21, from our modding lane's read]`:
+
+- A warp needs colour, depth and motion vectors per picture, plus the camera it was taken from and the
+  camera it should appear taken from. AFW gets depth and motion vectors by **listening to the game's own
+  temporal upscaler call** (DLSS, FSR 2/3 or XeSS), which is why the install notes say to turn DLSS or
+  DLAA on first. **A game with no temporal upscaler gives it nothing to listen to.**
+- The warp itself ships as a **compiled add-on behind a published header**: three plain D3D12 calls —
+  initialise the device, initialise the warp, evaluate a frame — none of which requires Unreal. So in
+  principle any D3D12 VR mod that can supply those inputs could call it `[hypothesis; untried, and the
+  add-on may check its host]`. **Its licence and terms are not established**: it is PureDark's work, to
+  be used only with his permission.
+- Known artefact: first-person arms and weapons can show double vision; per-game profile scripts fix
+  five listed games. Our wearer saw exactly that, slight, around the hands in the Silent Hill 2 remake,
+  and judged it a fair trade for the smoothness `[reported 2026-09-21, n=1 wearer]`.
+
 ## Sources
 
 - OpenComposite / OpenOVR — [gitlab.com/znixian/OpenOVR](https://gitlab.com/znixian/OpenOVR) ·
