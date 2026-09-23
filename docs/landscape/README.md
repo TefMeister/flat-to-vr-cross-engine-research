@@ -4,6 +4,8 @@ The public tools for putting a flat game into VR fall into **seven distinct fami
 **not** interchangeable — picking the right family for your engine is the first decision. All
 projects named here are credited in [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).
 
+For an evidence-graded reference that cuts across all seven families — symptoms, recipes and teardowns — see [phunkaeg's VR Modding Playbook](./vr-modding-playbook.md).
+
 | Family | Examples | What it does | True 6DoF stereo? |
 |--------|----------|--------------|-------------------|
 | **Source ports / SDK mods** | **Team Beef** Quest ports, **Quake VR**, **HL2VR**, **GZ3Doom** | VR built *inside* an open/GPL/SDK engine | **Yes** — the gold standard |

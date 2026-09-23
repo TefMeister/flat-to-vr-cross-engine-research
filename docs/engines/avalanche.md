@@ -130,6 +130,18 @@ instrument for this family; the engine-agnostic form is
   `[inferred-static 2026-09-04]`. The in-car first-person camera is still `[reported]` — pressed on
   foot with no effect, as expected, and the in-car press needs a save with a drivable car.
 
+### A native per-eye VR mod on a sibling Avalanche engine (2026-09-23)
+
+**vaas993's theHunterCotW-VR** (GPL-3.0) renders theHunter: Call of the Wild — Avalanche's **Apex**
+engine, D3D11 — natively once per eye from the game's own camera, with 6DoF, loaded by an
+`XINPUT9_1_0.dll` proxy `[reported]`. <https://github.com/vaas993/theHunterCotW-VR>
+
+It is the first public native-stereo work on this family, and its `docs/` folder is unusually complete:
+architecture, TAA per-eye and TAA replacement plans, a tier-1 FOV plan, recentring, 6DoF, a scope
+design and a flicker post-mortem. ⚠️ Mad Max diverged from the Just Cause 3 branch (see this page), so
+treat it as a map of which subsystems needed work, never as offsets `[hypothesis]`. Mad Max leads are in
+`mad-max-vr/external-research/topics/2026-09-23-thehunter-vr-native-stereo-on-a-sibling-avalanche-engine.md`.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" row.

@@ -117,6 +117,21 @@ builds against the CryEngine Mod SDK with engine-level access.
 Generalised from [`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr), its 2026-09-10 headset run
 and its 2026-09-11 research pass.
 
+### The VR Modding Playbook's Far Cry 2 chapter (2026-09-23)
+
+phunkaeg's *VR Modding Playbook* chapter 17 studies two Far Cry 2 VR projects — the author's own
+unreleased FarCry2-vr and MonsterDeadWood's FC2VR — and rates Dunia as reaching the **top rung** of its
+stereo ladder: the frame-graph and world-execute steps are reachable as vtable slots, so the engine can
+render the world twice itself `[reported]`. Two points that transfer across Dunia titles `[hypothesis]`:
+
+- **The camera reaches the renderer as a global you overwrite**, so a borrow-restore-freeze contract is
+  unavoidable; the chapter's four shipped failures (R1–R4) are what that costs.
+- **Store builds are told apart by SHA256, with a verified offset table per build.** Steam and Ubisoft
+  Far Cry 2 were proven to be the same port by matching section hashes and the embedded debug path — a
+  build-identity trick worth using on Far Cry 3: Blood Dragon too.
+
+<https://github.com/phunkaeg/vr-modding-playbook/blob/main/docs/17-teardown-fc2vr-native-stereo.md>
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Ubisoft Dunia" and "CryEngine" rows, including the

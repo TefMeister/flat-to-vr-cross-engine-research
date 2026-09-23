@@ -264,6 +264,24 @@ Generalised in part out of this account's own projects: `dead-space-2-vr`, `prey
 `burnout-paradise-vr`, `hard-reset-vr`, `portal-vr`, `metro-exodus-vr`, `tomb-raider-2013-vr`,
 `condemned-2-vr` and `the-darkness-vr`.
 
+### Added by the 2026-09-23 sweep
+
+- **phunkaeg** — *VR Modding Playbook* (code MIT, prose CC BY 4.0): <https://github.com/phunkaeg/vr-modding-playbook>. Summarised in `docs/landscape/vr-modding-playbook.md`; also the route by which most of the projects below were found.
+- **Mastersellz** — *BL1GOTYVR*, Borderlands GOTY Enhanced VR (no licence found): <https://github.com/Mastersellz/BL1GOTYVR>
+- **vaas993** — *theHunterCotW-VR* (GPL-3.0): <https://github.com/vaas993/theHunterCotW-VR>, including its flicker post-mortem and prior-art notes (which cite the Halo MCC VR and KisakCOD-VR authors).
+- **farmerarmor** — *DeusExHRVR* (LGPL-2.1): <https://github.com/farmerarmor/DeusExHRVR>
+- **DR-89** — *fear-vr* (MIT): <https://github.com/DR-89/fear-vr>; and the authors of **condemned-vr** and **FEAR2VR** as recorded in the playbook (no public link found yet — to be credited by name once found).
+- **dariulone** — *CyberpunkVR Port* (MIT): <https://github.com/dariulone/cyberpunk-vr-port>
+- **fholger**, **elliotttate** and **webhead2oo9** — *OpenXR-Simulator* and its forks (MIT): <https://github.com/fholger/OpenXR-Simulator> · <https://github.com/webhead2oo9/OpenXR-Simulator>
+- **PureDark** — UEVR fork with *Alternate Frame Warping*: <https://github.com/PureDark/UEVR>
+- **peteromallet** — *desloppify* (Open Source Native License 0.2): <https://github.com/peteromallet/desloppify>
+
+**Our own first-party generalisations, 2026-09-23:** the once-per-frame, one-snapshot, offset-in-the-camera,
+read-only-hook and build-step sections in `docs/techniques/` were generalised out of our work on
+legitimately-owned copies of **Resident Evil Village** ([`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr))
+and **The Darkness** ([`the-darkness-vr`](https://github.com/TefMeister/the-darkness-vr)), alongside the
+public sources above. Read online only; nothing was cloned or copied.
+
 ## Tools, drivers & communities
 
 - **Fire-Head** — **MHNoDRM**, the community write-up documenting Manhunt (2003)'s 16 SecuROM-remnant
