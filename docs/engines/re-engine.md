@@ -477,6 +477,36 @@ Credit **Ekey** (REE.PAK.Tool, whose published format description made the descr
   measurement of the engine. Credit **Junh2x** and **Namsku**; general form:
   [read a public mod for how many levers it writes](../techniques/README.md#read-a-public-mod-for-how-many-levers-it-writes-not-just-which-one).
 
+### Bullet spread is a scattered rotation the bullet is BUILT with (RE Village, 2026-09-21)
+
+From our `re-village-scope-vr` (dossier §9bd–§9bl) `[verified-live 2026-09-20/21]`. In RE Village the gun
+core fires in this order: use a round → create the bullet from a ray → build the bullet from a position
+and a rotation → set up the spread from two rotations. The ray is always the exact muzzle axis. The game
+turns it into a rotation and scatters it **before** the bullet is built; the later spread step is handed
+the scattered and the clean rotation, but by then the bullet exists, so every change made there measured
+perfectly and did nothing. The cancel that works replaces the rotation argument **at the build step**
+with the clean shortest-arc rotation from +Z onto the ray (five hip shots with 5–12° of scatter each flew
+within 0.04°). Measured sniper scatter: 0.005° aimed, 8.4° average and 14.9° worst from the hip.
+
+Traps on the way `[verified-live 2026-09-20]`: a value-type argument **cannot be written from a
+REFramework Lua hook** by either route (reassigning the argument, or writing through a value-type copy);
+reading works. In the native plugin API's pre-hook, argument type entries are **handles, not pointers**,
+and the argument count does not equal the declared parameters plus two — validate the data instead (a
+rotation must be a unit quaternion). ⚠️ Likely shared across the family's gun cores, **unchecked outside
+RE8**. The method is in `techniques/` → "Find the step that BUILDS the thing".
+
+### A read-only Lua hook on the scope's own update broke the scope (2026-09-21)
+
+See `techniques/` → "A read-only hook on the hot path of the feature you ship is not read-only". RE
+Engine specifics: the hooked method was the gun core's per-frame scope update, under REFramework's VR
+double submit `[verified-live 2026-09-21, n=1]`.
+
+### RE4 remake's scope is a camera the game already renders; Village has none (2026-09-20)
+
+Our `re-village-scope-vr` §9ba `[inferred-static]`: RE Engine keeps its type names in the executable, so
+whether a game ships a separate scope camera can be answered by searching the exe's strings, with nothing
+running. RE4 remake has one; Village does not, which is why Village needs its own mirror/crop route.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Capcom RE Engine" row.

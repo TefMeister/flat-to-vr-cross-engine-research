@@ -818,6 +818,31 @@ Generalised from [`unreal-gold-vr`](https://github.com/TefMeister/unreal-gold-vr
 [`XIII2003-vr`](https://github.com/TefMeister/XIII2003-vr) — their 2026-09-10 headset runs and the
 2026-09-11 research passes in each project's `external-research/topics/`.
 
+### UE3: never call the viewport Draw twice; ask the engine for a two-view family instead (2026-09-23)
+
+From **Mastersellz's BL1GOTYVR**, a headset-tested OpenXR mod for Borderlands GOTY Enhanced (UE3, Win64,
+D3D11), `docs/HOOK_RESEARCH.md` `[reported]` (no licence found in the repository — study only):
+<https://github.com/Mastersellz/BL1GOTYVR>
+
+- **Re-entering `GameViewportClient::Draw` twice per frame corrupts the UE3 heap** (`0xC0000374`).
+  Their stable route is alternate-eye: one Draw per frame, with the camera saved, posed and restored
+  around it.
+- **Same-frame stereo without re-entry:** hand UE3's own render-command constructor a temporary view
+  family holding two views. The engine then allocates, copies, registers and destroys both itself;
+  3,900+ frames ran clean. Only raising the view count on the existing command is unsafe — it has no
+  spare capacity and the view copy is not a plain memory copy.
+- **The scene view belongs to a render-thread command** that may destroy it before returning, so
+  writing matrices after the call faults. Two restore caches inside the view must carry the pose too.
+- **Find the camera by reflection**, and reject class-default (`Default__…`) objects, which look like
+  live cameras. In Borderlands the standard `PlayerCamera` was null and the view lived on the game's own
+  player-controller subclass.
+- **Queue every hook and enable them together**: enabling one at a time raced the render thread.
+
+Siblings this applies to `[hypothesis]`: `bulletstorm-vr` (UE3, D3D11, 64-bit — the closest match),
+`enslaved-vr` and `alice-madness-returns-vr` (UE3, D3D9, 32-bit), and `borderlands-goty-vr` itself,
+whose board now faces the question of whether to continue given that this mod exists. From the
+2026-09-23 `/gr` inbox drop; found through phunkaeg's VR Modding Playbook.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Unreal Engine 2 / 3" row.

@@ -18,6 +18,8 @@ for the last sweep date and what it found.
 | **mutars** — starfield2vr / anvilengine2vr / Geo3D (Sergii Permiakov) | The reference non-Unreal engine adapters — proves the `IEngineAdapter` pattern generalizes. New titles/techniques here are the best signal for building our own from-scratch adapters. | [github.com/mutars](https://github.com/mutars) |
 | **OldUnreal** — Unreal-testing / Unreal-PubSrc | Directly powers Unreal Gold VR (227k SDK, render-device contract). New SDK releases or engine fixes matter immediately. | [github.com/OldUnreal/Unreal-testing/releases](https://github.com/OldUnreal/Unreal-testing/releases) · [oldunreal.com forum](https://www.oldunreal.com/phpBB3/) |
 | **vrframework** (Elliott Tate) | Source of the `IEngineAdapter` model and 10-milestone porting checklist we use conceptually. Updates may refine the checklist itself. | [github.com/elliotttate/vrframework](https://github.com/elliotttate/vrframework) |
+| **VR Modding Playbook** (phunkaeg, added 2026-09-23) | An evidence-graded engineering reference built from ~10 in-house ports and 100+ external projects: failure atlas, pattern catalog, teardowns, tested maths, and a ledger of every project studied. Check its `sources.yml` and failure atlas for new rows touching our engines. Summary: [`landscape/vr-modding-playbook.md`](./landscape/vr-modding-playbook.md). | [github.com/phunkaeg/vr-modding-playbook](https://github.com/phunkaeg/vr-modding-playbook) |
+| **OpenXR-Simulator** and forks (fholger → elliotttate → webhead2oo9, added 2026-09-23) | Headset-free OpenXR runtime; the forks add headset profiles, Vulkan, 32-bit and an MCP server. Matters to any of our mods that outputs through OpenXR. See [`runtime-layers/`](./runtime-layers/README.md#headset-free-testing-openxr-simulator-and-its-forks). | [fholger](https://github.com/fholger/OpenXR-Simulator) · [webhead2oo9](https://github.com/webhead2oo9/OpenXR-Simulator) |
 
 ## Community hubs (broadest signal, all engines)
 
@@ -2648,3 +2650,65 @@ first job.
 
 Never covered in full by any sweep: `the-evil-within-vr`, `prince-of-persia-2008-vr`, `alan-wake-vr`,
 `burnout-paradise-vr`, and all sixteen new projects except `condemned-2-vr` and `the-darkness-vr`.
+
+### 2026-09-23 (eleventh sweep, HOME PC) — the VR Modding Playbook, and one fault shape found in four places
+
+**Window:** since the 2026-09-17 sweep. Run straight after a `/gs` and an estate-wide `/gr` in the same
+session, at the user's request, with the instruction to dig into phunkaeg's VR Modding Playbook.
+**Clone root:** this machine's `-sr` root holds every game repo on the account (only `mod-ideas`, not a
+game, and the frozen `XIII2003-vr-dev-archive` are absent).
+
+#### Watch-list sources
+
+UEVR (last release 1.05, repo pushed 2026-08-30), REFramework (nightly 01424, 2026-09-16; no commits
+since 2026-09-17), starfield2vr (unchanged since May), OldUnreal (227k_15, 2026-08-16), vrframework
+(unchanged since June), fholger's OpenXR-Simulator (unchanged since March): **nothing new since the last
+sweep.** Two sources added to the core table: the VR Modding Playbook and the OpenXR-Simulator forks.
+
+#### In-house delta
+
+Curated-file changes in 31 game repos, almost all `external-research/INDEX.md` stamps and the
+2026-09-17 and 2026-09-23 `/gr` topics. Dossier changes read this pass: `re-village-scope-vr` (+3,123
+lines; the section headings of §9aa–§9co, and §9bd–§9bo, §9cl, §9cn, §9co in substance),
+`the-darkness-vr` (+515; the 2026-09-18 stereo and lighting sections), `far-cry-2-vr` (the 2026-09-19
+#1253 correction and its "why four flags failed" note). **Not read:** `silent-hill-2-remake-vr`'s first
+dossier, and the visceral, XIII, Alice and manhunt deltas the last sweep also deferred — next sweep's
+first job.
+
+#### Generalised up
+
+1. **`techniques/` → four new sections:** *anything that must match between the eyes must advance once
+   per frame* (CyberpunkVR Port, KisakCOD-VR via theHunter VR's notes, the playbook's ch14, and our
+   `the-darkness-vr`); *two things that must agree must travel as one snapshot* (theHunter VR's flicker
+   post-mortem, three `re-village-scope-vr` instances §9cl/§9cn/§9co, FC2VR's R4a, playbook
+   FAIL-STR-062); *an eye offset inside the projection is invisible to CPU decisions* (`the-darkness-vr`
+   plus the playbook's ch15); *a read-only hook on the hot path of your own feature is not read-only*
+   and *find the step that builds the thing* (both `re-village-scope-vr`).
+2. **`techniques/` → third-party stereo fixes** gained the 7-of-14 count from the 2026-09-17 `/gr`.
+3. **`runtime-layers/` → two new sections:** headset-free OpenXR testing (fholger and forks, the MCP
+   server, the probe pattern) and PureDark's AFW frame warping.
+4. **Engine pages:** `unreal-1-3.md` (BL1GOTYVR's UE3 seams: never Draw twice, the two-view family),
+   `avalanche.md` (theHunter VR on Apex), `dunia.md` (the playbook's Far Cry 2 chapter),
+   `re-engine.md` (bullet spread built into the bullet; the read-only hook; RE4's scope camera),
+   `rexglue-static-recomp.md` (The Darkness's offset-in-camera and world-hold; the Jupiter EX prior art
+   for Condemned 2). New sections were placed inside "Shared findings", above "See also".
+5. **New page `landscape/vr-modding-playbook.md`**: what the playbook holds, how its evidence grades
+   map to our tags, its three most transferable ideas, and which of our projects it touches.
+
+#### Inbox drained — nine files, by explicit name
+
+`2026-09-17-gr-existing-3d-vision-fixes-as-static-camera-oracles.md` → item 2 ·
+`2026-09-17-gr-fholger-openxr-simulator-mit.md` → item 3 ·
+`2026-09-17-gr-second-engine-camera-stereo-and-shared-per-frame-state.md` → item 1 ·
+`2026-09-18-mod-webhead2oo9-github-sweep.md` → item 3 (§1–§3; §4–§6 left out as not flat-to-VR, except
+the probe pattern) ·
+`2026-09-21-mod-a-read-only-lua-hook-on-a-per-frame-function-broke-the-feature-it-watched.md` → items 1, 4 ·
+`2026-09-21-mod-puredark-afw-what-it-is-and-the-socket-it-exposes.md` → item 3 ·
+`2026-09-21-mod-re-engine-bullet-spread-is-a-rotation-swapped-in-before-the-bullet-is-built.md` → items 1, 4 ·
+`2026-09-23-gr-ue3-double-draw-corrupts-the-heap-and-a-two-view-family-does-not.md` → item 4 ·
+`2026-09-23-mod-phunkaeg-vr-modding-playbook-and-desloppify.md` → item 5.
+
+#### Dropped into other inboxes
+
+None this sweep: every per-game hand-off from the playbook was already filed by the `/gr` pass an hour
+earlier (borderlands, tomb-raider-2013 engine-research drops; seven external-research topics).
