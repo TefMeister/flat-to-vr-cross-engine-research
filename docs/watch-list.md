@@ -2733,3 +2733,28 @@ earlier (borderlands, tomb-raider-2013 engine-research drops; seven external-res
   (phunkaeg/PreyVR, OpenXR, created 2026-09-10); drops went to those games' `engine-research/inbox/`. No other
   watch-list source was re-read this sweep.
 - **Drops filed by this sweep:** none.
+
+#### 2026-09-29 addendum (second pass)
+
+The five deltas the main sweep left unread, read now (`git log --since=2026-09-23` over each repo's research lanes):
+
+- **Read:** `re-village-scope-vr` dossier §9cx–§9db, `modding-notes/2026-09-26-*` and `2026-09-27-the-golden-glass-is-beaten.md`,
+  `external-research/topics/2026-09-29-reframework-writes-fov-only-on-the-primary-camera.md`; `visceral-re2-vr`
+  `modding-notes/2026-09-24-the-aim-hunch-is-a-lookat-profile.md` (09-24/25 additions), `2026-09-26-the-running-shake-was-the-old-dlss-reframework.md`,
+  `2026-09-27-the-gun-swing-is-the-shot-kick-on-lowered-arms.md`, `2026-09-27-one-title-background-nine-rounds.md`;
+  `silent-hill-2-remake-vr` dossier §9–§15c; `the-darkness-vr` dossier (2026-09-27/28 additions); `witcher-2-vr` dossier
+  (scripts unpacked, free camera and console commands).
+- **Generalised into `docs/techniques/README.md`** (seven new sections before "Sources"): a fixed per-frame cost is our
+  own code first (re-village §9cy); copy a shared intermediate target mid-frame at its barrier exit (re-village §9db);
+  list our own loops and hotkeys before an A/B (re-village golden-glass note + visceral aim-hunch note — two projects);
+  measuring what the wearer sees (visceral aim-hunch note, second sighting in re-village); choose the eye per packet
+  (the-darkness dossier 2026-09-28); a clean reinstall is not clean (visceral running-shake note); headset frame-rate
+  readings that mislead, with the UE5/UEVR specifics (silent-hill-2 §14–§15c). The Darkness's window-border crop also
+  went into "three ways a window lies" as a pixel-work footnote.
+- **Generalised into `docs/engines/re-engine.md`:** a cloned camera's ungraded target, RetroFilm grain, the upscaler's
+  `MainCamera` filter, the golden highlights and the barrel near plane (re-village §9cx–§9db + the /gr topic); RE2's
+  additive shot kicks and the owed callback (visceral 2026-09-27 notes).
+- **Left in their repos:** Witcher 2's script and console findings (one game, REDengine 1, no family page); Silent
+  Hill 2's bone names, community-profile study and the Ultra+ licence note; Visceral's dirty-hands Record system and
+  port map.
+- **Credit:** ATTRIBUTION.md gained a 2026-09-29 first-party paragraph and Intel's PresentMon. **Drops filed:** none.
