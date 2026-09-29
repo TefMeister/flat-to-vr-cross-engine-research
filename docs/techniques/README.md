@@ -6748,6 +6748,26 @@ values on the command line `[verified-live 2026-09-17, n=1]`. Prefer the command
 **Rule:** find the setting's storage first (config file, registry, launch argument), back it up, write
 it, and **measure the window** to prove it took. Use the menu only when no stored form exists.
 
+### ⚠️ Measure the SCREEN too: three ways a window lies (2026-09-29)
+
+- **A size without "windowed" can switch the whole desktop.** Prototype (Radical Titanium) given
+  `-width 1280 -height 720` produced a borderless 1280×720 window at 0,0 that measured exactly right, while the
+  desktop itself had switched to 1280×720: it was exclusive fullscreen. The spelling that worked was
+  `windowed width=1280 height=720` `[verified-live 2026-09-29, n=1]`. The person watching saw it at once; the window
+  measurement did not. **Check the screen resolution alongside the window**, and treat a window that covers the
+  screen as fullscreen.
+- **A border stripped after you resize leaves black strips.** Manhunt (RenderWare) was resized by our proxy for a
+  captioned window style, then the game switched the window to a borderless popup, so the border allowance became
+  client area: an 800×600 picture inside an 816×639 window. Re-fitting the client to the back buffer a moment later,
+  for the CURRENT style, cured it `[verified-live 2026-09-29, n=3 launches]`.
+- **Some modes refuse to window at all.** Enslaved's DirectX 10 mode (UE3) ignored `-windowed ResX ResY` and rewrote
+  `Fullscreen=False` back to True at start-up `[verified-live 2026-09-29, n=1]`; the public DxWnd success for this
+  game was on its DirectX 9 path `[reported]`. There the window has to be forced at swap-chain creation by a proxy.
+
+Generalised from [`prototype-vr`](https://github.com/TefMeister/prototype-vr),
+[`manhunt-2003-vr`](https://github.com/TefMeister/manhunt-2003-vr) and
+[`enslaved-vr`](https://github.com/TefMeister/enslaved-vr) (2026-09-29).
+
 Generalised from the 2026-09-17 first live looks on [`prey-2017-vr`](https://github.com/TefMeister/prey-2017-vr),
 [`deus-ex-mankind-divided-vr`](https://github.com/TefMeister/deus-ex-mankind-divided-vr), [`heavy-rain-vr`](https://github.com/TefMeister/heavy-rain-vr),
 [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr), [`borderlands-goty-vr`](https://github.com/TefMeister/borderlands-goty-vr) and
@@ -6857,6 +6877,83 @@ intended and actual direction per event); trace the call order and say which ste
 object; identify the altered value by **arithmetic on logged data**, computing the clean value yourself;
 make every lever re-measure after it writes and log both numbers; and ask for several samples of a
 random effect, not one. This is also the lanes plugin's `docs/PROTOCOL.md` §11.
+
+## A constant upload's `start + count` may be a dirty-register window, not a variable
+
+Instruments that histogram vertex-constant uploads by `(StartRegister, count)` invite reading each pair as one
+shader variable. On Prototype the most common upload of all, `c0 + 5`, looked like a five-register variable; the
+engine actually keeps a shadow copy of all 256 registers, compares each shader's values into it, and before every
+draw uploads **one window from the lowest to the highest register that changed** `[inferred-static 2026-09-29]`.
+So `c0 + 5` meant "WVP and the first row of World changed", and `c0 + 4` meant "only WVP changed"; the live log agreed
+(the fifth register was always `(1, 0, 0, 0)`, the first row of an identity World) `[verified-live 2026-09-29]`.
+
+**Consequences:** a per-eye edit keyed on a count will miss draws whose window happens to start or end elsewhere;
+key on the register a shader DECLARES (from its constant table), keep your own copy of the register file, and apply
+the edit at draw time. Generalised from [`prototype-vr`](https://github.com/TefMeister/prototype-vr).
+
+## An engine's own post-camera pose slot is world-space: conjugate the head pose
+
+Engines often multiply a spare matrix into the camera when building the view (Prototype's `pure3d::View` keeps an
+identity 4×4 that `SetupCamera` folds in as `Invert(camera→world × slot)`). Writing a translation there moved the
+whole picture as a true camera step (near things most, far things least, HUD untouched)
+`[verified-live 2026-09-29, n=1]`. But a raw 10° yaw in the same slot **orbited the camera around the world origin**
+onto another street, because the slot applies in world space after camera→world. Written as `slot = inv(C) · H · C`
+(C = camera→world, H = the head pose in camera space, row vectors), the same 10° turned the view on the spot
+`[verified-live 2026-09-29, n=1]`.
+
+**Rule:** before using any "extra" matrix in an engine's camera chain, find out which side of camera→world it sits
+on; a slot after it needs the head pose conjugated by the camera, recomputed every frame as the camera moves.
+Generalised from [`prototype-vr`](https://github.com/TefMeister/prototype-vr).
+
+## Screen-space passes that rebuild world position keep the UNEDITED camera
+
+Shadow projection, and other deferred passes, rebuild a world position from the pixel's screen position and its
+depth, through a matrix the CPU built from the game's own camera. Move the camera for an eye and the depth buffer
+follows, but that matrix does not: **the shadow stays behind.** Seen in two engines within two days:
+
+- **Burnout Paradise (Criterion):** a 1 m test shift moved everything with correct depth except the car's sun shadow
+  `[verified-live 2026-09-28, n=1]`.
+- **Alice: Madness Returns (UE3):** `ScreenToShadowMatrix` reaches 56 pixel shaders; the game uploads it before
+  binding the pass, so a correction had to move to draw time, and a correction built in view space then moved the
+  shadows by a plausible but wrong amount `[verified-live 2026-09-29, n=1]`.
+
+In the Unreal lineage the input to that matrix is `(screen x·w, screen y·w, w, 1)`, a screen position times depth
+with w in the third slot `[reported]`, so a fix must be built **in that space** (roughly
+`F · inv(VP_edited) · VP_game · F⁻¹` around the game's matrix, F being the fix-up that maps the vector back to clip
+space), not as a view-space nudge `[hypothesis]`. Read the pass's own shader to settle the convention before
+building. Generalised from [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-vr) and
+[`alice-madness-returns-vr`](https://github.com/TefMeister/alice-madness-returns-vr).
+
+## Before re-running a render pass per eye, vet every call for state it advances
+
+Drawing the world twice per frame means running the engine's own draw code twice. Manhunt's static reader traced
+both render passes call by call, six levels deep, and the method is worth copying `[inferred-static 2026-09-29]`:
+
+1. **Classify each call**: only draws, or also writes game state (timers, animation, particles, AI, audio, frame
+   counters, streaming).
+2. **Look for built-in once-per-frame guards**: Manhunt's catch-up animation is stamped per entity per frame, so it
+   runs once however often the pass does; a render counter that looks like state is REQUIRED for the second eye to
+   draw entities at all.
+3. **Guard what advances**: snapshot the few small regions a pass ticks (a spinning corona, a fading lock-on marker,
+   an overlay particle pool) at the start of eye 1 and restore them before eye 2; patch spawners (rain) to skip on
+   eye 2 rather than snapshotting them, since a snapshot would still spawn different random drops.
+4. **Mind what the pass reads between eyes**: a frame sync the engine calls once must be called again after moving
+   the camera, or eye 2 culls against the stale camera; a function that saves and restores the view window must not
+   be re-called, or the view shrinks every frame.
+5. **Prove it with an identical camera first**: run the pass twice with no eye offset and check that the picture,
+   walking speed, animation and the game clock are unchanged.
+
+Extends "Anything that must match between the eyes must advance once per FRAME" above. Generalised from
+[`manhunt-2003-vr`](https://github.com/TefMeister/manhunt-2003-vr) (dossier §11n).
+
+## Count the memory pools before planning a D3D9Ex output path
+
+A shared texture for a VR compositor usually means upgrading a D3D9 game to D3D9Ex, and **D3D9Ex refuses
+`D3DPOOL_MANAGED`**. Whether that upgrade is one line or a project is a single measurement: hook the five
+`Create*Texture/Buffer` methods and count by pool. Enslaved (UE3) created 4,455 of its first 4,500 resources in
+MANAGED `[verified-live 2026-09-29, n=1]`, so its road to VR output goes through the game's own DirectX 10 mode
+instead. Take the count on its own launch, not alongside a stereo test. Generalised from
+[`enslaved-vr`](https://github.com/TefMeister/enslaved-vr).
 
 ## Sources
 

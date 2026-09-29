@@ -2712,3 +2712,24 @@ the probe pattern) ·
 
 None this sweep: every per-game hand-off from the playbook was already filed by the `/gr` pass an hour
 earlier (borderlands, tomb-raider-2013 engine-research drops; seven external-research topics).
+
+### 2026-09-29 (twelfth sweep, dev PC) — five lessons from one day of live work, two of them seen twice
+
+- **Inbox:** empty; nothing to drain.
+- **Changed since 2026-09-23:** re-village-scope-vr (37 commits in the research lanes), visceral-re2-vr (12),
+  silent-hill-2-remake-vr (11), prototype-vr (7), manhunt-2003-vr (4), alice-madness-returns-vr (3),
+  burnout-paradise-vr (3), the-darkness-vr (3), enslaved-vr (2), alan-wake-vr, doom-2016-vr, tomb-raider-2013-vr,
+  unreal-gold-vr and witcher-2-vr (1 each). Read in depth: the 2026-09-29 changes to the prototype, manhunt, enslaved,
+  alice and burnout dossiers and notes (the same day's `/gr` pass had just read them). Not read this sweep: the
+  re-village, visceral, silent-hill-2, the-darkness and witcher-2 deltas; start there next time.
+- **Generalised up into `docs/techniques/README.md`:** dirty-register constant windows (prototype-vr dossier §6);
+  the world-space post-camera pose slot and `inv(C)·H·C` (prototype-vr, `modding-notes/2026-09-29b-...`);
+  screen-space passes keeping the unedited camera (burnout-paradise-vr + alice-madness-returns-vr, the second
+  sighting); vetting a render pass before re-running it per eye (manhunt-2003-vr dossier §11n); counting pools
+  before a D3D9Ex plan (enslaved-vr); three window measurements that lie (prototype, manhunt, enslaved).
+  One-line pointers added to `docs/engines/renderware.md`, `unreal-1-3.md` and `criterion-burnout.md`.
+- **Web:** the same day's `/gr` checked the watch-list VR mods: KHARVOX 1.11 released (2026-09-29), Unreal Revived
+  0.9.0 (2026-09-25), BL1GOTYVR unchanged since 0.5.6.6, SH2R-UEVR unchanged since 2024, and a new Prey VR mod
+  (phunkaeg/PreyVR, OpenXR, created 2026-09-10); drops went to those games' `engine-research/inbox/`. No other
+  watch-list source was re-read this sweep.
+- **Drops filed by this sweep:** none.

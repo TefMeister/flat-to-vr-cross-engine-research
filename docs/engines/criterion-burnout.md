@@ -41,3 +41,5 @@ Source: [`burnout-paradise-vr`](https://github.com/TefMeister/burnout-paradise-v
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" row.
+
+**2026-09-29:** the car's sun shadow staying behind under a camera shift is the first of two sightings of a screen-space pass that keeps the unedited camera ([techniques](../techniques/README.md#screen-space-passes-that-rebuild-world-position-keep-the-unedited-camera)).
