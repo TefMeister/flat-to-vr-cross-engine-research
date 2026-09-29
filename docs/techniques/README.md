@@ -6763,6 +6763,9 @@ it, and **measure the window** to prove it took. Use the menu only when no store
 - **Some modes refuse to window at all.** Enslaved's DirectX 10 mode (UE3) ignored `-windowed ResX ResY` and rewrote
   `Fullscreen=False` back to True at start-up `[verified-live 2026-09-29, n=1]`; the public DxWnd success for this
   game was on its DirectX 9 path `[reported]`. There the window has to be forced at swap-chain creation by a proxy.
+- **For pixel work, the window rect is not the picture.** Grabs taken from the window rect include the ~8 px
+  invisible Windows 10 borders; crop to the client area before splitting or measuring `[verified-numerically 2026-09-28]`
+  ([`the-darkness-vr`](https://github.com/TefMeister/the-darkness-vr), added in the 2026-09-29 second pass).
 
 Generalised from [`prototype-vr`](https://github.com/TefMeister/prototype-vr),
 [`manhunt-2003-vr`](https://github.com/TefMeister/manhunt-2003-vr) and
@@ -6954,6 +6957,161 @@ A shared texture for a VR compositor usually means upgrading a D3D9 game to D3D9
 MANAGED `[verified-live 2026-09-29, n=1]`, so its road to VR output goes through the game's own DirectX 10 mode
 instead. Take the count on its own launch, not alongside a stereo test. Generalised from
 [`enslaved-vr`](https://github.com/TefMeister/enslaved-vr).
+
+## A fixed per-frame cost that ignores what is drawn is your own code first
+
+When adding a second view (a scope camera, a mirror, a second eye) costs the same number of
+milliseconds whatever that view draws — full scene or bare, large target or small — suspect your own
+per-frame hooks before the engine, the upscaler or the driver. Real rendering work scales with what is
+drawn; a flat cost is a wait or a loop, and the loop you control is the cheapest one to rule out.
+
+- **Seen in [`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr)** (dossier §9cx–§9cy):
+  switching on a cloned rifle camera dropped the game from ~180 to 26 fps, a flat ~32 ms, for every clone
+  variant tried. The first reading blamed a GPU-side wait or the upscaler seeing a second view; that was
+  `[disproved 2026-09-26]`. A timer on each engine update stage showed ~21 ms spent in the gap where script
+  pre-hooks run; the cause was our own pose code searching every mesh in the scene, every frame, to find the
+  rifle. Finding it once and keeping it took the camera to 150–160 fps, so a real second view cost about
+  1.5 ms `[verified-live 2026-09-26, n=1]`.
+- **The method that found it in one run:** time every stage of the engine's frame (before and inside each
+  stage) and log the present-side fence wait alongside. A large gap *before* a stage points at hooks that run
+  there; a large fence wait points at the GPU. Then switch your own features off one by one and watch the gap.
+- **Related:** a per-frame search by name or by enumeration is the usual culprit. Cache the result, re-find
+  it only when it stops answering, and rate-limit the re-find.
+
+## A shared intermediate target holds the LAST view at Present: copy it mid-frame, at its barrier exit
+
+Engines that draw several views in one frame often reuse one intermediate texture for each view's last
+stage. Reading it at Present gives whichever view wrote it last (usually the main view), never the second
+view you want. The fix is to copy it **during** the frame, at the moment the second view has finished with it.
+
+- **Seen in [`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr)** (dossier §9db): the
+  clone camera's graded output texture resolved correctly, but at Present it held the main view
+  `[verified-live 2026-09-26, n=1]`. Hooking D3D12 `ResourceBarrier` on the game's own command list and copying
+  that texture on its Nth transition **out of** the render-target state, into a texture of our own, gave the
+  second camera's finished, graded picture, every frame, with no measurable frame-rate cost
+  `[verified-live 2026-09-26, n=2 launches]`. Counting the exits per frame first told us which N belonged to
+  which view (flat: one exit per frame; in VR: two).
+- ⚠️ **The same texture meant something else in VR.** Under the VR framework's multipass it carried the
+  frozen desktop path, not the clone's picture `[reported 2026-09-26]`, so the VR build fell back to rendering
+  the clone into a float target of its own. Re-check which view owns a shared target after any change of
+  rendering mode.
+- **Why it beats rendering into your own target:** in that game a camera pointed at a custom render target
+  received the scene **before** the game's colour grading, clamped at 1.0 — four exposure levers changed
+  nothing because the grading was simply never applied there `[verified-live 2026-09-26, n=1 each]`. The
+  finished picture lives at the view's last stage; take it from there when you can.
+
+## Before an A/B, list everything of YOURS that can change the variable
+
+Twice in one week a careful measurement was quietly measuring our own code changing the condition under
+test. Neither showed up in the log as an error; both looked like the fix "not working".
+
+- **A keep-in-sync loop that reverted every fix.** [`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr)
+  spent five weeks on a golden, washed-out scope picture outdoors. Part of the cause was our own script that,
+  to keep the scope camera matching the main view, copied the main view's brightness and bloom settings back
+  onto it every tenth frame — undoing each experiment, so most tests showed the old picture. A frame-by-frame
+  look at a headset recording showed one good frame in nine, which is what gave it away
+  (`modding-notes/2026-09-27-the-golden-glass-is-beaten.md`) `[reported 2026-09-27]`.
+- **A hotkey shared with the driver.** In [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr)
+  a posture script toggled itself on the same numpad key the automated driver pressed to aim, so every
+  scripted aim press flipped it and an evening's automated measurements ran with it alternating on and off
+  (`modding-notes/2026-09-24-the-aim-hunch-is-a-lookat-profile.md`) `[verified-live 2026-09-24, n=1]`.
+
+**The check:** before the first run of an A/B, write down every loop, sync, watchdog and hotkey of ours
+that touches the value, and either pin it or log it. Periodic good frames among bad ones (1 in N) is the
+fingerprint of a loop fighting you.
+
+## Measuring what the wearer sees: record in the headset, and keep it still for instrument runs
+
+Two findings from [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr), with a second
+sighting in [`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr), that extend
+[a report from the person in the headset is primary evidence](#a-report-from-the-person-in-the-headset-is-primary-evidence).
+
+- **The desktop may not show the VR view at all.** With the RE Engine VR framework running, the game window
+  stayed black whichever desktop-recording option was set, so a screen grab could not capture what the wearer
+  saw `[measured 2026-09-24, n=2 launches]`. The headset's own video recording could. With a built-in
+  timestamp — the wearer's fingers visibly moving on the controller at the button press — and a fixed
+  reference in frame (the hand, which sits on the tracked controller), a small script measuring one feature per
+  frame turned "the torso pushes forward" into a number: ~13° of view within 0.2 s, held while aiming
+  `[measured 2026-09-24, n=5 presses]`. That same ruler then judged candidate fixes objectively. Village's
+  one-good-frame-in-nine finding came from the same kind of frame-by-frame look at a wearer's video.
+- **A worn headset contaminates head and camera numbers.** An A/B that showed 7–10 cm of head movement with a
+  feature on and 0.2–1 cm with it off turned out to be the wearer's own head: the headset was on during the
+  launches, and the in-game head follows the real one. It was `[disproved 2026-09-24]` by the wearer's report
+  that the effect persisted with the feature off. For instrument runs, rest the headset still (on a table), and
+  where the character's idle animation sways, **freeze the idle** so that anything which moves at the input is
+  caused by the input — see [the noise floor is the idle animation](#the-noise-floor-is-the-idle-animation-and-it-can-exceed-the-effect).
+- ⚠️ **And the instrument can still measure the wrong thing.** The frozen-idle run found a 16 cm body shift
+  that a framework setting removed; the wearer saw no difference, because the measurement was taken relative to
+  a root that itself rides under the head (`[disproved 2026-09-24]` as the explanation of what was seen). Pick
+  the ruler that matches the wearer's eye — hence the recording.
+
+## When the camera is built on another thread, choose the eye per packet — never by counting frames
+
+Alternate-eye stereo (one eye per game frame) assumes each drawn frame used the camera built for it. In an
+engine where a game thread builds a frame packet (camera, per-object matrices) and a render thread later
+plays it and presents, that pairing is not one-to-one: the queue has slack, and the render thread can draw a
+frame with the previous packet's camera.
+
+- **Seen in [`the-darkness-vr`](https://github.com/TefMeister/the-darkness-vr)** (dossier, 2026-09-28): the
+  camera builder ran 0, 1 or 2 times per presented frame (125/350/125 over 600 frames), averaging exactly one
+  `[measured 2026-09-28, n=1]`; so about one frame in five was drawn with the previous camera and the previous
+  eye, and 30–50 % of captured pairs showed one eye on both halves. The per-object matrices were multiplied on
+  the game thread, so moving the camera on the render thread changed nothing `[inferred-static 2026-09-28]`.
+  The queue also has a drain path that releases packets undrawn, which breaks any parity counted by swaps.
+- **The design that follows** `[hypothesis]`, not yet run: decide the eye when a packet is **acquired** (from a
+  serial number the engine already stamps into it) and record which serial each present actually played, so
+  every swap knows its eye by serial instead of by counting. Locking the queue to one packet would also work but
+  costs frame rate.
+- **Two instrument traps from the same work:** a host-side present counter is not a game-frame counter when the
+  presenter repaints on its own (there, an always-on overlay forced extra vblank-paced repaints of the same
+  image, so PresentMon read ~315/s) `[inferred-static 2026-09-28]`; and window grabs taken from the window rect
+  include the ~8 px invisible Windows 10 borders, so any half-split or pixel measurement must crop to the client
+  area first `[verified-numerically 2026-09-28]`.
+- **A cheap way to check pairs:** a build option that presents each swap side by side with the previous one puts
+  a whole eye pair in one window capture, so pairing can be counted from grabs alone `[verified-live 2026-09-28, n=2 runs]`.
+
+## A clean reinstall is not clean, and a framework BUILD can be the fault
+
+From [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr)
+(`modding-notes/2026-09-26-the-running-shake-was-the-old-dlss-reframework.md`), a bisect run with the wearer
+checking each step:
+
+- **Steam's "verify files" left every loose mod file in place**, and a full Steam uninstall left the game's
+  config file and shader cache behind `[verified-live 2026-09-26, n=1]`. Move those out by hand before calling
+  an install vanilla.
+- **The fault was a specific build of the injection framework**, not our mod: a camera shake while running
+  reproduced on a freshly reinstalled game with nothing of ours present, and vanished on a fresh download of
+  the same framework's branch; our files on top stayed smooth `[reported 2026-09-26]`. A folder saved as
+  "the working one" turned out, by hash, to hold a different build than its name said `[measured 2026-09-26]`.
+  Name and hash every framework build you test against, the same as your own.
+- **Rule out shared hardware during smoothness tests** `[hypothesis]`: a GPU video-encoder job from another
+  session, and screen recorders, use the same encoder a wireless PC-VR stream does.
+- The bisect shape that worked: back up everything with a hash manifest, reduce to vanilla, then add pieces back
+  one at a time with a human check after each, keeping each state as a numbered full copy.
+
+## Frame-rate numbers in the headset: three readings that mislead
+
+From the first headset tuning passes on [`silent-hill-2-remake-vr`](https://github.com/TefMeister/silent-hill-2-remake-vr)
+(UE 5.1 under UEVR, dossier §14–§15c):
+
+- **A steady rate at exactly half the refresh is a reprojection lock, not a measurement.** 37.2 fps on a ~74 Hz
+  target is what a runtime's half-rate mode looks like; the true unlocked rate lies somewhere between
+  `[hypothesis]`. A fully busy GPU says it genuinely missed, but not by how much.
+- **Standing still is not playing.** The same tuned settings read 72 standing in one view and 51–64 walking the
+  same building; one dark room read ~55 in one direction and ~69 in another `[measured 2026-09-29, n=1 each]`.
+  Fix a test spot and view per room before comparing settings across sessions.
+- **An upscaler's own internal size can beat a manual resolution cut.** Setting Unreal's `r.ScreenPercentage` to
+  75 was *slower* than leaving DLSS to pick its own lower internal size `[measured 2026-09-28, n=1]`.
+- Unreal-5-specific readings from the same passes, all `[measured 2026-09-28/29, n=1 each]` and none yet judged
+  by eye: shadow distance and resolution were the biggest single win; the volumetric-fog grid, Lumen reflections
+  and screen-space reflections/AO followed; object detail (`r.ForceLOD`, Nanite pixels-per-edge, skeletal LOD
+  bias) changed nothing, because Nanite already scales geometry and the cost was lighting and pixels. All of it
+  could be changed live mid-game through console commands, which is what makes a per-place settings table and
+  a frame-rate governor possible.
+- **A UEVR trap:** the injector rewrites the profile's requested runtime on every attach from its own saved
+  choice in its per-location user settings, so editing the profile's `config.txt` alone does not switch OpenVR to
+  OpenXR `[verified-live 2026-09-28, n=1]`; and its OpenXR resolution scale did not change live through the Lua
+  settings call (needs a runtime reinitialise) `[verified-live 2026-09-28, n=1]`.
 
 ## Sources
 

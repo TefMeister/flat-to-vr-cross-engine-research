@@ -282,6 +282,18 @@ legitimately-owned copies of **Resident Evil Village** ([`re-village-scope-vr`](
 and **The Darkness** ([`the-darkness-vr`](https://github.com/TefMeister/the-darkness-vr)), alongside the
 public sources above. Read online only; nothing was cloned or copied.
 
+**Our own first-party generalisations, 2026-09-29 (second pass):** the `docs/techniques/` sections on a fixed
+per-frame cost being our own code, copying a shared intermediate target mid-frame, listing our own loops and
+hotkeys before an A/B, measuring what the wearer sees, choosing the eye per packet, clean reinstalls, and
+headset frame-rate readings — plus the two new RE Engine sections in `docs/engines/re-engine.md` — were
+generalised out of our work on legitimately-owned copies of **Resident Evil Village**
+([`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr)), **Resident Evil 2**
+([`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr)), **Silent Hill 2** (2024)
+([`silent-hill-2-remake-vr`](https://github.com/TefMeister/silent-hill-2-remake-vr)) and **The Darkness**
+([`the-darkness-vr`](https://github.com/TefMeister/the-darkness-vr)). They rest on **praydog**'s REFramework and
+UEVR (credited above) and on **Intel**'s **PresentMon** (<https://github.com/GameTechDev/PresentMon>), used as a
+frame-timing tool; nothing was cloned or copied.
+
 ## Tools, drivers & communities
 
 - **Fire-Head** — **MHNoDRM**, the community write-up documenting Manhunt (2003)'s 16 SecuROM-remnant

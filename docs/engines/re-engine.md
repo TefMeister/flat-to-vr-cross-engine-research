@@ -507,6 +507,51 @@ Our `re-village-scope-vr` §9ba `[inferred-static]`: RE Engine keeps its type na
 whether a game ships a separate scope camera can be answered by searching the exe's strings, with nothing
 running. RE4 remake has one; Village does not, which is why Village needs its own mirror/crop route.
 
+### A cloned camera: what it misses, and where its finished picture is (RE Village, 2026-09-26/27)
+
+From our `re-village-scope-vr` (dossier §9cx–§9db, `modding-notes/2026-09-27-the-golden-glass-is-beaten.md`),
+building a scope from a cloned `via.Camera` + `via.render.RenderOutput`:
+
+- **A clone pointed at an authored render target gets the scene before grading, clamped at 1.0.** Exposure,
+  tone-mapping, bloom and auto-exposure changes on the clone did nothing outdoors `[verified-live 2026-09-26, n=1
+  each]`. The graded picture is the output of the clone layer's **PrepareOutput** stage; flat, that texture is
+  shared with the main view and must be copied mid-frame — see `techniques/` → "A shared intermediate target
+  holds the LAST view at Present". Under the VR framework the same output was the desktop path, and the VR build
+  renders the clone into an authored **float** target instead `[reported 2026-09-26, the wearer]`.
+- **Film grain on a second view stops short.** A speckled band over the bottom quarter of the clone's picture was
+  `via.render.RetroFilm`; leaving that component out of the clone removed it `[verified-live 2026-09-26, n=1 each]`.
+  Why only a quarter: probably a pass sized from the view, which REFramework's upscaler spoofs to the render size
+  `[hypothesis]`.
+- **REFramework's temporal upscaler ignores the clone.** It only processes scene layers whose camera GameObject
+  name starts with `MainCamera` `[inferred-static 2026-09-26]`, so a differently-named clone is neither upscaled
+  nor a second DLSS view.
+- **Golden highlights.** Outdoors the clone's bloom plus the hard ceiling turned warm-lit snow yellow (red and
+  green clip before blue). Bloom off and the clone three brightness steps darker than the main view fixed it —
+  once our own sync loop stopped copying those two settings back every tenth frame `[reported 2026-09-27]`.
+- **Hiding the barrel:** put the clone's near plane just past the muzzle joint (distance along the view axis
+  + 5 cm, clamped), re-read every frame `[verified-live 2026-09-26, n=1]`; the trade is that very close walls get
+  cut.
+- Framework split, from the `/gr` read of REFramework's source: its VR mod writes **FOV and aspect only on the
+  primary camera** but hands the per-eye projection to **every** camera (see "the framework applies its transform
+  to every camera" in `techniques/`) `[inferred-static 2026-09-29]`, so a clone whose FOV drifts is being driven
+  by something else unless it has become the primary camera
+  ([`external-research/topics/2026-09-29-reframework-writes-fov-only-on-the-primary-camera.md`](https://github.com/TefMeister/re-village-scope-vr/blob/main/external-research/topics/2026-09-29-reframework-writes-fov-only-on-the-primary-camera.md)).
+
+### Animation and flow findings from RE2 (2026-09-27)
+
+From our `visceral-re2-vr` (`modding-notes/2026-09-27-*.md`):
+
+- **Shot kicks are additive layers.** The handgun shot motions carry all-zero weapon offsets where full poses carry
+  a fixed one `[inferred-static 2026-09-27]`, and splicing lowered-arm poses under them threw the gun sideways on
+  every shot while the vanilla raised-arm aim did not `[reported 2026-09-27, one run per build]`. Reading: an
+  additive layer authored over one base pose misbehaves on another `[hypothesis]`. Swapping only the arm and
+  weapon bone tracks inside a motion (grafting) is the next test; bone names in motion files can be recovered by
+  hashing guesses (murmur3 of the UTF-16 name).
+- **A skipped engine request may still owe its callback.** Suppressing a title-camera change the menu flow waits
+  on left the menu without text; calling the flow's callback inside the hook was too early, and calling it **one
+  frame later** worked `[verified-live 2026-09-27, n=1 per round]`. Worth trying first whenever you swallow a
+  request that the caller awaits.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Capcom RE Engine" row.
