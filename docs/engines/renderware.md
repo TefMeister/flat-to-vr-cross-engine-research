@@ -124,3 +124,5 @@ the dimensions against the resolution the game is really running.
   Direct3D 8 or older" rows.
 - [Generic drivers for older D3D9 games](../generic-drivers/) — the vorpX/geo-11/dgVoodoo2
   routes relevant to this era.
+
+**2026-09-29 (Manhunt):** both of Manhunt's render passes were vetted for a per-eye re-run, with a five-step method now in [techniques](../techniques/README.md#before-re-running-a-render-pass-per-eye-vet-every-call-for-state-it-advances); the game strips its window border after a resize (see [windowed mode](../techniques/README.md#-measure-the-screen-too-three-ways-a-window-lies-2026-09-29)); and Fire-Head's widescreen fix names the additive view-window widening `CScene::ms_viewWinScale` (`0x00715CDC`), a candidate lever for a headset FOV `[inferred-static 2026-09-29]`.

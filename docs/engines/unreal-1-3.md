@@ -848,3 +848,5 @@ whose board now faces the question of whether to continue given that this mod ex
 - [engines index](../engines-index.md) — the "Unreal Engine 2 / 3" row.
 - [OldUnreal](https://github.com/OldUnreal) — community custodians of UE1; their 227k patch is
   the foundation of the Unreal Gold project.
+
+**2026-09-29 (UE3, two projects):** Alice's `ScreenToShadowMatrix` is the second sighting of a screen-space pass keeping the unedited camera ([techniques](../techniques/README.md#screen-space-passes-that-rebuild-world-position-keep-the-unedited-camera)); Enslaved creates almost everything in `D3DPOOL_MANAGED`, which rules out a cheap D3D9Ex upgrade ([techniques](../techniques/README.md#count-the-memory-pools-before-planning-a-d3d9ex-output-path)), and its DirectX 10 mode will not window itself `[verified-live 2026-09-29, n=1 each]`.
