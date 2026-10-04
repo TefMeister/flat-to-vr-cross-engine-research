@@ -2758,3 +2758,29 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   Hill 2's bone names, community-profile study and the Ultra+ licence note; Visceral's dirty-hands Record system and
   port map.
 - **Credit:** ATTRIBUTION.md gained a 2026-09-29 first-party paragraph and Intel's PresentMon. **Drops filed:** none.
+
+### 2026-10-04 (thirteenth sweep, dev PC) — two patterns confirmed in a second game, and a tool that wakes shipped stereo
+
+- **Root:** the `-sr` clone root was missing nine game repos (borderlands-goty, bulletstorm, deus-ex-md,
+  far-cry-3-bd, heavy-rain, prey-2017, visceral-re3/re7/re8); cloned locally and re-pointed at GitHub.
+- **Inbox drained (2):** `2026-09-30-mod-vr-grip-steers-by-animated-socket.md` (modding, visceral-re2-vr) and
+  `2026-10-04-gr-wiz3d-revives-shipped-stereo-paths.md` (the same day's `/gr`).
+- **Changed since 2026-09-29 (research lanes):** visceral-re2-vr (9), tomb-raider-2013-vr (5), mad-max-vr (5),
+  prototype-vr (4), enslaved-vr (4), death-stranding-vr (3), burnout-paradise-vr (3), hard-reset-vr (2),
+  bulletstorm-vr (2), and one each in witcher-2, the-evil-within, silent-hill-2-remake, re-village-scope,
+  prince-of-persia-2008, prey-2017. Read in depth: the hard-reset, death-stranding, visceral-re2 (§8g.6 and the
+  10-02 swing notes), tomb-raider and enslaved deltas. **Not read this sweep:** the prototype (HUD markers,
+  WorldToScreen), burnout (car shadow blob), bulletstorm (CalcSceneView), the-evil-within (tilt) and witcher-2
+  (DZIP writer) deltas; start there next time.
+- **Generalised into `docs/techniques/README.md`** (two new sections before "Sources"): *waking a game's shipped
+  vendor stereo through a stand-in vendor library* (hard-reset-vr dossier 2026-10-01; tomb-raider-2013-vr topic,
+  checked 2026-10-04; death-stranding-vr's stubbed stereo setting as the counter-example; wiz3D); *a two-hand grip
+  that aims along an animated socket* (re-village-scope-vr §9cf/§9cg + board 2026-10-01; visceral-re2-vr §8g.6, now
+  worn in both games).
+- **Engine pages:** `re-engine.md` gained the grip bullet; `unreal-1-3.md` gained "where the view is decided each
+  tick" (enslaved-vr §9h, the BL1GOTYVR write-draw-restore shape, and the `eventXxx()` thunk count for the
+  `ProcessEvent` slot).
+- **Web:** the same day's `/gr` re-checked the watched VR mods (PreyVR has public preview builds; the others
+  unchanged) and read effcol's wiz3D and TombRaiderVR's build files; nothing further searched here.
+- **Credit:** ATTRIBUTION.md gained effcol (wiz3D, and the iZ3D developers), farmerarmor's TombRaiderVR, and a
+  2026-10-04 first-party paragraph. **Drops filed:** none.

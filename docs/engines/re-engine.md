@@ -551,6 +551,11 @@ From our `visceral-re2-vr` (`modding-notes/2026-09-27-*.md`):
   on left the menu without text; calling the flow's callback inside the hook was too early, and calling it **one
   frame later** worked `[verified-live 2026-09-27, n=1 per round]`. Worth trying first whenever you swallow a
   request that the caller awaits.
+- **REFramework's two-hand grip aims along the ANIMATED left-hand socket** (shared by its RE2, RE3, RE7 and Village
+  code), so a trigger pull or a shot kick that moves the animated hand re-aims the gun. Freezing the socket while
+  gripping fixed it in Village (rifle, 4.8° → ~1.5°) and RE2 (pistol swing gone, worn 2026-10-02); freeze it in a
+  settled pose and reset it per weapon. Full write-up:
+  [techniques](../techniques/README.md#a-two-hand-grip-that-aims-along-an-animated-socket-turns-every-animation-change-into-a-gun-jerk).
 
 ## See also
 
