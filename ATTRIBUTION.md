@@ -269,7 +269,8 @@ Generalised in part out of this account's own projects: `dead-space-2-vr`, `prey
 - **phunkaeg** — *VR Modding Playbook* (code MIT, prose CC BY 4.0): <https://github.com/phunkaeg/vr-modding-playbook>. Summarised in `docs/landscape/vr-modding-playbook.md`; also the route by which most of the projects below were found.
 - **Mastersellz** — *BL1GOTYVR*, Borderlands GOTY Enhanced VR (no licence found): <https://github.com/Mastersellz/BL1GOTYVR>
 - **vaas993** — *theHunterCotW-VR* (GPL-3.0): <https://github.com/vaas993/theHunterCotW-VR>, including its flicker post-mortem and prior-art notes (which cite the Halo MCC VR and KisakCOD-VR authors).
-- **farmerarmor** — *DeusExHRVR* (LGPL-2.1): <https://github.com/farmerarmor/DeusExHRVR>
+- **farmerarmor** — *DeusExHRVR* (LGPL-2.1): <https://github.com/farmerarmor/DeusExHRVR>; and *TombRaiderVR* (wakes Tomb Raider 2013's own HD3D stereo with stand-in AMD libraries): <https://github.com/farmerarmor/TombRaiderVR>
+- **effcol** — *wiz3D* (LGPL-2.1), a modern revival of the open-sourced **iZ3D** stereo driver that re-enables games' native HD3D and 3D Vision output through proxy DLLs: <https://github.com/effcol/wiz3D>. Thanks also to the original iZ3D developers for open-sourcing it.
 - **DR-89** — *fear-vr* (MIT): <https://github.com/DR-89/fear-vr>; and the authors of **condemned-vr** and **FEAR2VR** as recorded in the playbook (no public link found yet — to be credited by name once found).
 - **dariulone** — *CyberpunkVR Port* (MIT): <https://github.com/dariulone/cyberpunk-vr-port>
 - **fholger**, **elliotttate** and **webhead2oo9** — *OpenXR-Simulator* and its forks (MIT): <https://github.com/fholger/OpenXR-Simulator> · <https://github.com/webhead2oo9/OpenXR-Simulator>
@@ -971,6 +972,10 @@ REE.PAK.Tool, **praydog**'s REFramework, **MarsyApp**'s Anomaly VR, **Downpour I
 **Meta**'s tracking write-up, **CodeRedModding**'s UE3 mirror and **ItsBranK**'s UE3SDKGenerator — that
 work is credited above and was read online only; nothing was cloned, installed or copied.
 **Added 2026-09-10.** Four more first-party generalisations, all measured with no game running except where stated: *stability is not identity* — a shared D3D9 constant register carried two matrices and a value stable across 33,300 frames belonged to the wrong one, from `alice-madness-returns-vr`; *an identity the wrong answer also satisfies* — an inverse-pair check that rejects 200,000 of 200,000 random pairs still cannot separate a transposed inverse near a unit near plane, from `doom-2016-vr`; *enumerate every input config a game ships, and read them rather than write them* — a shipped first-person camera found on a letter key in a file nobody had opened, and the follow-up launch that disproved the "one rebind away" inference, from `alice-madness-returns-vr`; and *a published byte signature encodes a compiler, not a function* — from `enslaved-vr`, where the `unrealsdk` prologue pattern matched the wrong function in 23 MB while the assertion-string route found the right one in a single pass. Credit for the last one goes to the **`unrealsdk`** project and the wider UE3 SDK-generator community, whose skip-the-vtable-index framing is the half that held; read online only, nothing cloned or copied. Public UE3 binding documentation used to place that finding in context comes from the **BeyondUnreal / Unreal Wiki** community and **Epic Games’** own developer forums. DOOM (2016) config and key-rebinding behaviour was read from **DOOM Steam Community** threads.
+**Added 2026-10-04.** Three more: *waking a game's shipped vendor stereo through a stand-in vendor library*
+(`hard-reset-vr`, `tomb-raider-2013-vr`, and the `death-stranding-vr` counter-example); *a two-hand grip that aims
+along an animated socket* (`re-village-scope-vr` and `visceral-re2-vr`, both worn); and *where UE3 decides the view
+each tick* (`enslaved-vr`), set beside **Mastersellz**'s BL1GOTYVR notes, credited above.
 
 Like everything else we write, these are CC-BY-4.0 — take them and build on them, just say where
 they came from.

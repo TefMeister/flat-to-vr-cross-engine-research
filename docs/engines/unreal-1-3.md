@@ -843,6 +843,26 @@ Siblings this applies to `[hypothesis]`: `bulletstorm-vr` (UE3, D3D11, 64-bit �
 whose board now faces the question of whether to continue given that this mod exists. From the
 2026-09-23 `/gr` inbox drop; found through phunkaeg's VR Modding Playbook.
 
+### Where the view is decided each tick, and where to turn it (2026-10-04)
+
+- **Stock UE3 updates every player camera in ONE loop, after all actors tick.** In Enslaved that loop calls
+  `PlayerCamera->eventUpdateCamera(DeltaTime)` for each player controller; `Camera.UpdateCamera`,
+  `FillCameraCache` and `GetCameraViewPoint` are all **script** there, so `CameraCache.POV` is written inside that
+  loop and drawing only copies it out `[inferred-static 2026-10-04]`. The first instruction after the loop is a
+  write point that changes the view rather than annotating it; a write from `Present` is too late, because the next
+  tick's loop overwrites the cache first. Enslaved's numpad yaw test sits there, untested.
+- **Write, draw, restore.** BL1GOTYVR keeps its write inside the drawing window: it saves the controller's view,
+  writes the head pose, calls `Draw` once, and restores the saved view afterwards, so game logic (aim, movement,
+  AI) never sees the turned view `[reported 2026-10-04]`. A write that is never restored can feed into the next
+  tick if the camera update starts from last tick's cache `[hypothesis]`.
+- **Generated `eventXxx()` thunks call `ProcessEvent` through one fixed vtable slot**, so counting them is a cheap,
+  compiler-independent way to read the slot: in Enslaved 845 of 850 `FindFunctionChecked` call sites are followed by a
+  `+0x100` vtable call, slot 64 `[inferred-static 2026-10-04, n=845]`. This replaces the `.rdata` run-length method,
+  which merged abutting vtables.
+
+From `enslaved-vr` (dossier §9h, `modding-notes/2026-10-04-pd-the-camera-is-decided-in-one-loop-and-the-yaw-test-is-built.md`)
+and its `/gr` topic on BL1GOTYVR (2026-10-04).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Unreal Engine 2 / 3" row.

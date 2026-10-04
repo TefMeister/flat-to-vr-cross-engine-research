@@ -7113,6 +7113,77 @@ From the first headset tuning passes on [`silent-hill-2-remake-vr`](https://gith
   OpenXR `[verified-live 2026-09-28, n=1]`; and its OpenXR resolution scale did not change live through the Lua
   settings call (needs a runtime reinitialise) `[verified-live 2026-09-28, n=1]`.
 
+## Waking a game's shipped vendor stereo: the switch is a stand-in for the vendor library
+
+**Seen in two projects (2026-10-01 to 10-04), plus a public tool that does it generally.** This extends the table in
+[Dormant native stereo paths](#dormant-native-stereo-paths) for its first
+kind ("a render stereo toggle for a dead driver"): once the dead driver is out of the loop, what turns the game's own
+two-eye renderer back on is usually **a fake of the vendor library the game asks**, not a change to the game.
+
+| Game | Vendor path | What the game asks, and what a stand-in must answer |
+| --- | --- | --- |
+| **Hard Reset** (Road Hog, D3D9) | NVIDIA 3D Vision via NVAPI | The exe `LoadLibrary`s `nvapi.dll` by name, sets direct mode, and runs its own eye loop whenever its stereo cvar is on; before each eye it calls `SetActiveEye` `[inferred-static 2026-10-01]`. Its own per-eye constant shifts **only the HUD**; the world shift was the driver's job, which is why flipping the cvar alone gave a blown-out picture. A stand-in `nvapi.dll` that says "stereo on" and treats `SetActiveEye` as the per-eye signal is the proposed route `[hypothesis]`. |
+| **Tomb Raider 2013** (Foundation, D3D11) | AMD HD3D quad-buffer | farmerarmor's TombRaiderVR ships stand-ins for AMD's driver-extension DLL (`atidxx32`) and display library (`atiadlxy`) plus a `d3d11` proxy that reports AMD's vendor ID on every adapter, so the HD3D path turns on with any GPU; it also hooks the per-eye projection function and sets the renderer's stereo/eye flags `[reported 2026-10-04]`. |
+
+**The general tool:** effcol's **wiz3D** (LGPL 2.1), a modern revival of the open-sourced iZ3D driver, wraps
+DirectX 7–11 and OpenGL and re-enables games' native **HD3D** ("mostly working") and **3D Vision Direct** ("partly
+working, DX11") output through proxy DLLs instead of iZ3D's kernel hooks `[reported 2026-10-04]`. TombRaiderVR's AMD
+stand-ins derive from it.
+
+**And the counter-example, so "a stereo setting exists" is not read as "a stereo path exists":** **Death Stranding**
+(Decima, D3D12) lists `SetStereoscopic`, a 3D screen factor and even a separate first-person depth multiplier among
+its user settings, but on PC the setters do nothing and the getter always reports off `[inferred-static 2026-10-01]`.
+A console-era menu option survived; the renderer behind it did not.
+
+**What carries:**
+
+- **Read which library the game loads, and how.** A vendor library loaded by name at run time (Hard Reset's
+  `nvapi.dll`) is a ready-made foothold: put the stand-in beside the exe. Check the import table first; a dynamic
+  load does not show there.
+- **Find what the game does per eye itself, and what it left to the driver.** Hard Reset shifts only its HUD; the
+  world offset was the driver's. Whatever the driver used to do, your stand-in now owns.
+- **Use the game's own per-eye call as the eye signal** (`SetActiveEye`, an eye flag on the renderer), never a frame
+  count. Same rule as [choosing the eye per packet](#when-the-camera-is-built-on-another-thread-choose-the-eye-per-packet--never-by-counting-frames).
+- **Vintage stereo still is not VR** (cautions 2 and 3 above): you get two eyes from the engine's own code, and still
+  write the head pose, the per-eye projection and the headset output yourself.
+
+Generalised from [`hard-reset-vr`](https://github.com/TefMeister/hard-reset-vr) (dossier, 2026-10-01),
+[`tomb-raider-2013-vr`](https://github.com/TefMeister/tomb-raider-2013-vr) (`external-research/topics/2026-09-29-tombraidervr-wakes-the-hd3d-path-with-a-fake-amd-driver.md`,
+checked against the whole repo 2026-10-04) and [`death-stranding-vr`](https://github.com/TefMeister/death-stranding-vr)
+(dossier, 2026-10-01); wiz3D from the `/gr` sweep of 2026-10-04.
+
+## A two-hand grip that aims along an ANIMATED socket turns every animation change into a gun jerk
+
+**Seen in two RE Engine games with one VR mod, fixed the same way in both, and worn in both.** praydog's
+REFramework VR aims a two-handed gun along the line from the right hand to the **left-hand grip socket read from the
+body animation every frame** (shared by its RE2, RE3, RE7 and Village code). Whenever the *animation* moves that
+socket while the grip is held, the gun re-aims although both real hands are still.
+
+- **RE Village (rifle):** the first shot after taking the grip moved the muzzle about 4.8°, every time, because the
+  trigger pull moves the animated hands from the carry pose to the firing pose. Freezing the socket at the take:
+  4.8° → about 1.5° `[verified-live 2026-09-21, n=12 shots]`.
+- **RE2 (pistol):** the shot kick pulls the animated support hand off the gun for a moment and the gun swings with
+  it, two-handed only; a per-frame trace showed it on 9 of 9 shots `[measured 2026-10-02]`. Stripping the kick's
+  left-arm animation only changed the angle `[disproved 2026-10-02 as a fix]`. Freezing the socket while gripping
+  (thawed on release): **worn, the swing is gone** `[verified-live 2026-10-02, n=1 round]`.
+- **The freeze has its own trap (Village, 2026-10-01):** a reference frozen at the wrong moment is wrong for as long
+  as it is held. After a relaunch the rifle pointed far to the right because the freeze captured the socket from
+  another weapon's or animation's pose; the fix being built is a per-weapon reset and never freezing mid-animation
+  `[reported 2026-10-01]`.
+
+**The rule:** when a VR mod computes a pose from a **game-animated** reference (a socket, an IK joint, a bone), any
+change in the animation under the player's hands looks like a fault of the mod. Two symptoms, one cause: a jump at a
+state change (fire, reload, raise) and a throw after an animation edit (RE2's spliced walk had no "keep the hand on
+the gun" track `[inferred-static 2026-09-30]`). To find it: log the reference's movement relative to the hand that
+holds it, per frame, with shots marked. To fix it: take the reference **once**, at a clean moment (the grip, in a
+settled pose, reset per weapon), let the *drawn* hand keep following the live animation, and drive the aim from the
+controllers.
+
+Generalised from [`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr) (dossier §9cf, §9cg; status
+board 2026-10-01) and [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) (dossier §8g.6;
+`modding-notes/2026-10-02-the-swing-is-the-support-hand-leaving-the-gun-through-the-kick.md`,
+`2026-10-02-the-swing-fix-freeze-the-grip-socket-in-reframework.md`); first filed by the modding session 2026-09-30.
+
 ## Sources
 
 - **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, the log-before-the-call habit, and the exclusive-mode DirectInput wall that `SendInput` cannot cross; generalised out of [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research) §9a/§9b; the byte-identity read-only-tree rule from the same dossier (2026-09-02)
