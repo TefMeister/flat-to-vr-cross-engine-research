@@ -511,7 +511,8 @@ position on their terms of use.
 ## Written / documentation sources consulted
 
 UEVR docs (docs.uevr.io, uevr.org) · REFramework (reframework.dev) · UploadVR · DigiAlps ·
-Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · and the READMEs of every repo listed above.
+Luke Ross (patreon.com/realvr) · CompoundVR · VRDB · GamingOnLinux and VR.org (SteamVR 2.17 32-bit OpenXR coverage, 2026-09) ·
+and the READMEs of every repo listed above.
 
 ### Developer-authored engine talks & technical write-ups
 

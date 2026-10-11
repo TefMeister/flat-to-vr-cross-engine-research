@@ -58,7 +58,9 @@ submits both every frame.
   [latch the eye with the frame](../techniques/README.md#alternate-eye-rendering-latch-the-eye-with-the-frame-or-you-silently-swap-them).
 - **One shared pose for both eyes is forced here, not chosen.** OpenVR cannot express two poses in one
   frame (issue #1253, opened 2019-11-23, still open, no Valve reply); OpenXR's projection layer can,
-  but SteamVR ships no 32-bit OpenXR runtime and this is a 32-bit process. Re-read 2026-09-04, with the
+  and this is a 32-bit process; when this was written SteamVR shipped no 32-bit OpenXR runtime. ⚠️ **Since
+  SteamVR 2.17 (stable 2026-09-10) it does** `[reported 2026-10-11]`, so the OpenXR route is open here too
+  (see [runtime layers](../runtime-layers/README.md)); not yet tried on this engine. Re-read 2026-09-04, with the
   detail that a partial fix was reported for one driver only:
   [OpenXR carries a pose per view](../techniques/README.md#openxr-carries-a-pose-per-view-where-openvr-collapses-to-one).
 - **A test-hygiene note from the same work**, now generalised: the parity test's first version passed

@@ -19,10 +19,14 @@ OpenVR title runs natively on any OpenXR runtime — no SteamVR in the middle. P
 cut SteamVR's overhead on Quest/Rift/Pimax-class headsets or to sidestep SteamVR issues.
 
 **Why it matters to mod authors:** if your mod targets **OpenVR** (often the pragmatic choice —
-e.g. it's the only 32-bit-friendly option, since SteamVR ships no 32-bit OpenXR runtime),
+e.g. it was long the only 32-bit-friendly option, because SteamVR shipped no 32-bit OpenXR runtime until 2.17),
 OpenComposite is the escape hatch that can still land it on OpenXR — subject to bitness: the
-target **OpenXR runtime** must exist for the game's architecture (SteamVR, notably, ships no
-32-bit OpenXR runtime). It's also a
+target **OpenXR runtime** must exist for the game's architecture. ⚠️ **Corrected 2026-10-11:** SteamVR
+**2.17 (stable 2026-09-10) ships a 32-bit OpenXR runtime** `[reported 2026-10-11]`. It is registered under
+the `WOW6432Node` `Khronos\OpenXR\1\ActiveRuntime` key only once SteamVR's "set as default OpenXR runtime"
+prompt is accepted; until then the file (`steamxr_win32.json`) exists but the 32-bit key stays empty
+`[measured 2026-10-06]` (alan-wake-vr). A runtime can also be picked per process with `XR_RUNTIME_JSON`.
+Not yet run end to end on our machines. Before 2.17, Virtual Desktop's VDXR was the 32-bit option. It's also a
 proof-of-concept that the two APIs are close enough to bridge — with known edge cases around
 overlays and some input paths.
 
