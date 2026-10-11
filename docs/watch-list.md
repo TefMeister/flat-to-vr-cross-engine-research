@@ -2784,3 +2784,24 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   unchanged) and read effcol's wiz3D and TombRaiderVR's build files; nothing further searched here.
 - **Credit:** ATTRIBUTION.md gained effcol (wiz3D, and the iZ3D developers), farmerarmor's TombRaiderVR, and a
   2026-10-04 first-party paragraph. **Drops filed:** none.
+
+### 2026-10-11 (fourteenth sweep, dev PC) — the SteamVR 32-bit line corrected, two hand-over lessons
+
+- **Inbox drained (2):** `2026-10-07-gr-steamvr-now-ships-32-bit-openxr.md` and
+  `2026-10-08-gs-dunia-page-repeats-the-32-bit-steamvr-claim.md`, read together (both `Supersedes:`). Re-checked on
+  the web first: SteamVR 2.17 added 32-bit OpenXR. Corrected in `docs/runtime-layers/README.md` (both places) and
+  `docs/engines/dunia.md`; no other copy left in `docs/`. The Far Cry 2 dossier copy is modding's (its drop waits).
+- **Changed since 2026-10-04 (research lanes):** hard-reset-vr (20), alan-wake-vr (11), the-evil-within-vr (9),
+  visceral-re2-vr (9), far-cry-3-blood-dragon-vr (8), metro-exodus-vr (7), alice (6), bulletstorm (6), enslaved (5),
+  heavy-rain (4), plus INDEX stamps elsewhere and a new `visceral-re3-vr/external-research/`. Read: the hard-reset,
+  metro, alan-wake, FC3BD, TEW and enslaved dossier commit trail, and the hard-reset hand-over and metro keyed-mutex
+  sections in full. **Not read:** alice, bulletstorm, burnout, XIII, psychonauts, heavy-rain deltas; start there.
+- **Generalised into `docs/techniques/README.md`:** *gate the D3D9 lock on an event query* (hard-reset-vr dossier,
+  "Hand-over speed": 14 ms to 1.1 ms), next to the D3D8 readback bullet it refines; *a game's D3D11 device can refuse
+  keyed-mutex textures* (metro-exodus-vr dossier, 2026-10-07/08), next to the D3D9 keyed-mutex bullet.
+- **Seen in four games this window, not written up as new:** head tracking working in the OpenXR simulator first
+  (hard-reset, alan-wake, the-evil-within, enslaved). It is the estate's declared route, already in the library.
+- **Web:** UEVR (still 1.05), OpenXR SDK (1.1.63, already known), dxwrapper (unchanged), REFramework (nightly-01432,
+  2026-10-11: RE9 world_to_screen, session log kept across restarts; nothing estate-wide). The same day's `/gr`
+  re-checked the watched VR mods (BL1GOTYVR now V0.5.7.1).
+- **Credit:** ATTRIBUTION.md gained GamingOnLinux and VR.org. **Drops filed:** none.

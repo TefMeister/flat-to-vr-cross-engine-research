@@ -3892,6 +3892,15 @@ texture. Three things reliably go wrong at that seam:
   only helps if the stall is where you think it is. Rate-cap the capture (one readback per ~11 ms is
   already 90 Hz) before optimising it, and treat a GPU-only shared-surface path as the real lever if
   the cost has to be removed rather than bounded.
+- **On D3D9 the stall can be the lock waiting for a copy you only QUEUED — gate the lock on an event
+  query.** `GetRenderTargetData` is queued, not done, when it returns; a `LockRect` straight after it
+  waits for the copy to finish. Give each slot of a small ring its own system-memory surface, issue a
+  `D3DQUERYTYPE_EVENT` after the copy, and lock a slot only once its query reports done (`GetData` ==
+  `S_OK`), handing the headset the newest finished slot. On Hard Reset (D3D9, 32-bit) that took the
+  hand-over from ~14 ms to **1.1 ms, with every frame reaching the headset** `[verified-live 2026-10-07,
+  n=1]` (`hard-reset-vr` dossier, "Hand-over speed"). This does not contradict the D3D8 bullet above:
+  there the driver stalled inside the blit itself, so it is worth timing the copy and the lock
+  separately before choosing which fix applies.
 
 **The ceiling, which is structural and not a matter of effort.** A finished frame is one image
 rendered from one camera. Both eyes get the same pixels, so there is **no stereo depth**; and
@@ -5280,6 +5289,16 @@ inheritance does the work; no wrapper objects, no vtable forwarding.
   `IDirect3D9KeyedMutex` counterpart, so the synchronisation primitive every D3D11 interop tutorial
   reaches for is unavailable to a D3D9Ex producer. The established substitute is an
   `IDirect3DQuery9` event query plus double or triple buffering.
+- **On D3D11, a game's own device can refuse keyed-mutex textures.** Metro Exodus's device returns
+  `E_INVALIDARG` for every texture created with `MISC_SHARED_KEYEDMUTEX`, while accepting `MISC_SHARED`
+  and `MISC_SHARED | MISC_SHARED_NTHANDLE` `[measured 2026-10-07, n=1 game]` (`metro-exodus-vr` dossier).
+  So a keyed-mutex hand-over that works on one D3D11 game (The Evil Within) cannot be assumed on the next.
+  Two ways round, both built and **not yet run** `[compile-verified 2026-10-08]`: create the keyed-mutex
+  textures on the **headset's** device and only open them on the game's; or skip the mutex and use a ring
+  of plain shared textures, each published only after a GPU event query reports its copy done. Whether a
+  finished event query on one device is enough for the other device to read the texture whole is
+  `[hypothesis]`; a torn picture would disprove it. Probe the texture kinds the game's device accepts
+  before choosing.
 
 **Relation to the alternative:** the
 [whole-frame capture route](#capturing-the-finished-frame-the-whole-frame-route-to-a-headset) avoids
