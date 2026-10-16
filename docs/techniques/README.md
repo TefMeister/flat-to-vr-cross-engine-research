@@ -1354,6 +1354,14 @@ covered elsewhere on this page: an *absent* capability is not proof either when 
 the call is resolved by string.) The third row therefore currently has **no worked case in this
 estate**; it stays as a real possibility, not an observed one.
 
+**⚠️ A compiler DLL in the folder is not proof of the third case (2026-10-16).** Death Stranding Director's Cut
+ships `d3dcompiler_47.dll` and **imports `D3DReflect`** from it, which looked like a chance to log every shader's
+constant map as the game reads it. A proxy of that DLL loaded (29/29 exports) and its `D3DReflect` wrapper saw only
+about ten small start-up compute shaders, none of them the camera, and none at all on the second start
+`[verified-live 2026-10-16, n=2 launches]`: the game ships compiled shaders and reflects only a handful. The cheap
+test is the one that was run: one proxy, one launch, count what passes through. [`death-stranding-vr`](https://github.com/TefMeister/death-stranding-vr),
+dossier §6.
+
 #### A fourth case: the shader is ASSEMBLY TEXT, and it ships in the binary
 
 The table above has three rows because those were the three cases seen. A D3D8-era title added a
@@ -2841,6 +2849,13 @@ section above was written to retire, and one controlled negative on one 2008 con
 restore it. What is established is narrower and worth stating exactly: **the vendor documentation does
 not license a blanket prediction, and a per-game measurement is still required.** Treat the scancode
 rule as *the first thing to try*, not as an explanation of what you observe.
+
+**Follow-up, 2026-10-16 (same title).** With the window **truly** in front (an Alt tap, then `SetForegroundWindow`,
+then a check that `GetForegroundWindow` returns the game), `keybd_event` with hardware scancodes (SPACE then RETURN,
+each held 300 ms) passed the "press any key" screen `[verified-live 2026-10-16, n=2]` and went straight to the main
+menu, not to the idle-timer demo reel. That leans on the UIPI/foreground candidate rather than the device split, but
+it is a different screen and a different call from the 22-second test, so it does not settle the table above
+`[hypothesis]`. Practical rule: **prove the foreground with `GetForegroundWindow` before blaming the input route.**
 
 ### ⭐⭐ And when no OS route reaches the game: write into the buffer the game asks for
 
@@ -5657,6 +5672,29 @@ edit — see [finding the camera matrix the engine actually
 reads](#finding-the-camera-matrix-the-engine-actually-reads) for why editing a derived copy achieves
 nothing.
 
+### Look for the engine's own "offset" input before building an off-axis matrix (2026-10-16)
+
+Four projects this week had to give each eye **the headset's own lens**, which is uneven (most headsets see further
+outwards than towards the nose), and two of them found the engine already had the input for it:
+
+- **Condemned 2** (LithTech Jupiter EX, recompiled): the set-view call takes the FOV tangents **and a second float
+  pair, the picture centre**; half-widths plus centre reproduce the headset lens exactly `[verified-live 2026-10-15,
+  n=1]` (simulator). [`condemned-2-vr`](https://github.com/TefMeister/condemned-2-vr), dossier §8a.
+- **Manhunt** (RenderWare): view window = half the lens width/height in tangents, view offset = the lens centre, both
+  put back after the second eye `[measured 2026-10-12, n=1]` in a test program; not yet run in the game.
+  [`manhunt-2003-vr`](https://github.com/TefMeister/manhunt-2003-vr).
+- **Metro Exodus** builds its lens from the **back buffer's** shape, not the window's `[verified-numerically
+  2026-10-15]`, so the lens to match is the one of the picture the headset receives. [`metro-exodus-vr`](https://github.com/TefMeister/metro-exodus-vr).
+- **Mad Max** had no such input; its fix renders a narrower eye lens inside a wider game view so the game's culling
+  covers a head turn, which works within a range (about 18° of head turn at an 80° eye lens in a 116.9° game view)
+  `[reported 2026-10-15, n=1]`. [`mad-max-vr`](https://github.com/TefMeister/mad-max-vr).
+
+**The reflex:** older engines often kept an offset or shift input on the view call, for split screens, jitter or
+stereo-3D TV modes. Look for it first; an engine-native off-centre view is honoured by everything downstream, where a
+patched matrix is honoured only by what reads that matrix. **⚠️ The simulator preview cannot judge the shape:** it
+copies each eye image into its window and ignores the layer `fov` (Metro dossier, from its README), so "stretched"
+there says nothing; read the projection log instead.
+
 ## A public reimplementation of your game is a signature source, not just a reference
 
 `[inferred-static 2026-09-02, n=1 game]` Generalised out of
@@ -7202,6 +7240,26 @@ Generalised from [`re-village-scope-vr`](https://github.com/TefMeister/re-villag
 board 2026-10-01) and [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) (dossier §8g.6;
 `modding-notes/2026-10-02-the-swing-is-the-support-hand-leaving-the-gun-through-the-kick.md`,
 `2026-10-02-the-swing-fix-freeze-the-grip-socket-in-reframework.md`); first filed by the modding session 2026-09-30.
+
+## When the result you expect looks the same as a fallback, swap in something that cannot
+
+`[verified-live 2026-10-16, n=1 each]` Generalised out of [`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr)
+(`modding-notes/2026-10-16-the-follow-camera-and-proof-the-swap-is-honoured.md`).
+
+A data repoint (here, which camera object a rule installs) was meant to install the game's normal follow camera. It
+did look like a normal follow camera, which is also exactly what the game shows if our repoint is ignored. **A
+success that looks the same as doing nothing proves nothing.** The fix was two swaps of the same field:
+
+| Installed by our rule | What the screen showed | Reading |
+| --- | --- | --- |
+| the intended follow camera | orbits the character | expected, but also what a fallback looks like |
+| a ghost camera from the proven id range | orbits the character | "orbit-looking" is no sign of fallback |
+| a marketing (free) camera | stays put while the character walks away | **the field is honoured** |
+
+Only the third row could not have come from the game's default, so only it proves the field is read. One question
+can stay open after that (whether an object from a different id range resolves), and the observation that would
+settle it is to change something **visible in our object only**. General form: pick at least one test value whose
+result is impossible without your change, and run it beside the value you actually want.
 
 ## Sources
 
