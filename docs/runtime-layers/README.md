@@ -118,6 +118,25 @@ one that draws stereo into the game's own swap chain. phunkaeg's playbook adds t
 (chapter 09): *a substitute runtime that enforces less than production passes things the headset then
 fails*, so a simulator pass is not headset acceptance.
 
+## A game's own old C++ runtime can kill any runtime loaded into it
+
+Generalised out of [`heavy-rain-vr`](https://github.com/TefMeister/heavy-rain-vr) (`dev-archive/recon/2026-10-12-old-cpp-runtime-closes-the-game/`).
+
+Many games ship `msvcp140.dll` and `vcruntime140.dll` in their own folder. Being found first, **that copy is what
+every DLL in the game's process gets**, including an OpenXR runtime (or the simulator) that a mod loads in process.
+Binaries built with Visual Studio 2022 17.10 or later need runtime 14.40 or later: they build their `std::mutex` in
+place, and an older runtime crashes at the first lock `[reported]`. The tell recorded with the evidence: the PE
+imports `_Mtx_lock` but not `_Mtx_init_in_situ`.
+
+- **Seen:** Heavy Rain ships 14.16 (2018). The OpenXR Simulator died inside `xrCreateInstance` with the game's copy
+  beside a test program, and ran with the Windows copy `[measured 2026-10-12, n=2 each]`. In the game it looked like a
+  **silent exit**: no crash event and a 0-byte runtime log, which reads like anything but a runtime-version fault.
+- **Cheap checks for any game:** list `msvcp140.dll` in the game folder and read its version; before loading a
+  runtime, log the path and version of the `msvcp140.dll` already in the process, and refuse below 14.40 with a log
+  line rather than lose the game.
+- **Fix under test:** move the game's two files out (archived, not deleted) so Windows' newer copies load. Not yet
+  tried live `[hypothesis]`.
+
 ## Frame warping as a plug-in: PureDark's AFW
 
 **PureDark's UEVR fork** adds *Alternate Frame Warping*: the game draws fewer pictures and the missing
