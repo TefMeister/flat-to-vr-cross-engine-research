@@ -2805,3 +2805,26 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   2026-10-11: RE9 world_to_screen, session log kept across restarts; nothing estate-wide). The same day's `/gr`
   re-checked the watched VR mods (BL1GOTYVR now V0.5.7.1).
 - **Credit:** ATTRIBUTION.md gained GamingOnLinux and VR.org. **Drops filed:** none.
+
+### 2026-10-16 (fifteenth sweep, dev PC) — the headset's own lens through the engine's own input, and three hand-overs
+
+- **Inbox drained (3), by name:** `2026-10-12-mod-old-msvcp140-in-game-folder-crashes-openxr-runtimes.md` → new
+  section in `docs/runtime-layers/README.md`; `2026-10-15-mod-reframework-single-frame-multipass-with-dlss.md` →
+  `docs/engines/re-engine.md`; `2026-10-15-mod-xbox360-lithtech-world-unit-and-offcentre-view.md` →
+  `docs/engines/rexglue-static-recomp.md` and `docs/techniques/README.md`. No `Supersedes:` lines among them.
+- **Changed since 2026-10-11 (research lanes):** mad-max-vr (25), manhunt-2003-vr (12), witcher-2-vr (6),
+  metro-exodus-vr (6), condemned-2-vr (6), deus-ex-mankind-divided-vr (5), the-darkness-vr (4), hard-reset-vr (3),
+  death-stranding-vr (3), and smaller ones. Read: commit subjects for the top six, and the per-eye-lens sections of the
+  mad-max, manhunt, metro and condemned-2 dossiers, the death-stranding §4/§6 injection lines, and the PoP note of
+  2026-10-16. **Not read:** deus-ex (its own side-by-side 3D mode, 2026-10-15) and the-darkness deltas; start there.
+- **Generalised into `docs/techniques/README.md`:** *look for the engine's own offset input before building an
+  off-axis matrix* (condemned-2-vr §8a, manhunt-2003-vr 2026-10-12, with metro-exodus-vr and mad-max-vr as the
+  contrasting cases); *a compiler DLL in the folder is not proof the game compiles at run time* (death-stranding-vr
+  dossier, 2026-10-16), added to the shader-compile section; *when the expected result looks like a fallback, swap in
+  something that cannot* (prince-of-persia-2008-vr, 2026-10-16 note); and a follow-up on the 2026-09-07 DirectInput
+  correction (same title: hardware scancodes passed the title screen once the window was proven to be in front).
+- **Watch list (light pass):** REFramework-nightly last pushed 2026-10-11, UEVR-nightly 2026-08-30, the three
+  OpenXR-Simulator repos unchanged since 2026-09-22 or earlier; nothing new to fold. BL1GOTYVR's V0.5.7.3 was handled
+  by today's `/gr`.
+- **Drops filed:** none. **Inboxes dropped into:** none.
+

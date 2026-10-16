@@ -978,6 +978,12 @@ work is credited above and was read online only; nothing was cloned, installed o
 along an animated socket* (`re-village-scope-vr` and `visceral-re2-vr`, both worn); and *where UE3 decides the view
 each tick* (`enslaved-vr`), set beside **Mastersellz**'s BL1GOTYVR notes, credited above.
 
+**Added 2026-10-16.** *Single Frame Multipass with DLSS* follows advice from **Andyalpa** (RE7 VR RELOADED, built on
+**praydog**'s REFramework). The Condemned 2 database reading uses **libmspack** (LZX) on top of **psxrestore**'s
+recompilation (credited above). *Look for the engine's own offset input* is generalised from our `condemned-2-vr`,
+`manhunt-2003-vr`, `metro-exodus-vr` and `mad-max-vr`; the old-C++-runtime warning from `heavy-rain-vr`; the
+compiled-shader caution from `death-stranding-vr`; the positive-control swap from `prince-of-persia-2008-vr`.
+
 Like everything else we write, these are CC-BY-4.0 — take them and build on them, just say where
 they came from.
 

@@ -557,6 +557,23 @@ From our `visceral-re2-vr` (`modding-notes/2026-09-27-*.md`):
   settled pose and reset it per weapon. Full write-up:
   [techniques](../techniques/README.md#a-two-hand-grip-that-aims-along-an-animated-socket-turns-every-animation-change-into-a-gun-jerk).
 
+### Single Frame Multipass is the rendering choice to pair with DLSS (2026-10-15)
+
+From our [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) home-PC session and RE7 testing. REFramework's VR tab offers three
+rendering techniques (config key `VR_RenderingTechnique_V2`): `0` Alternating/AFR, `1` Two Frame Sequential, `2`
+**Single Frame Multipass**, which draws both eyes in one game frame. Andyalpa's advice for his RE7 VR RELOADED is to
+use single pass "for better performance and DLSS".
+
+- **RE7** (RE7 VR RELOADED v1.0.3) with Single Frame Multipass and `TemporalUpscaler_Enabled=true` (DLSS, quality 1):
+  the wearer: "that single frame multipass works really well!" `[verified-live 2026-10-15, n=1]`.
+- **RE2** (Visceral) has run the same two settings since before that; the wearer on 2026-10-09: "there DLSS makes a massive
+  difference" `[reported 2026-10-09]`.
+- **Village** runs DLSS off by choice (scope sharpness), so the pairing is untested there.
+- Why it should matter `[hypothesis]`: a temporal upscaler keeps a history per frame; with the eyes on alternate
+  frames that history mixes two viewpoints.
+- **Setting it before the first launch works:** a `<game>_fw_config.txt` holding only those keys is merged by
+  REFramework on start, and the game fills in the rest (done for RE7, 2026-10-15).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Capcom RE Engine" row.
