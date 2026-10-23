@@ -30,7 +30,7 @@ kind is ours to give; the first never is.
 > ours to take. What we take is the publicly-explained idea; the implementation stays theirs.
 >
 > **Corrections & removals — no questions asked.** If you are credited or referenced here and
-> want your name or information changed or removed, just email **(an issue on this repository)** and tell us
+> want your name or information changed or removed, just open an issue on this repository and tell us
 > **exactly what to remove**, and we will remove it, no problem. You do not need to be a lawyer or
 > prove anything — if it's yours and you want it gone, that's enough.
 

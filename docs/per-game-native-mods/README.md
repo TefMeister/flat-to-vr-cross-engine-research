@@ -14,7 +14,7 @@ the property note below.
 > *publicly-explained concept* of alternating-eye rendering and links to his official channels.
 > If you want to use a R.E.A.L. mod, get it from his official Patreon and support the author. As
 > with everything in this repo: we use nothing that anyone claims as their property, and we honor
-> correction/removal requests — email **(an issue on this repository)**.
+> correction/removal requests — open an issue on this repository.
 
 ---
 

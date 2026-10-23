@@ -64,7 +64,7 @@ to stand on it the same way.
 ## Corrections & removals
 
 If you are credited or referenced here — as an author, contributor, or source — and want your
-name or information changed or removed, email **(an issue on this repository)** and tell us **exactly what to
+name or information changed or removed, open an issue on this repository and tell us **exactly what to
 remove**. We will do it promptly, no problem and no argument; you do not need to prove ownership or
 explain why. Likewise, if you should be credited and aren't, tell us and we'll fix it. And to be
 clear: we document techniques and link to sources — **we do not copy or reuse anyone's actual code
