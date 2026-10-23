@@ -11,7 +11,7 @@ describe the public *idea* in our own words and link back to the author's implem
 stays theirs.
 
 **Corrections & removals — no questions asked.** If you are credited or referenced anywhere here
-and want your name or information changed or removed, email **(an issue on this repository)** and tell us
+and want your name or information changed or removed, open an issue on this repository and tell us
 **exactly what to remove** — we will remove it promptly, no problem and no argument. We credit
 everyone who helped, published, or even just inspired this work — tools, open-source projects,
 community knowledge, and individuals alike; if we missed you, that's a mistake to fix, so tell us.
