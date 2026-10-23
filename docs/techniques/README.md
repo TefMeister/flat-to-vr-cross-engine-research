@@ -7201,6 +7201,12 @@ A console-era menu option survived; the renderer behind it did not.
   world offset was the driver's. Whatever the driver used to do, your stand-in now owns.
 - **Use the game's own per-eye call as the eye signal** (`SetActiveEye`, an eye flag on the renderer), never a frame
   count. Same rule as [choosing the eye per packet](#when-the-camera-is-built-on-another-thread-choose-the-eye-per-packet--never-by-counting-frames).
+- **Some games keep a side-by-side mode of their own, no vendor library needed** (2026-10-23). Deus Ex: Mankind
+  Divided's `Stereoscopic3DMode 1` draws a real, separate picture per eye `[verified-live 2026-10-15, n=1]`, but only
+  in exclusive fullscreen. A shape-based camera finder found the camera in 130+ scans with it off, and in 2 of 15
+  with it on, while buffer `Map` calls fell from ~14,000 to 5-50 per 5 s `[measured 2026-10-15, n=1 run]`: the
+  stereo path feeds its matrices another way (or the finder's budget ran out) `[hypothesis]`. Find the camera with
+  stereo OFF first, then follow it into the stereo path.
 - **Vintage stereo still is not VR** (cautions 2 and 3 above): you get two eyes from the engine's own code, and still
   write the head pose, the per-eye projection and the headset output yourself.
 
@@ -7261,8 +7267,110 @@ can stay open after that (whether an object from a different id range resolves),
 settle it is to change something **visible in our object only**. General form: pick at least one test value whose
 result is impossible without your change, and run it beside the value you actually want.
 
+## Moving flat 2D draws onto a floating panel? Move the game's clipping rectangle with them (2026-10-23)
+
+From [`hard-reset-vr`](https://github.com/TefMeister/hard-reset-vr) (Direct3D 9, 2026-10-17). A common VR-HUD route
+re-projects every flat 2D draw (menus, HUD) through a per-eye "panel" matrix so it lands on a plane in front of the
+wearer. In Hard Reset the pause menu's text and fills landed exactly where the maths put them, but the frames around
+them shrank to a thin strip of ticks, at the left edge in one eye and the right edge in the other.
+
+The cause was not the shader: the game draws its menu lists with **`SetScissorRect` on**, and the rectangle is still
+in **flat screen** pixels. Everything outside the list's flat rectangle was cut, at the same pixels in both eyes; the
+visible strip's edges were exactly the flat list's edges `[measured 2026-10-17, n=1]`. The fix was to put the
+rectangle's corners through the same per-eye panel matrix (bounding box plus a pixel, clamped; the whole target if a
+corner falls behind the eye), set it around each placed draw, and give the game its own rectangle back afterwards;
+the whole menu then showed in both eyes, and switching only the scissor part off brought the empty boxes back
+`[verified-live 2026-10-17, n=1]`.
+
+- **The habit:** when a re-projected 2D element is *partly* visible, and the visible edge lines up with where it was
+  on the flat screen, look for clipping state that was set in screen space: scissor rectangles, viewports, clip planes.
+  The earlier "expand the scissor/viewport" note in this file covers the full-screen case; a panel needs the rectangle
+  *moved*, not widened, or the menu bleeds over everything.
+- **Keep your own copy** of the game's rectangle (it is state, so it outlives the draw), and forget it when the render
+  target, device or reset changes, or the next frame clips with a stale box.
+
+## Keeping a game listening while another window is in front (2026-10-23)
+
+From [`hard-reset-vr`](https://github.com/TefMeister/hard-reset-vr) (2026-10-17). The earlier section "An old main
+loop may stop rendering the moment it loses focus" covers *ticking*; this one covers *receiving*, which it lists as a
+separate problem. An engine that reads the mouse and keys only while its own "active" flag is set, and polls held keys
+with `GetAsyncKeyState`, ignores everything once another window takes focus, which is the normal state while a VR
+controller layer, a simulator window or an automation session is in front.
+
+What worked, all scoped to the game's own module `[verified-live 2026-10-17, n=1 each]`:
+
+- **Subclass the window and drop `WM_ACTIVATE(WA_INACTIVE)`**, so the engine never learns it lost focus (check first
+  which activation messages it handles; this one handled only `WM_ACTIVATE`) `[inferred-static 2026-10-17]`.
+- **Hook the polls**, not the OS: `GetAsyncKeyState` (OR in your held keys, because a posted key-down alone lasts one
+  frame when the engine re-polls held keys every frame), `GetCursorPos`/`SetCursorPos`/`ClipCursor` (leave the real
+  desktop cursor alone while the game is not in front), and `GetRawInputData` when raw mouse is on.
+- **Post** keys, buttons and mouse moves to the game's window. Live: the aim turned the camera with another window in
+  front, and the keys walked the player 13.5 m in 3 s.
+- ⚠️ **Never let one posted message gate the next.** The raw-mouse route first looked dead (0 answers in ~30 s). It was
+  our own flag: one post the engine skipped (it reads raw input only in relative-mouse mode, off while its console is
+  open) left a "one in flight" flag set for good. Clearing the flag whenever the message passes the window, dropping
+  skipped moves, re-sending a lost one after 250 ms and falling back to plain mouse after 40 lost re-sends fixed it; a
+  stand-in window at the game's addresses went from 2 of 7 checks to 7 of 7 `[verified-numerically 2026-10-17, n=1]`.
+  A negative from an input route with a latch in it says nothing until the latch has been ruled out.
+
+## Jitter checks: let the simulator move the head, do not stream head poses at it (2026-10-23)
+
+From [`hard-reset-vr`](https://github.com/TefMeister/hard-reset-vr) (OpenXR Simulator, 2026-10-17). The same slow turn,
+measured by the jitter recorder, came out as **20 of 20 seconds jittery** when driven by 20 head-pose commands a
+second, and **2 of 35** (both on the start and stop) when driven by the simulator's own pose sweep, which renews the
+pose every frame `[verified-live 2026-10-17, n=1]`. A hand-made head path updated more slowly than the frame rate is
+itself stepped, which is precisely what "jittery" means. So:
+**drive automated jitter checks with a pose source that renews at least once per frame** (the simulator's sweep, or
+your own per-frame interpolation), and read a jitter result from a stepped driver as a measurement of the driver.
+
+## A skinned view model may arrive in world space: move its bones, not its object matrix (2026-10-23)
+
+From [`hard-reset-vr`](https://github.com/TefMeister/hard-reset-vr) (Direct3D 9 shader constants, 2026-10-17). The
+held gun is skinned: its bones arrive as a palette of 3-register matrices (`float4x3`, from `c28` up), already in
+**world space**, while the object matrix (`c16..c18`) moved only an unskinned part on the gun (the HUD dial)
+`[verified-live 2026-10-17, n=1]`. Shifting every bone and object within 0.9 m of the eye by one per-frame offset
+carried the gun to the controller. Two traps that transfer to any constant-register mod:
+
+- **The same registers mean something else in other shaders** (here `c28`/`c29` were also HUD parameters, and a decal
+  shader used `c28` for its projection). Gating by register number is fragile; **classify each vertex shader once, at
+  creation, from its constant table** (bones / object matrix / neither) and move uploads only while a matching shader
+  is bound. That worked across 1,226 shaders with the gun still following the hand `[verified-live 2026-10-17, n=1]`.
+  It relies on the engine binding the shader before uploading its constants, which was read for the main draw path
+  only `[inferred-static 2026-10-17]`.
+- **A skinning-matrix translation is where the model origin lands under that bone**, not the bone's own position, so a
+  "near the eye" test or a grip point read from it can be off by the bone's offset `[inferred-static 2026-10-17]`.
+
+## Ask the running engine itself: live type-database MCP servers (2026-10-23)
+
+Two public MCP servers turn a running game's own reflection data into something an assistant can query, which
+replaces a lot of static hunting for a field or method by name `[reported 2026-10-23, from their READMEs; not yet run
+against one of our games]`:
+
+- **RE Engine MCP** (praydog): a REFramework.NET (C#) plugin plus a small MCP server. It reads RE Engine's own type
+  database live: types, fields, methods, singletons, object graphs, and calling methods. Needs a recent nightly
+  REFramework with its C# support and the .NET SDK to build. <https://github.com/praydog/re-engine-mcp>
+- **UEVR-MCP** (elliotttate): a UEVR plugin plus MCP server for Unreal Engine 4/5 games: object and class lookup,
+  properties, functions, live calls, plus static helpers that resolve and disassemble the game's executable. It has a
+  dumper mode that turns UEVR's VR rendering off, for recon only. <https://github.com/elliotttate/uevr-mcp>
+
+Where it fits: engines with a rich runtime type system (RE Engine's, Unreal's reflection) are the cheap case in this
+library precisely because the names survive into the shipped game; these servers make that advantage directly
+usable. They answer *what exists and what it holds right now*; they do not replace reading the code that decides
+when a value is written (see "Find the step that BUILDS the thing before changing any step that CARRIES it"). Both
+need the game running, so in a multi-lane setup they belong to the live session, not to static work. The Lanes
+plugin (0.82.0) installs both on request.
+
+A third, engine-agnostic server, **REA** (morluto, MIT), fronts an existing Ghidra, IDA or Hopper install and also
+reads .NET assemblies statically with nothing else installed, which may suit Unity (Mono) games; it has no
+engine-specific type-database support `[reported 2026-10-17, from its README; not installed]`.
+<https://github.com/morluto/rea>
+
 ## Sources
 
+- **Hard Reset VR** (this account) — the moved scissor rectangle for panel HUDs, input without focus and the latched-post trap, the per-frame pose source for jitter checks, and world-space skinned view models with shader-role gating (2026-10-17); generalised out of [`hard-reset-vr/engine-research/`](https://github.com/TefMeister/hard-reset-vr/tree/main/engine-research)
+- **praydog** — RE Engine MCP: <https://github.com/praydog/re-engine-mcp>
+- **elliotttate** — UEVR-MCP: <https://github.com/elliotttate/uevr-mcp>
+- **morluto** — REA (Reverse Engineer Anything): <https://github.com/morluto/rea>
 - **XIII (2003) VR** (this account) — harness tick sites, the disproved render-path diagnosis, the log-before-the-call habit, and the exclusive-mode DirectInput wall that `SendInput` cannot cross; generalised out of [`XIII2003-vr/engine-research/`](https://github.com/TefMeister/XIII2003-vr/tree/main/engine-research) §9a/§9b; the byte-identity read-only-tree rule from the same dossier (2026-09-02)
 - **Psychonauts VR** (this account) — the void-behind-the-player characterisation and measurement method, the camera-matrix identification arithmetic, the double-rotation trap, the unbound-key false negative and the camera-height-is-not-eye-height rule (notes 71–72); generalised out of [`psychonauts-vr/modding-notes/`](https://github.com/TefMeister/psychonauts-vr/tree/main/modding-notes) and [`psychonauts-vr/dev-archive/`](https://github.com/TefMeister/psychonauts-vr/tree/main/dev-archive)
 - **Unreal Gold VR** (this account) — the mutation-checked numerical verification, the no-convergence and full-window-2D-layer design notes; generalised out of [`unreal-gold-vr/modding-notes/`](https://github.com/TefMeister/unreal-gold-vr/tree/main/modding-notes)

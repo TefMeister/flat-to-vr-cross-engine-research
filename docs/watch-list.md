@@ -2828,3 +2828,26 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   by today's `/gr`.
 - **Drops filed:** none. **Inboxes dropped into:** none.
 
+### 2026-10-23 (sixteenth sweep, dev PC) — Hard Reset's lessons, the live-game MCP servers, one inbox drained
+
+- **Inbox drained (1), by name:** `2026-10-17-mod-rea-reverse-engineering-mcp.md` → `docs/techniques/README.md`
+  ("Ask the running engine itself"). No `Supersedes:` lines.
+- **Changed since 2026-10-16 (research lanes):** hard-reset-vr (14 commits, dossier +206 lines), witcher-2-vr (7),
+  visceral-re2-vr (4), death-stranding-vr (4); most other repos had only the 2026-10-23 e-mail clean-up. Read: the
+  Hard Reset dossier delta in full, the Witcher 2 camera/console and archive-hash sections, RE2's two menu-flicker
+  frames and the title-rain cause, Death Stranding's windowed/proxy lines, and (owed from the last sweep) Deus Ex's
+  side-by-side 3D and camera-finder lines. The Darkness had only an inbox drop.
+- **Generalised into `docs/techniques/README.md`:** move the game's scissor rectangle with a panel HUD; input that keeps
+  working without focus, and the latched-post trap; per-frame pose source for jitter checks; world-space skinned view
+  models and shader-role gating (all hard-reset-vr dossier, 2026-10-17); the live type-database MCP servers (RE Engine
+  MCP, UEVR-MCP) and REA; Deus Ex's own side-by-side mode added to the shipped-stereo section
+  (deus-ex-mankind-divided-vr dossier, 2026-10-15).
+- **Into `docs/engines/re-engine.md`:** RE Engine MCP; the scratch-page nesting counter behind RE2's title-rain crash
+  (visceral-re2-vr dossier, 2026-10-17); REFramework's single download.
+- **Left in their projects (one-offs):** Witcher 2's remote-console camera steering and DZIP table hash (REDengine 2,
+  no sibling project); Death Stranding's settings.cfg window and d3dcompiler proxy.
+- **Watch list (light pass):** REFramework-nightly nightly-01433 (2026-10-21; single `REFramework.zip` since at least
+  2026-09-10), UEVR-nightly unchanged since 2026-08-30, the three OpenXR-Simulator repos unchanged since 2026-09-22 or
+  earlier, uevr-mcp last pushed 2026-06-15, re-engine-mcp 2026-03-11.
+- **Credit:** techniques Sources gained Hard Reset VR, praydog (RE Engine MCP), elliotttate (UEVR-MCP), morluto (REA).
+  **Drops filed:** none. **Inboxes dropped into:** none.

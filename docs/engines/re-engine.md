@@ -574,6 +574,34 @@ use single pass "for better performance and DLSS".
 - **Setting it before the first launch works:** a `<game>_fw_config.txt` holding only those keys is merged by
   REFramework on start, and the game fills in the rest (done for RE7, 2026-10-15).
 
+### One REFramework download for every game (noted 2026-10-23)
+
+The nightly builds now ship one `REFramework.zip` that detects the game at run time, plus `VR.zip` and
+`csharp-api.zip`; the per-game zips (`RE2.zip`, `RE8.zip`, ...) are gone, and the old non-ray-tracing builds of RE2,
+RE3 and RE7 are not supported by it `[reported 2026-10-23, from the nightly release page; the single zip is listed
+since at least nightly-01421, 2026-09-10]`. <https://github.com/praydog/REFramework-nightly/releases>
+
+### Ask the running game: RE Engine MCP (2026-10-23)
+
+praydog's [RE Engine MCP](https://github.com/praydog/re-engine-mcp) is a REFramework.NET (C#) plugin plus an MCP
+server that reads the engine's own type database while the game runs: types, fields, methods, singletons and live
+calls `[reported 2026-10-23, from its README; not yet run against our games]`. It needs a recent nightly REFramework
+with its C# support. For this family it turns "which field holds X" from a static hunt into a question. More, and the
+Unreal twin (UEVR-MCP), in [techniques](../techniques/README.md) → "Ask the running engine itself".
+
+### A crash inside the engine's own effect request: the scratch-page nesting counter (2026-10-23)
+
+From [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) (RE2, 2026-10-17, live debugger). Calling the
+effect request from our own code crashed inside the engine; the game's own calls never did. The engine's per-thread
+context hands out short-lived arrays from a bump-allocated **scratch page**, and a nesting counter decides when that
+page is rewound: an allocation made *inside* the request brought the counter back to zero, the page was rewound and
+zeroed, and the request's own temporary array was overwritten `[verified-live 2026-10-17, n=2 + a hardware
+write-watch]`. The game's own call runs with the counter already at 1; ours ran at 0. Holding the counter one higher
+for the length of our call cured it. The layout read on RE2 (counter at context `+0x78`, current page at `+0x60`)
+is RE2's; whether other RE Engine titles share it is `[hypothesis]`. **The transferable rule:** when an engine
+function crashes only when *you* call it, compare the thread's engine-side state at entry between its own call and
+yours before suspecting the arguments.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Capcom RE Engine" row.
