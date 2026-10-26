@@ -984,6 +984,23 @@ recompilation (credited above). *Look for the engine's own offset input* is gene
 `manhunt-2003-vr`, `metro-exodus-vr` and `mad-max-vr`; the old-C++-runtime warning from `heavy-rain-vr`; the
 compiled-shader caution from `death-stranding-vr`; the positive-control swap from `prince-of-persia-2008-vr`.
 
+**Added 2026-10-26.** People whose public work this sweep drew on, all read online, nothing copied:
+**phunkaeg** (*VR Modding Playbook*, chapters 08 and 14, credited above); **praydog** and **PureDark** (UEVR's pad
+callback order, and REFramework's standing-origin reset, read in their source); **cursey** and the contributors of the
+*REFramework book* (the `vrmod` Lua API page, <https://github.com/cursey/reframework-book>); **aap** (librw's view
+offset, credited above); **fholger** (*Alan Wake VR* release notes, <https://github.com/fholger/alanwake_vr>);
+**eqzitara** and **Artox** (the Helix Mod Witcher 2 3D Vision fix and its comment thread,
+<https://helixmod.blogspot.com/2012/04/witcher-2-enhanced-edition.html>); **elliotttate** (the OpenXR Simulator's
+screenshot UI targeting, 2026-10-24) and **webhead2oo9** (its headset profiles, built on the **HMD Geometry Database**
+by **risa2000**, <https://risa2000.github.io/hmdgdb/>); **portingpete** (*The Darkness Recomp*,
+<https://github.com/portingpete/The-Darkness-Recomp>); **invinceble55-wq** (*Estacado*,
+<https://github.com/invinceble55-wq/Estacado-The-Darkness-Recomp>); and **psxrestore** (Condemned2Recomp's 0.3/0.4
+release notes, credited above).
+Our own first-party generalisations the same day: the menu hand-back double turn and REFramework's overlay on OpenXR
+(`visceral-re2-vr`), RenderWare's eye-moving view offset seen in a headset (`manhunt-2003-vr`), the ReXGlue SDK seams
+and first headset run (`the-darkness-vr`), the UE4–5 page (`silent-hill-2-remake-vr`), the standing-origin reset
+(`visceral-re8-vr`), and the checker lessons (`BeG0nE`).
+
 Like everything else we write, these are CC-BY-4.0 — take them and build on them, just say where
 they came from.
 

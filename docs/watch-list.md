@@ -2851,3 +2851,42 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   earlier, uevr-mcp last pushed 2026-06-15, re-engine-mcp 2026-03-11.
 - **Credit:** techniques Sources gained Hard Reset VR, praydog (RE Engine MCP), elliotttate (UEVR-MCP), morluto (REA).
   **Drops filed:** none. **Inboxes dropped into:** none.
+
+### 2026-10-26 (seventeenth sweep, dev PC) — what each eye must own, a new UE4–5 page, and lens bugs a simulator hides
+
+- **Inbox drained (4), by name, after a `supersedes` grep that found none:**
+  `2026-10-23-gr-playbook-two-pass-ownership-and-shared-machine.md` → `docs/techniques/README.md` (new "What each eye
+  must own when the scene is drawn twice") and `docs/landscape/vr-modding-playbook.md` (chapter 08 compared with our
+  lanes); `2026-10-26-gr-reframework-vr-standing-origin-retaken-on-start-and-recenter.md` → `docs/engines/re-engine.md`;
+  `2026-10-26-gr-renderware-view-offset-moves-the-eye.md` → `docs/engines/renderware.md` (re-read in librw online
+  first: the offset sits in both the picture-shift and the translation terms);
+  `2026-10-26-gr-uevr-pad-callbacks-cpp-first-lua-last.md` → new `docs/engines/unreal-4-5-uevr.md`.
+- **Changed since 2026-10-23 (research lanes):** visceral-re2-vr (7), the-darkness-vr (5), silent-hill-2-remake-vr (4,
+  new dossier), manhunt-2003-vr (4), alice-madness-returns-vr (4), prey-2017-vr, metro-exodus-vr, hard-reset-vr,
+  alan-wake-vr (3 each); everything else 1-2 (the 2026-10-23 e-mail clean-up, the 2026-10-25 commit-ID update, today's
+  `/gr` stamps). Read in full: the RE2, The Darkness, Silent Hill 2, Manhunt and Alice dossier deltas; every
+  `external-research/topics/` file dated 2026-10-23 to 2026-10-26 by title, and the Alan Wake, Witcher 2, Tomb Raider,
+  Alice, The Darkness, Condemned 2, RE8 standing-origin and SH2 pad topics in full; the Gold Digger drops in Village,
+  Manhunt and Alan Wake, and BeG0nE's checker-lessons idea file. **Covered in full now:** `silent-hill-2-remake-vr`'s
+  new dossier (§1-§5). **Not read:** the other new topics (Burnout decomp, Psychonauts decomp, Deus Ex VR demo,
+  RE7/RE8 one-offs); they are game-specific.
+- **Generalised:** *what each eye must own* (phunkaeg ch. 14 + `alan-wake-vr` and `witcher-2-vr` topics, 2026-10-26);
+  *the game copies the rendered camera back after a menu* under "Do not rotate twice" (`visceral-re2-vr` dossier,
+  inventory exit jump, 2026-10-24); *read a checker's verdict against its own counters* under the jitter section
+  (`BeG0nE` `ideas/fresh/begone--gd-2026-10-26-checker-lessons-from-the-shelves.md`); REFramework's overlay drawn after
+  the eye copy on OpenXR (`visceral-re2-vr` dossier, menu squish); ReXGlue SDK seams and the first headset run
+  (`the-darkness-vr` dossier §6c, 2026-10-23/25) plus the route moving (`the-darkness-vr` and `condemned-2-vr`
+  2026-10-26 topics); the UE4–5 page from `silent-hill-2-remake-vr` dossier §2-§3b; Manhunt's headset sign fix on the
+  RenderWare page.
+- **Left in their projects (one-offs):** Alice's `ENGINEINI=` route (untested, UE3), Tomb Raider's HelixVision report,
+  SH2's fire-gate offsets, The Darkness's dev-menu doorways, RE2's EMV pose import and magazine meshes.
+- **Web:** REFramework-nightly still nightly-01433 (2026-10-21); UEVR and UEVR-nightly unchanged since 2026-08-30;
+  **elliotttate's OpenXR-Simulator** gained screenshot-based controller UI targeting with per-app ray offsets
+  (2026-10-24, not released; latest release still v1.5.0) → `docs/runtime-layers/README.md`; webhead2oo9's fork
+  unchanged since 2026-09-22 but its source read for the headset profiles (Quest 3 asymmetric is the default);
+  fholger's fork unchanged; uevr-mcp unchanged since 2026-06-15; the playbook's last push 2026-10-21 (chapters 08 and
+  14 read online).
+- **Credit:** ATTRIBUTION.md "Added 2026-10-26" (cursey's REFramework book, Artox, risa2000's HMD Geometry Database,
+  portingpete, invinceble55-wq, fholger's Alan Wake VR); techniques Sources likewise.
+- **Drops filed (1):** `manhunt-2003-vr/engine-research/inbox/2026-10-26-sr-simulator-has-an-asymmetric-quest-3-profile.md`
+  (carries `Supersedes:` and `Still-wrong:` for the dossier's "can never show this" sentence).

@@ -113,6 +113,22 @@ OpenXR runtime that shows both eyes in a window.
   replays one mod's exact OpenXR call sequence and exits 0 if the runtime can serve it — turning a class
   of headset-only failures into a desk check.
 
+- **Test lens-centre code on an asymmetric profile** (added 2026-10-26). A real headset's lenses are off-centre
+  per eye; a symmetric simulator lens has its centre at zero, so a wrong sign or a lens shift that also moves the
+  eye cannot show. Manhunt's per-eye offset sign was wrong and passed every simulator run, then failed on the first
+  Quest 3 wear (see the [RenderWare page](../engines/renderware.md)). webhead2oo9's fork carries measured per-eye
+  angles for Quest 2, Quest 3, Quest Pro, Index and Vive Pro 2 (from the HMD Geometry Database); in its current
+  source the Quest 3 asymmetric profile is the default, a saved setting can turn it back to symmetric, and the MCP
+  server's `set_headset_profile` picks one `[inferred-static 2026-10-26, read online in the fork's source]`. Check
+  which one your runs actually used before trusting a lens-centre result.
+- **Clicking a VR menu from a screenshot** (elliotttate's fork, 2026-10-24, not yet in a release): the MCP server
+  can now hover and click with a simulated controller at a pixel of a captured eye image, aiming from the eye or
+  from the hand at a known quad or a scene rectangle; an optional per-application ray correction undoes a game's own
+  aim-ray tweak (FlatOut 4 adds 3 cm and 5° to its pointer, and an uncorrected aim missed a small button). Results
+  mean "input delivered"; the game's own highlight or menu change is the proof it landed `[reported 2026-10-26, from
+  its MCP README]`. <https://github.com/elliotttate/OpenXR-Simulator> This is the piece a headset-free menu driver
+  for in-world VR menus has been missing.
+
 **The limit:** these are OpenXR runtimes. They help only a mod whose VR output goes through OpenXR, not
 one that draws stereo into the game's own swap chain. phunkaeg's playbook adds the matching warning
 (chapter 09): *a substitute runtime that enforces less than production passes things the headset then

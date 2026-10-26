@@ -55,7 +55,9 @@ relevant to OpenXR — noted so nobody chases it.
 
 - **The published SDK binaries require AVX2** (Haswell, 2013+); older CPUs die instantly with an
   illegal-instruction fault `[verified-live 2026-09-16]` (Condemned 2). Building from source for the target CPU is
-  the way round it.
+  the way round it. **Update 2026-10-26:** upstream Condemned2Recomp's 0.3.1 release notes say it "no longer requires
+  CPUs with AVX2" `[reported 2026-10-26]`, so the trap now belongs to the older releases; check the notes of the one
+  you take. (Estacado, a ReXGlue port of The Darkness, still lists AVX2 as required.)
 - **Drive it with a virtual Xbox pad** (ViGEmBus). Title screen to live gameplay was reached that way,
   and look-stick turning was measured by phase correlation on the lower half of the frame, because
   fixed HUD prompts pin a whole-frame match at zero `[verified-live 2026-09-16]` (The Darkness).
@@ -96,6 +98,47 @@ From [`condemned-2-vr`](https://github.com/TefMeister/condemned-2-vr) (dossier �
   lens fits exactly with half-widths (L+R)/2, (U+D)/2 and centre (R-L)/2, (U-D)/2, with no matrix patching
   `[verified-live 2026-10-15, n=1]` (OpenXR simulator). The general lesson is in `techniques/` → "The engine may have
   no projection matrix to patch".
+
+### 2026-10-26: the SDK's own seams for seeing and driving a game, the first real headset run, and the route moving
+
+**SDK seams, read in the ReXGlue SDK source** by [`the-darkness-vr`](https://github.com/TefMeister/the-darkness-vr)
+(dossier, 2026-10-23) `[inferred-static 2026-10-23]`; they hold for every game built on the SDK:
+
+- **Frame pictures without the window:** the presenter can read back the guest's latest finished frame through its
+  own command list and fence, from any thread (the xenia screenshot path). It never touches the desktop window, so it
+  avoids stale screen copies. Used live by our session tooling on the home PC (title → menu → level, pictures from
+  the engine's own frames) `[verified-live 2026-10-24, n=6 runs]`.
+- **An extra pad, from the port itself:** the input factory can be replaced before set-up, so a port can add one more
+  input driver. A device marked synthetic feeds player one without taking a pad slot, so a real pad keeps working;
+  states are merged. Menus that read keystrokes need the driver to queue key events too.
+- **Focus:** nothing in the SDK pauses on focus loss; only the real-pad drivers care. A driver living inside the port
+  is read whatever window is in front.
+- **Building one game rebuilds a shared SDK checkout** when its tree changed, carrying every patch applied there into
+  the next game's build. Keep one SDK tree per game, or list the SDK patches in each build's notes.
+
+**The first real headset run** (The Darkness, home PC, 2026-10-25): the per-eye OpenXR patch from Condemned 2 applied
+cleanly and ran 42,300 headset frames with no draw errors `[verified-live 2026-10-25, n=1]`, but the head turn curved,
+the eyes were off sideways and up-down, and the controls lagged. On the side-by-side build the two halves had looked
+in clearly different directions while the bookkeeping counters were perfect `[verified-live 2026-10-24, n=1]`. Cause
+open; the checklist in `techniques/` → "What each eye must own when the scene is drawn twice" lists the usual
+suspects.
+
+**The route is moving under us** `[reported 2026-10-26, from the repos' own pages, via our /gr lane]`:
+
+- **portingpete's *The Darkness Recomp*** (GPL-3.0, v0.1.7, 2026-10-14) renders **through the engine's own D3D11
+  backend** from original geometry and shader sources and "does not interpret console GPU packets"; the engine then
+  uses one display size for both its perspective projection and its CPU visibility checks. A port like this exposes
+  the camera and projection as ordinary D3D11 state, which may be a cheaper place for stereo than the emulated GPU
+  path `[hypothesis]`.
+- **invinceble55-wq's *Estacado*** (MIT, ReXGlue, v0.9.8 pre-release) added temporal upscaling with the scene drawn
+  jittered at the final composite and the HUD kept separate, so the place where the scene projection can be offset
+  per frame has been found in a ReXGlue build by someone else.
+- **psxrestore's Condemned2Recomp** reached 0.4.0 (2026-10-24) with a cheat manager and weapon spawner, and lists a
+  **native renderer** as in the works. Our headset output and per-eye view are SDK patches in the emulated GPU path,
+  so a native renderer would strand them; do not take an upstream update blind.
+
+The lesson for the family: a recompiled game's renderer is not fixed. Check the upstream port's plans before
+investing in a seam that the port may replace.
 
 ## See also
 
