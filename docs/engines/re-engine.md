@@ -21,6 +21,8 @@ orientation row. Curated by the cross-project research sweep.*
 | --- | --- | --- |
 | Resident Evil Village (2021) — picture-in-picture sniper scope — native C++ REFramework plugin | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/re-village-scope-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr) |
 | Resident Evil 2 Remake (2019) — Visceral | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/visceral-re2-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) |
+| Resident Evil 3 (2020) — Visceral RE3, a port of the RE2 work (same REFramework) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/visceral-re3-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`visceral-re3-vr`](https://github.com/TefMeister/visceral-re3-vr) |
+| Resident Evil Village (2021) — Visceral RE8, Andyalpa's "Hands Off" pack ported to C++ (added 2026-10-26) | none yet | [`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr) |
 | Resident Evil 2 Remake (2019) — arcade controls — retired; superseded by Visceral | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/arcade-controls-re2-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`arcade-controls-re2-vr`](https://github.com/TefMeister/arcade-controls-re2-vr) |
 
 ## Shared findings
@@ -601,6 +603,34 @@ for the length of our call cured it. The layout read on RE2 (counter at context 
 is RE2's; whether other RE Engine titles share it is `[hypothesis]`. **The transferable rule:** when an engine
 function crashes only when *you* call it, compare the thread's engine-side state at entry between its own call and
 yours before suspecting the arguments.
+
+### The standing origin is retaken from the head at VR start and on every recenter (2026-10-26)
+
+Read in praydog's REFramework source by our `/gr` lane for [`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr)
+`[inferred-static 2026-10-26]`. The VR runtime starts with its "reset origin" flag already set, so on the first frame
+with valid poses the **standing origin becomes the headset's position, all three axes**; nothing is saved or read back
+from the config. On OpenXR the same reset runs whenever the runtime reports a reference-space change, which is what a
+recenter sends. The menu's "Set Standing Height" takes only the height; "Recenter View" only the facing.
+
+**Why it matters for every REFramework VR game** (RE2, RE3, RE7, Village and the later titles): a body, arms or a gun
+placed relative to the player's height comes out different on each launch, depending on whether the wearer sat or
+stood when VR came up, and can jump mid-session after a recenter. **The stop-gap is to pin the height**: save a
+calibrated y and write it back after the first valid poses and after any change, keeping x and z, through the Lua API
+(`vrmod:get_standing_origin` / `set_standing_origin`, documented in the community REFramework book). The C plugin API
+has no origin call, so a native plugin goes through the Lua bridge `[inferred-static 2026-10-26]`. Cheap check: log
+the origin's y at start and every few seconds; two launches in two poses should give two numbers, a recenter a jump.
+Full write-up: `visceral-re8-vr/external-research/topics/2026-10-26-the-standing-origin-is-taken-from-the-head-at-vr-start-and-on-every-recenter.md`.
+
+### REFramework's own menu is drawn after the eyes are copied, on OpenXR (RE2, 2026-10-24)
+
+From [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) (dossier, menu-text squish) `[inferred-static
+2026-10-24]`: on OpenXR the eye images are copied out in the present callback **before** the REFramework menu is
+drawn, so the menu never reaches the headset; it is drawn 1:1 at the window's client size into the corner of the
+eye-sized back buffer (2688x2880 measured), and the desktop window then shows that buffer shrunk to 16:9, which
+flattens the text. Setting the menu library's framebuffer scale to back buffer ÷ client while the headset is on undid
+it, with no change to the mouse `[compile-verified 2026-10-24]`. Any plugin that draws its own window through
+REFramework's overlay on OpenXR meets the same two facts: the overlay is desktop-only, and its pixels are not the
+window's pixels.
 
 ## See also
 

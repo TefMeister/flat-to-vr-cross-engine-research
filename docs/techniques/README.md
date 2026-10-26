@@ -1039,6 +1039,15 @@ Generalised from [`psychonauts-vr/modding-notes/`](https://github.com/TefMeister
 [`psychonauts-vr/dev-archive/`](https://github.com/TefMeister/psychonauts-vr/tree/main/dev-archive)
 (`recon/2026-08-28-void-REPRODUCED-and-measured/`).
 
+**The same fault arrives a second way: the game copies the rendered camera back into gameplay** (added 2026-10-26).
+When a menu, inventory or cut-scene hands control back, a game may seed the returning player camera from the camera
+as it last stood, and that camera already includes the headset's turn. A VR layer that then takes it as the body's
+facing and adds the live head turn on top counts the turn twice for a frame or two: the world swings by the head's
+yaw as the menu closes. In RE2, 20 of 22 logged inventory closes were off by exactly the headset yaw (within 2°)
+`[measured 2026-10-24]`; the cure was to keep the pre-menu body facing in charge for a few frames after the close
+`[compile-verified 2026-10-24]`. From [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) (dossier,
+inventory exit jump). Watch for it at every hand-back point a game has.
+
 ## Finding the camera matrix the engine actually reads
 
 Most of the matrices you can find near a camera object are **derived outputs that nothing reads
@@ -7006,6 +7015,47 @@ both render passes call by call, six levels deep, and the method is worth copyin
 Extends "Anything that must match between the eyes must advance once per FRAME" above. Generalised from
 [`manhunt-2003-vr`](https://github.com/TefMeister/manhunt-2003-vr) (dossier §11n).
 
+## What each eye must own when the scene is drawn twice: a checklist from four sources (2026-10-26)
+
+The two sections above say *advance shared state once per frame* and *vet each call before replaying it*. This one is
+the list of places where that goes wrong, gathered from one public reference and three public stereo projects. Walk it
+when one eye differs from the other in anything but viewpoint.
+
+**From phunkaeg's VR Modding Playbook, chapter 14, "two-pass ownership"** (added 2026-10-21; the playbook credits an
+unpublished port for most of it) `[reported 2026-10-26, read online]`, each hazard with its cheap test:
+
+1. **Draws issued once, after the eye loop, land only in the last eye** (full-screen tints, damage flashes, fades).
+   Test: swap the eye order. A difference that follows the order is per-frame state; one that follows the eye is
+   camera state.
+2. **A draw that drains a shared list or cursor starves the second eye.** Test: log shared counters at the start of
+   each eye; give each eye its own slice and refuse the frame unless each eye's count matches what it pushed.
+3. **Caches keyed on anything but the eye** can hand eye 1's projection to eye 2; a capture route that follows "the
+   latest render target" can pick up a side target mid-eye. Key caches on the eye.
+4. **Per-frame state built as a side effect of drawing**: a skeleton prepared only when the body draws vanished when
+   the body stopped drawing; height fog measured from each eye's own origin gave one world point two densities.
+   Prepare per-frame state once before the first eye; anchor fog and similar media in world space.
+5. **Shared once per frame**: the clock, noise and jitter, simulation snapshots. **Owned per eye**: camera and
+   projection, the depth copy, refraction snapshots, reflections, and ambient-occlusion constants (which carry their
+   own field-of-view terms; left on the old projection they crashed the GPU in the playbook's case).
+
+**From shipped and published stereo fixes** `[reported 2026-10-26]`:
+
+- **fholger's Alan Wake VR** (v1.1.0 notes, 2026-10-20) had to make the pickup highlight stereo-correct, restore
+  bright spots on light sources, rework fog billboards, move interaction markers out of the HUD into the scene, and
+  **disable the post-process vignette because it is not stereo-correct**. Read via our paused
+  [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) project, whose own lamp halos that stayed put through
+  the eye shift are likely the same family `[hypothesis]`.
+- **The 2012 Helix Mod 3D Vision fix for The Witcher 2** (eqzitara, HUD by Artox; read via our
+  [`witcher-2-vr`](https://github.com/TefMeister/witcher-2-vr)) names **shadows drawn flat** under automatic stereo and
+  a **screen-locked HUD** as the two things that broke, the same pair our Burnout and Alice runs met (see "Screen-space
+  passes that rebuild world position keep the UNEDITED camera" above).
+
+**The order to check them in**, cheapest first: swap the eye order (one launch, separates per-frame from per-eye);
+run both eyes with a zero offset and diff the two pictures (anything that differs is shared state advancing or a
+draw landing in one eye); then walk the owned-per-eye list against whatever still differs. Turn off vignette, film
+grain and similar screen-painted effects early; they are off in VR by our own rule anyway and remove several suspects
+at once.
+
 ## Count the memory pools before planning a D3D9Ex output path
 
 A shared texture for a VR compositor usually means upgrading a D3D9 game to D3D9Ex, and **D3D9Ex refuses
@@ -7323,6 +7373,29 @@ itself stepped, which is precisely what "jittery" means. So:
 **drive automated jitter checks with a pose source that renews at least once per frame** (the simulator's sweep, or
 your own per-frame interpolation), and read a jitter result from a stepped driver as a measurement of the driver.
 
+### Read a checker's verdict against its own counters first (2026-10-26)
+
+A re-read of 218 stored reports from our two automated checkers (camera jitter and controller-to-game-hand), across
+eight games, found four ways a verdict said something its own numbers did not support `[measured 2026-10-26]`. Each
+is a general rule for any automated VR checker:
+
+- **A head placed by commands reads as jitter.** Mad Max, Alice and Manhunt simulator runs showed "98 % of pose reads
+  unchanged while turning" over only 2-4 turning seconds in runs of 3-12 minutes: a head put somewhere, not a slow
+  turn. The same fault as above, now in three more games. A verdict over a handful of isolated turning seconds with
+  near-identical reads should say "stepped head, cannot judge".
+- **A counter that is always zero is a missing hook, not a measurement.** Manhunt's checker read 0.0 camera writes in
+  all 6 logs, in every mode, and blamed the update rate each time. Before trusting a verdict, check that every counter
+  it rests on has ever been non-zero.
+- **A gap of 100 m between the game hand and the controller is two coordinate spaces, not drift.** Village had 16 of
+  107 runs with the game hand ~156 m from the controller (world position against room position, logged before the
+  camera was known), and the lag then sat exactly at the search limit. A lag equal to the search limit means "could
+  not line up", not a lag.
+- **A gap of exactly zero means the game hand IS the controller** (Hard Reset): "follows cleanly" is then true and
+  proves nothing.
+
+From our checker suite [`BeG0nE`](https://github.com/TefMeister/BeG0nE) (`ideas/fresh/`, 2026-10-26) and the
+project boards it fed.
+
 ## A skinned view model may arrive in world space: move its bones, not its object matrix (2026-10-23)
 
 From [`hard-reset-vr`](https://github.com/TefMeister/hard-reset-vr) (Direct3D 9 shader constants, 2026-10-17). The
@@ -7473,5 +7546,11 @@ engine-specific type-database support `[reported 2026-10-17, from its README; no
   [nvapi_lite_stereo.h](https://github.com/NVIDIA/nvapi/blob/main/nvapi_lite_stereo.h)
 - **MGS5VR** and **fnvvr** (nikamigaming-create) — read for technique only; see the [case study](../case-studies/mgs5vr-and-fnvvr.md): [MGS5VR](https://github.com/nikamigaming-create/MGS5VR) · [fnvvr](https://github.com/nikamigaming-create/fnvvr)
 - Inspection tools: [RenderDoc](https://renderdoc.org/) · [PIX](https://devblogs.microsoft.com/pix/)
+- **Added 2026-10-26:** phunkaeg, *VR Modding Playbook*, chapter 14 (render-pass hazard atlas, "two-pass ownership"):
+  [docs/14-render-pass-hazard-atlas.md](https://github.com/phunkaeg/vr-modding-playbook/blob/main/docs/14-render-pass-hazard-atlas.md) ·
+  fholger, *Alan Wake VR* release notes: [github.com/fholger/alanwake_vr](https://github.com/fholger/alanwake_vr) ·
+  eqzitara and Artox, Helix Mod *Witcher 2: Enhanced Edition* fix and its comments:
+  [helixmod.blogspot.com](https://helixmod.blogspot.com/2012/04/witcher-2-enhanced-edition.html) ·
+  our own `visceral-re2-vr` (menu hand-back), `BeG0nE` (checker lessons)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

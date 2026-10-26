@@ -12,8 +12,9 @@ the family's page.
 
 | Family | Page | Projects on it |
 | --- | --- | --- |
+| Unreal Engine 4–5 (through UEVR) | [unreal-4-5-uevr.md](./unreal-4-5-uevr.md) | Silent Hill 2 (2024 remake) |
 | Unreal Engine 1–3 | [unreal-1-3.md](./unreal-1-3.md) | Unreal Gold, XIII (2003), Enslaved, Alice: Madness Returns, Borderlands GOTY Enhanced, Bulletstorm: Full Clip Edition |
-| Capcom RE Engine | [re-engine.md](./re-engine.md) | RE Village scope, RE2 Remake (Visceral; earlier arcade-controls, retired) |
+| Capcom RE Engine | [re-engine.md](./re-engine.md) | RE Village scope, RE2 Remake (Visceral; earlier arcade-controls, retired), RE3 (Visceral RE3), RE Village (Visceral RE8) |
 | id Tech 5 | [id-tech-5.md](./id-tech-5.md) | The Evil Within |
 | id Tech 6 | [id-tech-6.md](./id-tech-6.md) | DOOM (2016) |
 | Ubisoft Dunia | [dunia.md](./dunia.md) | Far Cry 2, Far Cry 3: Blood Dragon (Dunia 2) |

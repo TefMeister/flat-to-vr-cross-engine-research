@@ -118,6 +118,29 @@ so. Verify a published layout with a **self-consistency check** rather than trus
 width field and its reciprocal field from the same struct and confirm they actually agree, and check
 the dimensions against the resolution the game is really running.
 
+### ⚠️ The view offset moves the eye as well as the picture (2026-10-26)
+
+`[reported 2026-10-26]` from **aap**'s librw (`src/camera.cpp`, the open reimplementation of RenderWare), read online
+by our `/gr` lane for [`manhunt-2003-vr`](https://github.com/TefMeister/manhunt-2003-vr) and re-read by this sweep the
+same day. When the projection is built, the camera's **view offset** goes into two places: the term that shifts the
+picture by a fixed amount on screen (a lens-centre shift), **and** the translation term, whose effect after the
+perspective divide shrinks with distance, which is what moving the eye sideways looks like. The perspective culling
+frustum is shifted the same way, as if the camera had moved. So on this family the view offset is an **off-axis eye
+shift**, not a lens-only shift.
+
+What follows for any RenderWare VR mod (GTA III / Vice City / San Andreas era, Manhunt, Bully and others) that uses
+the view offset for per-eye lens centres while also moving the camera frame by half the eye gap: the eye gap is
+widened or narrowed by the offset. With a centred, symmetric lens the offset is zero and nothing shows; with a real
+headset's off-centre lens (Quest 3, roughly ±0.18 in tangent units) each eye moves by that much. Two cures: move the
+frame back by the offset, or put the lens shift into the projection and leave the view offset at zero `[hypothesis]`.
+Cheap check: log each eye's projection translation term; non-zero means the eye moved.
+
+**Seen in the headset, 2026-10-25** (Manhunt, Quest 3): the per-eye view offset needed its x sign flipped for a frame
+whose right vector points to screen left; the eyes went from far apart with no depth to "much better", and a smaller
+gap remained, cause open `[verified-live 2026-10-25, n=1]`. Both faults are invisible on a symmetric simulator lens,
+which is the reason to test lens-centre code with an asymmetric headset profile (see
+[runtime layers](../runtime-layers/README.md#headset-free-testing-openxr-simulator-and-its-forks)).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" and "Anything

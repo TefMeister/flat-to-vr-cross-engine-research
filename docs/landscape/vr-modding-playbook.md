@@ -66,6 +66,25 @@ and around a thousand anchors, with its own consistency checks. The parts:
 The rest of the estate had no matching entry. Per-project detail lives in each repo's
 `external-research/topics/2026-09-23-*`.
 
+## New on 2026-10-21 (read 2026-10-26)
+
+New sections, found by our `/gr` lane on 2026-10-23 and read online by this sweep `[reported 2026-10-26]`:
+
+- **Chapter 14, "two-pass ownership"**: what each eye must own when the scene is drawn twice, each hazard with
+  a cheap test. Folded into [techniques](../techniques/README.md) → "What each eye must own when the scene is
+  drawn twice", beside our own per-eye sections.
+- **Chapter 08, "agents share a machine"**: two AI agents on one PC and one game install. Its rules: number every
+  run and never reuse a number; before launching, wait while the game runs, then pause a random 3-12 s and look
+  again; send commands through a mailbox file renamed into place, with sequence numbers the game echoes back; hand
+  work over as patches against a named baseline, never by writing into the other's checkout; judge a failure
+  against a clean copy; and merge only on "no new failures". **Close to our own lanes**: our one-writer-per-file
+  rule, create-only inboxes and one clone root per session type do the "never write into the other's checkout"
+  part; we have no equivalent of its numbered runs or its random-pause launch check, because only one of our
+  lanes may launch a game at a time. It also warns that **a harness that takes over the desktop mouse cannot run
+  while the wearer uses the PC**.
+- Also new: ch. 07 engine-state cache and actor-owner lease; ch. 06 feature-verification ladder; ch. 02 rendered
+  fingertip touch; ch. 12 body on the camera clock; ch. 03 hand roles. Not yet read in full.
+
 ## Cautions
 
 - Its in-house ports are **unreleased**, so their claims can be read but not checked against a build.
