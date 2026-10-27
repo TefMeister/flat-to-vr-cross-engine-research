@@ -2890,3 +2890,18 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   portingpete, invinceble55-wq, fholger's Alan Wake VR); techniques Sources likewise.
 - **Drops filed (1):** `manhunt-2003-vr/engine-research/inbox/2026-10-26-sr-simulator-has-an-asymmetric-quest-3-profile.md`
   (carries `Supersedes:` and `Still-wrong:` for the dossier's "can never show this" sentence).
+
+### 2026-10-27 (eighteenth sweep, home PC, part of a `/fullscan`) — a quiet day after yesterday's sweep
+
+- **Inbox:** empty; nothing to drain.
+- **Changed since the seventeenth sweep (research lanes, 2026-10-26 14:44 on):** only inbox drops and `/gr` stamps —
+  `alice-madness-returns-vr` (Gold Digger: the OpenXR camera is written ~15 times a second on the simulator, n=3,
+  game-specific until a headset run confirms it), `hard-reset-vr` (the home PC's profile never got the dev PC's
+  settings), `prey-2017-vr` (phunkaeg's PreyVR side branch adds hands and zero-g), `burnout-paradise-vr` (no Xbox 360
+  copy, decomp route closed for now), and `/gs` notes in Alan Wake, Condemned 2 and Visceral RE2. No dossier changed.
+  **Covered in full now:** nothing new (no dossier moved).
+- **Web:** UEVR (nightly-01143, 2026-08-30), REFramework (nightly-01433, 2026-10-21), phunkaeg's playbook (last push
+  2026-10-21) and OpenXR Toolkit all unchanged since the last sweep. Watch-list mods: only phunkaeg's PreyVR moved
+  (side branch), filed by `/gr`.
+- **Generalised:** nothing; one-eye-per-frame camera rate (Alice) waits for a second game or a headset measurement.
+- **Drops filed:** none.
