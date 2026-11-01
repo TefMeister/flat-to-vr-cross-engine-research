@@ -94,11 +94,13 @@ flat game ── ReShade + SuperDepth3D ──► 3D display (z-buffer stereo)
 A mod whose output goes through **OpenXR** can be tested with no headset by pointing it at a desktop
 OpenXR runtime that shows both eyes in a window.
 
-- **fholger's OpenXR-Simulator** (MIT; fholger also wrote the Crysis and Far Cry VR mods): a small
-  runtime rendering side-by-side stereo in a window, with mouse-and-keyboard pose control and D3D11,
-  D3D12 and OpenGL backends; tested with Unity, Unreal through UEVR, and the Steam overlay `[reported,
-  from its README]`. <https://github.com/fholger/OpenXR-Simulator>
-- **Downstream forks** (fholger → elliotttate → webhead2oo9) add, by their READMEs `[reported
+- **elliotttate's OpenXR-Simulator** (MIT; the original, created 2025-08-09): a small runtime rendering
+  side-by-side stereo in a window, with mouse-and-keyboard pose control and D3D11, D3D12 and OpenGL backends;
+  tested with Unity, Unreal through UEVR, and the Steam overlay `[reported, from its README]`.
+  <https://github.com/elliotttate/OpenXR-Simulator>. fholger's copy (<https://github.com/fholger/OpenXR-Simulator>,
+  2026-03-31) is a fork of it, as GitHub's own fork record shows `[measured 2026-11-01]`; this page named fholger as
+  the original until 2026-11-01.
+- **Forks of elliotttate's original** (webhead2oo9's, and fholger's) add, by their READMEs `[reported
   2026-09-18]`: a **Vulkan** backend; **headset profiles** with measured per-eye FOV, panel resolution
   and IPD for ten headsets, so a projection bug that only shows at one FOV becomes reproducible at a
   desk; frame timing measured from `xrEndFrame` submissions rather than window repaints (p50/p95 on a

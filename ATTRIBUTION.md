@@ -273,7 +273,7 @@ Generalised in part out of this account's own projects: `dead-space-2-vr`, `prey
 - **effcol** — *wiz3D* (LGPL-2.1), a modern revival of the open-sourced **iZ3D** stereo driver that re-enables games' native HD3D and 3D Vision output through proxy DLLs: <https://github.com/effcol/wiz3D>. Thanks also to the original iZ3D developers for open-sourcing it.
 - **DR-89** — *fear-vr* (MIT): <https://github.com/DR-89/fear-vr>; and the authors of **condemned-vr** and **FEAR2VR** as recorded in the playbook (no public link found yet — to be credited by name once found).
 - **dariulone** — *CyberpunkVR Port* (MIT): <https://github.com/dariulone/cyberpunk-vr-port>
-- **fholger**, **elliotttate** and **webhead2oo9** — *OpenXR-Simulator* and its forks (MIT): <https://github.com/fholger/OpenXR-Simulator> · <https://github.com/webhead2oo9/OpenXR-Simulator>
+- **elliotttate** — *OpenXR-Simulator*, the original (MIT): <https://github.com/elliotttate/OpenXR-Simulator>; **webhead2oo9** and **fholger** — its forks: <https://github.com/webhead2oo9/OpenXR-Simulator> · <https://github.com/fholger/OpenXR-Simulator>
 - **PureDark** — UEVR fork with *Alternate Frame Warping*: <https://github.com/PureDark/UEVR>
 - **peteromallet** — *desloppify* (Open Source Native License 0.2): <https://github.com/peteromallet/desloppify>
 
@@ -387,6 +387,12 @@ frame-timing tool; nothing was cloned or copied.
   still widely used). <https://mbucchia.github.io/OpenXR-Toolkit/>
 - **oneup03** — **VRto3D** (**LGPL-3.0**), the SteamVR virtual-headset driver for 3D displays.
   <https://github.com/oneup03/VRto3D>
+  Also REFramework issue #1143 (RE4 one-eye foliage on pd-upscaler) and the VRto3D wiki's REFramework page
+  <https://oneup03.github.io/VRto3D/wiki/REFramework> (credited 2026-11-01).
+- **papoulou**, with **nix-dev-fan** and **kub04** — REFramework issue #1339 (one-eye shadows on pd-upscaler) and its
+  confirmations: <https://github.com/praydog/REFramework/issues/1339>. **Izimzizi** (#1506, one-eye UI opacity under
+  Single Frame Multipass) and **cubicj** (#1853, out/ref float hook corruption): <https://github.com/praydog/REFramework/issues/1506>
+  · <https://github.com/praydog/REFramework/issues/1853>.
 - **BlueSkyDefender** — **Depth3D / SuperDepth3D** (no repo-level license; see file headers),
   the ReShade depth-buffer stereo shader. <https://github.com/BlueSkyDefender/Depth3D>
 - **crosire** and contributors — **ReShade**, the post-processing injector SuperDepth3D runs on.
@@ -1008,3 +1014,7 @@ they came from.
 
 *This library is non-commercial and educational. All trademarks and copyrights belong to their
 respective owners.*
+
+Our own first-party generalisations, 2026-11-01: the motion-controlled hands order of levers (`the-darkness-vr`,
+`manhunt-2003-vr`), the RenderWare view offset confirmed in Manhunt's own code, and the shared-eye-counter reading of
+REFramework's pd-upscaler branch (`visceral-re4-vr`).

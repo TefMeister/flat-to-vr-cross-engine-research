@@ -23,6 +23,7 @@ orientation row. Curated by the cross-project research sweep.*
 | Resident Evil 2 Remake (2019) — Visceral | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/visceral-re2-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) |
 | Resident Evil 3 (2020) — Visceral RE3, a port of the RE2 work (same REFramework) | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/visceral-re3-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`visceral-re3-vr`](https://github.com/TefMeister/visceral-re3-vr) |
 | Resident Evil Village (2021) — Visceral RE8, Andyalpa's "Hands Off" pack ported to C++ (added 2026-10-26) | none yet | [`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr) |
+| Resident Evil 4 (2023) — Visceral RE4, small add-ons for Talemann's RE4 VR mod (added 2026-11-01) | private repo for now | `visceral-re4-vr` (private) |
 | Resident Evil 2 Remake (2019) — arcade controls — retired; superseded by Visceral | [`ENGINE-DOSSIER.md`](https://github.com/TefMeister/arcade-controls-re2-vr/blob/main/engine-research/ENGINE-DOSSIER.md) | [`arcade-controls-re2-vr`](https://github.com/TefMeister/arcade-controls-re2-vr) |
 
 ## Shared findings
@@ -567,7 +568,9 @@ rendering techniques (config key `VR_RenderingTechnique_V2`): `0` Alternating/AF
 use single pass "for better performance and DLSS".
 
 - **RE7** (RE7 VR RELOADED v1.0.3) with Single Frame Multipass and `TemporalUpscaler_Enabled=true` (DLSS, quality 1):
-  the wearer: "that single frame multipass works really well!" `[verified-live 2026-10-15, n=1]`.
+  the wearer: "that single frame multipass works really well!" `[verified-live 2026-10-15, n=1]`, about speed and DLSS.
+  **Corrected 2026-10-29:** the picture was not fine: each eye showed different lighting ("re7 didn't look fine")
+  `[reported 2026-10-29]`. See the next section.
 - **RE2** (Visceral) has run the same two settings since before that; the wearer on 2026-10-09: "there DLSS makes a massive
   difference" `[reported 2026-10-09]`.
 - **Village** runs DLSS off by choice (scope sharpness), so the pairing is untested there.
@@ -575,6 +578,42 @@ use single pass "for better performance and DLSS".
   frames that history mixes two viewpoints.
 - **Setting it before the first launch works:** a `<game>_fw_config.txt` holding only those keys is merged by
   REFramework on start, and the game fills in the rest (done for RE7, 2026-10-15).
+
+### The cost of Single Frame Multipass: the two eyes can differ (2026-10-29 to 11-01)
+
+On the `pd-upscaler` builds (the branch with the clone camera that Single Frame Multipass uses), a family of
+one-eye faults is reported, on our PCs and in public:
+
+- **Lighting differs per eye**: RE7 and RE2 on the home PC under Single Frame Multipass `[reported 2026-10-28]`;
+  every RE game there moved to Two Frame Sequential (`VR_RenderingTechnique_V2=1`) on 2026-10-28.
+- **UI background opacity differs per eye** in RE3 under Single Frame Multipass; AFR and Two Frame Sequential cure it
+  (praydog/REFramework #1506) `[reported]`.
+- **Shadows in one eye only** (RE3, RE2): NOT cured by changing the technique, cured by the stable non-upscaler build
+  (#1339, papoulou; turning contact shadows off reduces it) `[reported]`.
+- **Foliage missing in the right eye** in RE4, plain REFramework, in the forest after the opening window jump
+  (#1143, oneup03, open since 2024-10-31); the VRto3D wiki lists it for the pd-upscaler build only `[reported]`. Seen
+  in RE4 with Talemann's RE4 VR on the home PC, with DLSS on and off `[reported 2026-10-31]`.
+
+Two mechanisms are on the table, and they predict different tests `[hypothesis]`:
+
+1. **Once-per-frame work reused by the second eye**: auto exposure, temporal history, fog, ambient occlusion, a shadow
+   or culling pass computed from one eye inside the one game frame. Predicts: switching that one effect off evens
+   the eyes.
+2. **One shared eye switch**: in the branch's source (`pd-upscaler` 8c209b1), both cameras' view and projection come
+   from one counter set when each eye's scene layer starts its update; a camera read anywhere else gets the eye set
+   last `[inferred-static 2026-11-01]` (from `visceral-re4-vr`). Predicts: faults only under Single Frame Multipass,
+   gone under Two Frame Sequential.
+
+#1339 surviving every technique says at least part of the family is neither. The cheapest separating look is the
+same spot under Two Frame Sequential.
+
+### ⚠️ Do not hook a method with an `out` / `ref` float argument on pd-upscaler builds (noted 2026-11-01)
+
+REFramework's HookManager treated an `out`/`ref System.Single` argument as a float in an XMM register, while it is a
+pointer in an integer register, so the hooked method was handed a bad pointer and memory was corrupted (#1853)
+`[reported]`. Fixed on master on 2026-11-01 (`bda3f6d`, and `1813bf3` for by-value doubles; nightly 01435 and
+later). The `pd-upscaler` branch has had no commits since 2026-10-10, so the RE2, Village and RE4 VR builds we use
+do not have the fix `[measured 2026-11-01]`. Hook a neighbouring method, or read the value after the call.
 
 ### One REFramework download for every game (noted 2026-10-23)
 

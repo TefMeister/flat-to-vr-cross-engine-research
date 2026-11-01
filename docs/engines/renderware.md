@@ -141,6 +141,12 @@ gap remained, cause open `[verified-live 2026-10-25, n=1]`. Both faults are invi
 which is the reason to test lens-centre code with an asymmetric headset profile (see
 [runtime layers](../runtime-layers/README.md#headset-free-testing-openxr-simulator-and-its-forks)).
 
+**Confirmed in a shipped game, 2026-10-29** (Manhunt, from its own binary): its camera begin-update builds the same
+two off-axis terms as librw, so each eye sits at camera-space `(ox, oy, 0)`; with the Quest 3 lens each eye slid
+17.65 cm toward the other and the y sign was the wrong way too `[inferred-static 2026-10-29]`. The fix moves each
+eye's frame back by its offset; numerically checked against a rebuild of the game's maths, headset verdict on the
+remaining gap pending (`manhunt-2003-vr` `modding-notes/2026-10-29-pd-the-lens-offset-moves-the-eye.md`).
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Bespoke / older custom engines" and "Anything

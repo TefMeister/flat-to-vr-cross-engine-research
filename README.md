@@ -14,6 +14,10 @@ in [`ATTRIBUTION.md`](./ATTRIBUTION.md)), and **our own first-party research**, 
 our project repos and contributed back here so it isn't stranded in one game's notes. The second
 kind is ours to give; the first never is.
 
+## Download
+
+The whole library as one zip, always the newest copy: <https://github.com/TefMeister/flat-to-vr-cross-engine-research/archive/refs/heads/main.zip>. It is plain Markdown and needs nothing else to read.
+
 ---
 
 ## The one rule that governs everything here

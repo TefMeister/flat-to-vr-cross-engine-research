@@ -58,6 +58,11 @@ Lesson: your engine's timing model is dictated by what signals it exposes. Look 
 existing instrumentation (Reflex, ETW, a frame-index global); fall back to hooking the engine's
 own frame-begin functions.
 
+elliotttate's vrframework guide 07 (frame timing and synchronisation) adds two rules that matter for any
+"jittery" rate fault: the engine, render and present counters must stay locked to each other, and under alternate
+frames the eye parity must stay locked to the eye the compositor expects, with drift detected and recovered by
+skipping a present rather than by drawing the wrong eye `[reported]`.
+
 ## Stereo submission strategies
 
 From best-quality to most-compatible:
@@ -472,6 +477,12 @@ smeared** image. Two legitimate, opposite fixes seen in public adapters:
 
 Which is "right" is engine-dependent — fix per eye when quality matters and the history is
 reachable; patch it off when it isn't worth it.
+
+The same guide series (08, section 6.2) widens "temporal": anything carried from one frame to the next is poisoned
+by AFR, including the previous view-projection matrix and motion vectors, not only the TAA colour and depth history;
+Creation Engine 2 keeps a copy per parity, Anvil ping-pongs the previous view matrix. And before writing any
+matrix, hook the projection read-only and log the mono matrix first (08, section 5) `[reported]`.
+Source: <https://github.com/elliotttate/vrframework> (guides/07, guides/08).
 
 ## Basis & handedness
 
@@ -5792,6 +5803,27 @@ live reading can retire it.
 offset finds **unrelated classes that happen to share that offset**. Two of the hits there were a
 texture pointer and an unrelated three-field write at the same displacement. An offset is not a type;
 confirm the class before counting a site as evidence.
+
+## Motion-controlled hands: give the game's own IK a target before rewriting bones (2026-10-28 to 10-30)
+
+Two of our projects on unrelated engines reached the same order of levers for putting the player's hands on the
+controllers, cheapest first:
+
+1. **The game's own hand IK, fed our point.** Many games already aim a hand at something (a grip, a door handle, a
+   ledge) with a two-bone IK solver and an explicit-target path. In The Darkness (Xbox 360, on an emulator) the
+   solver has an explicit-target mode that puts the grip bone on a stored point and skips the animation-driven hand
+   IK; writing the controller's position there made the first-person hand reach for it, and a later pass turned the
+   hand with the controller too `[verified-live 2026-10-28, simulator, n=1 per point]`
+   (`the-darkness-vr` dossier 6e). The game then keeps the elbow, shoulder and skin right by itself.
+2. **The skeleton's final matrices, after the animation update and before the draw.** In Manhunt (RenderWare) the
+   skin is drawn from the RpHAnim world matrices; lifting the arm's bones from outside moved the drawn arm in every
+   picture `[verified-live 2026-10-30, flat, n=1 run]` (`manhunt-2003-vr` board). This works with no IK in the game,
+   but the elbow and the rest of the chain are then ours to solve.
+
+Look for the IK first: its switch strings (`DISABLE_HAND_IK` and the like) or a solver called with a target matrix
+are cheap static finds, and the game's own solver avoids a whole class of broken-elbow faults. In Manhunt the player
+is not drawn at all in the first-person look mode, which has to be dealt with before hands can be seen
+`[verified-live 2026-10-30, n=1]`. Our own first-party work; credited to the two project repos.
 
 ## Two-handed VR weapons: the second controller hides behind the first
 

@@ -19,7 +19,7 @@ for the last sweep date and what it found.
 | **OldUnreal** — Unreal-testing / Unreal-PubSrc | Directly powers Unreal Gold VR (227k SDK, render-device contract). New SDK releases or engine fixes matter immediately. | [github.com/OldUnreal/Unreal-testing/releases](https://github.com/OldUnreal/Unreal-testing/releases) · [oldunreal.com forum](https://www.oldunreal.com/phpBB3/) |
 | **vrframework** (Elliott Tate) | Source of the `IEngineAdapter` model and 10-milestone porting checklist we use conceptually. Updates may refine the checklist itself. | [github.com/elliotttate/vrframework](https://github.com/elliotttate/vrframework) |
 | **VR Modding Playbook** (phunkaeg, added 2026-09-23) | An evidence-graded engineering reference built from ~10 in-house ports and 100+ external projects: failure atlas, pattern catalog, teardowns, tested maths, and a ledger of every project studied. Check its `sources.yml` and failure atlas for new rows touching our engines. Summary: [`landscape/vr-modding-playbook.md`](./landscape/vr-modding-playbook.md). | [github.com/phunkaeg/vr-modding-playbook](https://github.com/phunkaeg/vr-modding-playbook) |
-| **OpenXR-Simulator** and forks (fholger → elliotttate → webhead2oo9, added 2026-09-23) | Headset-free OpenXR runtime; the forks add headset profiles, Vulkan, 32-bit and an MCP server. Matters to any of our mods that outputs through OpenXR. See [`runtime-layers/`](./runtime-layers/README.md#headset-free-testing-openxr-simulator-and-its-forks). | [fholger](https://github.com/fholger/OpenXR-Simulator) · [webhead2oo9](https://github.com/webhead2oo9/OpenXR-Simulator) |
+| **OpenXR-Simulator** and forks (elliotttate's original; webhead2oo9's and fholger's forks; added 2026-09-23, corrected 2026-11-01) | Headset-free OpenXR runtime; the forks add headset profiles, Vulkan, 32-bit and an MCP server. Matters to any of our mods that outputs through OpenXR. See [`runtime-layers/`](./runtime-layers/README.md#headset-free-testing-openxr-simulator-and-its-forks). | [elliotttate](https://github.com/elliotttate/OpenXR-Simulator) · [webhead2oo9](https://github.com/webhead2oo9/OpenXR-Simulator) · [fholger](https://github.com/fholger/OpenXR-Simulator) |
 
 ## Community hubs (broadest signal, all engines)
 
@@ -2905,3 +2905,25 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   (side branch), filed by `/gr`.
 - **Generalised:** nothing; one-eye-per-frame camera rate (Alice) waits for a second game or a headset measurement.
 - **Drops filed:** none.
+
+### 2026-11-01 (nineteenth sweep, dev PC, part of a `/fullscan`) — the one-eye family on pd-upscaler, hands, seven notes drained
+
+- **Inbox drained (7):** `2026-10-27-mod-one-zip-download-link.md` (README download line), `2026-10-27-mod-openxr-simulator-original-author.md`
+  (elliotttate is the original, checked with GitHub's fork record; runtime-layers, this list, ATTRIBUTION fixed),
+  `2026-10-27-mod-vrframework-guides.md` (guides 07/08 folded into techniques: frame timing, temporal history),
+  `2026-10-29-mod-correction-re7-sfm-not-fine.md` and `2026-10-29-mod-single-frame-multipass-eye-mismatch.md` (re-engine:
+  RE7 bullet corrected, new section on the cost of Single Frame Multipass), `2026-11-01-gr-pd-upscaler-one-eye-foliage-re4.md`
+  (folded into that section), `2026-11-01-gr-reframework-hook-out-float-corrupts.md` (re-engine: hook warning).
+- **Changed since the eighteenth sweep:** manhunt-2003-vr (lens offset confirmed in code; first person, kill camera, arm
+  bones), the-darkness-vr (dossier 6d/6e: camera rows, the game's own hand IK fed our point), visceral-re2-vr (exposure
+  held off, shadow head), heavy-rain-vr (picture to the headset proven outside the game), death-stranding-vr (camera
+  logger), prince-of-persia-2008-vr (follow-camera chain), psychonauts-vr (head-follow fix); the rest were privacy
+  wording, `/gr` stamps and inbox drops. **Covered in full now:** the-darkness-vr 6d-6e; nothing else read in full.
+- **Web:** REFramework master moved (#1853 out/ref float hook fix, #1795 atomic `json.dump_file`, nightly 01436,
+  2026-11-01); pd-upscaler unchanged since 2026-10-10. UEVR nightly (01143, 2026-08-30), OpenXR Toolkit and phunkaeg's
+  playbook (last push 2026-10-21) unchanged.
+- **Generalised:** motion-controlled hands, game IK first (the-darkness-vr dossier 6e + manhunt-2003-vr board) into
+  techniques; the RenderWare view offset confirmed in Manhunt's binary into renderware.md; the shared eye counter
+  (visceral-re4-vr `modding-notes/2026-11-01-one-eye-counter-for-both-eyes.md`) into re-engine.md as one of two candidates.
+- **Drops filed:** none.
+
