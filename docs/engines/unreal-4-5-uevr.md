@@ -75,6 +75,37 @@ MCP's object inspection was quicker.
   for `OnFirePerformed`, because the weapon's Blueprint class overrides it; hooking the Blueprint class's
   function did fire `[verified-live 2026-10-24, n=1]`.
 
+### The frame order: when UEVR moves the hands, and when a bone write reaches the picture
+
+Generalised 2026-11-07 from [`silent-hill-2-remake-vr`](https://github.com/TefMeister/silent-hill-2-remake-vr)
+(dossier §7, note 2026-11-06b). It holds for any UEVR mod that places a mesh on the motion controllers.
+
+- **UEVR moves the motion-controller components and every UObjectHook attachment at the SECOND eye's
+  `on_pre_calculate_stereo_view_offset`**, not at the engine tick. A plugin's `on_pre_engine_tick` still sees the
+  previous frame's controller pose; the fresh pose exists from the second eye's view step on
+  `[inferred-static 2026-11-06, praydog's UObjectHook.cpp]`.
+- **A `UPoseableMeshComponent`'s bone writes reach the picture only after its own tick**, so a target set at the
+  pre-tick is drawn the same frame and one set at view time is drawn a frame later `[reported; one forum report of
+  the same one-frame lag, n=1 project]`.
+- Together they make a gun turned toward the fresh controller at view time sit one frame ahead of a hand placed on it:
+  the hand "slides" on the gun. The cure that project chose: draw the gun where the hands were solved for, and take only
+  the hands' NEXT targets from the fresh controller (unworn when written).
+
+### Where UEVR waits for the headset (`VR_SynchronizationMode`) costs frame time
+
+From the same project (dossier §6, `[measured 2026-11-05, simulator, A/B/A, n=2 per setting]`): the setting is where
+UEVR calls `xrWaitFrame`: 0 Early (the frame's first hooked render command), 1 Late (top of the Present hook), 2 Very
+Late (just after Present, for the next frame), all on the render thread. On that game, Early took the frame from 13.0
+to 11.2 ms (the 90 Hz cap). ⚠️ In the headset the same day Early gave a black screen through Virtual Desktop and was
+put back to Very Late (note 2026-11-06), so a simulator gain here needs a headset check before it is kept.
+
+### ⚠️ A connector plugin can cost more than the mod: measure with it out
+
+The UEVR-MCP connector dll (`uevr_mcp.dll` 1.0.0) cost about 7 ms a frame on that project, because it rewrote a
+crash-breadcrumb file around six times a frame (the throttle in its source is broken in 1.0.0; fixed on master,
+unreleased when measured) `[measured 2026-11-05, simulator, A/B/A]`. Keep a live-reading connector out of the profile
+for any run that measures frame time.
+
 ### Ask the running engine
 
 UEVR-MCP (elliotttate) reads the engine's reflection live: objects, fields, calls, hooks and a simulated

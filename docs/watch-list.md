@@ -2927,3 +2927,21 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   (visceral-re4-vr `modding-notes/2026-11-01-one-eye-counter-for-both-eyes.md`) into re-engine.md as one of two candidates.
 - **Drops filed:** none.
 
+
+### 2026-11-07 (twentieth sweep, home PC, part of a `/fullscan`) — UEVR's frame order, two RE Engine facts, three notes drained
+
+- **Inbox drained (3):** `2026-11-02-mod-chasms-vr-framework.md` (into techniques → two-handed weapons, and
+  runtime-layers → headset-free testing), `2026-11-07-gr-reframework-hookmanager-1885.md` (into re-engine → the
+  `out`/`ref` float hook warning), `2026-11-07-gr-shared-wide-cull-camera-and-shared-shadows.md` (into techniques →
+  "What each eye must own", as the shared-pass side).
+- **Projects with dossier changes since 2026-11-01:** silent-hill-2-remake-vr (§5–8), visceral-re8-vr (§5–8, the
+  Duke's shop, Euler order), visceral-re2-vr (the get-item screen), the-darkness-vr (two small edits, nothing to
+  generalise). All four read as deltas only.
+- **Generalised up:** from `silent-hill-2-remake-vr` dossier §5–7 into the UE4–5 / UEVR page (UEVR moves the hands at
+  the second eye's view step; the poseable mesh's one-frame lag; where `VR_SynchronizationMode` waits, and that the
+  simulator gain did not hold in the headset; the connector dll's 7 ms a frame). From `visceral-re8-vr` §7 (joint
+  Euler order YXZ) and `visceral-re2-vr` (a menu hides the world by scene folder) into the RE Engine page.
+- **Web:** today's `/gr` estate sweep (same `/fullscan`) checked REFramework master and pd-upscaler, UEVR nightly,
+  PureDark's AFW and joeyhodge's fork, rexglue-sdk (v0.10.1) and the watched VR mods; nothing else re-checked here, so
+  the rest of this list keeps its 2026-11-01 date.
+- **Inboxes dropped into:** none.

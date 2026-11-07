@@ -607,6 +607,26 @@ Two mechanisms are on the table, and they predict different tests `[hypothesis]`
 #1339 surviving every technique says at least part of the family is neither. The cheapest separating look is the
 same spot under Two Frame Sequential.
 
+### A joint's Euler angles are in the order YXZ (RE Village, 2026-11-05)
+
+`via.Joint.get_LocalEulerAngle` / `set_LocalEulerAngle` use **YXZ**: the joint's turn is qY(y) * qX(x) * qZ(z), so the
+Z turn is applied first `[measured 2026-11-05, 12,000 samples on 30 finger joints, 0.0000 deg error, n=1 game]`. Any
+tool that writes hand or finger poses as angles (Hand Poser, Animation & Timing) must convert with that order; a
+quaternion converted with the usual XYZ gives a pose that is close and wrong. `via.Joint` is shared engine code, so
+the same order is expected on RE2, RE3 and RE4 `[hypothesis]`. Source: [`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr)
+dossier §7.
+
+### A menu that hides the world hides scene FOLDERS, not objects (RE2, 2026-11-05)
+
+RE2's get-item screen switches whole `via.Folder`s off (`set_DrawSelf(false)`: `Environments` and about fifteen
+more), so every object inside reads `get_Draw` false while its own `DrawSelf` stays true, and writing the objects does
+nothing; `set_DrawSelf(true)` on the folder brings the world back, and the game restores its own state when the screen
+closes `[measured 2026-11-05, n=2]`. The folder tree starts at `via.Scene.get_FirstFolder` and chains by `get_Child` /
+`get_Next`, or `findFolder(name)`. In VR, where a menu should float in the world rather than blank it, this is the
+first place to look on any RE Engine game whose menu empties the scene `[inferred-static]`. Source:
+[`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) dossier, "The get-item screen hides the world by
+scene folder".
+
 ### ⚠️ Do not hook a method with an `out` / `ref` float argument on pd-upscaler builds (noted 2026-11-01)
 
 REFramework's HookManager treated an `out`/`ref System.Single` argument as a float in an XMM register, while it is a
@@ -614,6 +634,13 @@ pointer in an integer register, so the hooked method was handed a bad pointer an
 `[reported]`. Fixed on master on 2026-11-01 (`bda3f6d`, and `1813bf3` for by-value doubles; nightly 01435 and
 later). The `pd-upscaler` branch has had no commits since 2026-10-10, so the RE2, Village and RE4 VR builds we use
 do not have the fix `[measured 2026-11-01]`. Hook a neighbouring method, or read the value after the call.
+
+**Update 2026-11-07** `[reported, from the PR text]`: the 11-01 fix was partial. PR #1885 (wdre9, merged 2026-11-04,
+nightly 01438) also saves and restores the first float argument's register, so a pre-hook that CHANGES that argument
+is honoured; it also catches exceptions thrown in pre/post callbacks before they reach the game, stops a failed hook
+from leaving a half-made entry, and puts hook adding and removing behind a lock. #1887 (2026-11-03) skips inline hooks
+on ARM64EC code (Windows on ARM only). `pd-upscaler` is still unchanged since 2026-10-11 and has none of it
+`[measured 2026-11-07, GitHub API]`. Source: <https://github.com/praydog/REFramework/pull/1885>.
 
 ### One REFramework download for every game (noted 2026-10-23)
 

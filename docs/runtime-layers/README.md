@@ -136,6 +136,13 @@ one that draws stereo into the game's own swap chain. phunkaeg's playbook adds t
 (chapter 09): *a substitute runtime that enforces less than production passes things the headset then
 fails*, so a simulator pass is not headset acceptance.
 
+**Another headset-free runtime: chasmlol's `xrsim`** (added 2026-11-07) `[reported 2026-11-02, from its docs]`. Part of
+the Chasms VR Framework (<https://github.com/chasmlol/chasms-vr-framework>, `docs/XRSIM.md`): an OpenXR runtime with
+no hardware, chosen per process through `XR_RUNTIME_JSON` so the system runtime is left alone, with a scripted head and
+both controllers, and both eyes saved per frame. Its `--sim all` mode runs a scripted player through every gesture and
+checks that the game reacted: a model for turning a headset-free runtime into a regression suite. Whether it runs
+under an RE Engine game has not been tried `[hypothesis]`.
+
 ## A game's own old C++ runtime can kill any runtime loaded into it
 
 Generalised out of [`heavy-rain-vr`](https://github.com/TefMeister/heavy-rain-vr) (`dev-archive/recon/2026-10-12-old-cpp-runtime-closes-the-game/`).

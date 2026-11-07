@@ -476,6 +476,13 @@ frame-timing tool; nothing was cloned or copied.
   [free-the-real-DLL section](./docs/techniques/README.md#and-it-must-free-the-real-dll-on-detach-or-a-reload-walks-straight-past-it);
   read online only, no code taken.
   <https://github.com/crosire/reshade/commit/74347b91d7729a6da93040298c6587bb3b786da4>
+- **chasmlol** — the **Chasms VR Framework** (MIT): its cited design notes on two-hand aim, reloads, holsters and
+  melee, and its headset-free `xrsim` runtime and scripted test range; read online only (2026-11-02, folded
+  2026-11-07), no code taken. <https://github.com/chasmlol/chasms-vr-framework>
+- **Braxus** — **FarCry2VR**: one culling camera wider than either eye and sun shadows drawn once for both eyes,
+  as described in its README (read 2026-11-07); no code taken. <https://github.com/Braxusx/FarCry2VR>
+- **wdre9** and **praydog** — REFramework PR **#1885**, the rest of the HookManager float-argument fix and safer
+  callbacks (read 2026-11-07). <https://github.com/praydog/REFramework/pull/1885>
 ## Open-source libraries commonly used by these projects
 
 Each under its own license:

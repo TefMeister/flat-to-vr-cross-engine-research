@@ -5925,6 +5925,17 @@ Sorcery). **Meta** developer blog, *Tracking Technology Explained: LED Matching*
 [`re-village-scope-vr`](https://github.com/TefMeister/re-village-scope-vr) and
 [`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr).
 
+**A cited reference for two-hand aim, reloads and holsters** (added 2026-11-07) `[reported 2026-11-02, read online]`:
+chasmlol's Chasms VR Framework (<https://github.com/chasmlol/chasms-vr-framework>, MIT, Rust) keeps design notes
+(`docs/design/vr-player-controller/`) with numbers gathered from Half-Life: Alyx, H3VR, HL2VR, VRExpansion, XR
+Interaction Toolkit, Auto Hand and HurricaneVR. The two-hand aim it describes: the gun points from the main grip
+towards a One-Euro-filtered support hand, the second hand's influence eases in over about 0.15 s when it grabs, and
+fades out with the hand's distance from the foregrip. Its reload notes record Alyx taking two shells per reach, one
+when only one slot is left, and a different sound for the last shell. The framework as a whole is a separate VR
+process that owns the player (physics hands, full-body IK, holsters, melee) and drives a game through a small
+per-game adapter over shared memory; one adapter exists (Oblivion). For games whose rendering we already own it is a
+reference, not something to adopt.
+
 ## A retail build that shipped its assertions names its own globals
 
 `[inferred-static 2026-09-05]` · found on UE3, which is the only engine it has been checked against.
@@ -7087,6 +7098,17 @@ run both eyes with a zero offset and diff the two pictures (anything that differ
 draw landing in one eye); then walk the owned-per-eye list against whatever still differs. Turn off vignette, film
 grain and similar screen-painted effects early; they are off in VR by our own rule anyway and remove several suspects
 at once.
+
+**The other side of the ledger: what one shared pass can do for both eyes** (added 2026-11-07, from Braxus's
+FarCry2VR, read via our [`far-cry-2-vr`](https://github.com/TefMeister/far-cry-2-vr) project) `[reported 2026-11-07,
+from the mod's README]`. A released native-stereo mod for Far Cry 2 (Dunia, each eye rendered by the engine through
+OpenXR) says it runs **one culling camera, wider than either eye, shared by both**, and **draws the sun's shadows once
+and shares them between the eyes**, and credits the shared shadows with a steady 90 fps in busy towns. The shape that
+transfers `[inferred-static]`: when culling follows the camera, cull once from a frustum that encloses both eye
+frusta, so nothing goes missing at the outer edges; and treat view-independent passes (a directional light's shadow
+maps) as once-per-frame work, not once-per-eye. That is item 5 above read the other way: the shadow map of a
+directional light belongs with the clock and the simulation snapshot, not with the camera. Not tried on any of our
+projects yet.
 
 ## Count the memory pools before planning a D3D9Ex output path
 
