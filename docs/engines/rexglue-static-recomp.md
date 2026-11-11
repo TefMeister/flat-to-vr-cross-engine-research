@@ -140,6 +140,54 @@ suspects.
 The lesson for the family: a recompiled game's renderer is not fixed. Check the upstream port's plans before
 investing in a seam that the port may replace.
 
+### 2026-11-11: what each draw costs in the D3D12 backend, and the interrupt lock
+
+**First, count the passes: the console may be drawing each frame in strips.** A 360 game that asks for 4-sample
+anti-aliasing at 1280 × 720 does not fit the console's 10 MB of video memory, so its graphics library uses
+"predicated tiling": the whole frame's command stream is replayed once per horizontal strip (The Darkness: three
+strips, 256 + 256 + 208 rows). A recompiled port runs that stream as it is, so every draw is issued three times; the
+flood of "resolve region is empty" / "failed in backend" log lines is the other strips' turns and is harmless
+`[measured 2026-11-10, n=3 runs]`. The game's own anti-aliasing setting was not obeyed; forcing one sample where the
+renderer lays out its surfaces (a hook on the layout function itself, since five callers each pass their own sample
+setting) gave one pass a frame: ~40 to 72 game frames a second at 2 × 3 resolution scale, empty-resolve lines to zero
+`[verified-live 2026-11-10, simulator, n=1]`. The host can supersample instead (`draw_resolution_scale_x/_y`). Notes:
+[three strips](https://github.com/TefMeister/the-darkness-vr/blob/main/modding-notes/2026-11-10e-three-strips-a-frame.md),
+[one pass](https://github.com/TefMeister/the-darkness-vr/blob/main/modding-notes/2026-11-10f-one-pass-a-frame.md).
+Whether other 360 games on the route tile the same way is `[hypothesis]`; the strip offsets in the resolve log show it.
+
+Stereo doubles the draws, so a fixed cost per draw doubles too. Two such costs are shared SDK code (inherited from
+Xenia), so they hold for every game on the route. Numbers from [`the-darkness-vr`](https://github.com/TefMeister/the-darkness-vr)
+(dossier note 2026-11-10g; full topic `external-research/topics/2026-11-11-rexglue-sdk-per-draw-uploads-and-0-11-nightlies.md`),
+the code read online by our `/gr` lane.
+
+- **A whole-buffer barrier pair whenever a draw finds changed guest memory.** For each draw the D3D12 command processor
+  asks the shared-memory buffer for the vertex-fetch (and memexport) ranges; if a page changed, the upload step
+  transitions the *whole* buffer to a copy target, submits, copies, and the draw transitions it back for reading: a
+  barrier pair mid-stream on the one buffer every draw reads `[inferred-static 2026-11-11, read online in rexglue-sdk
+  v0.10.0 and development, src/graphics/d3d12/shared_memory.cpp]`. In The Darkness (Nsight GPU trace, one eye,
+  simulator): ~560 small uploads an eye, ~10 % of card time, and a ~2–3 µs card cost per draw whatever its size
+  `[measured 2026-11-10]`; that the barriers are part of that per-draw cost is `[hypothesis]`.
+- **The known designs are Vulkan only so far** `[reported 2026-11-11, open pull requests]`: #536 (datamothra) records
+  uploads in a slot ahead of the open render pass when no draw in that pass reads those pages (Tekken 6 on an M1 Max:
+  ~125 to 56 passes a frame, ~21 to 60 frames shown); #549 (mkalkhoven-po, for issue #548) stops write-protecting pages
+  that are rewritten every frame and compares them against a shadow copy instead (NFS Carbon on an RTX 5080: 87 to 147
+  frames a second in a race), naming the D3D12 half and leaving it out.
+  <https://github.com/rexglue/rexglue-sdk/pull/536>, <https://github.com/rexglue/rexglue-sdk/pull/549>
+- **What the vendors say about the pattern** (searched 2026-11-11 by `/sr`): NVIDIA's barrier guidance asks for barriers
+  grouped into one `ResourceBarrier` call and warns that "any barrier or fence can limit parallelism", naming redundant
+  barriers and the wait-for-idle they cause as "a major performance problem" in DX11-to-DX12 ports `[reported
+  2026-11-11]` ([NVIDIA, *Advanced API Performance: Barriers*](https://developer.nvidia.com/blog/advanced-api-performance-barriers));
+  Microsoft's barrier page says a resource already in a state that covers the next reads needs no new transition
+  ([Microsoft Learn](https://learn.microsoft.com/en-us/windows/win32/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12)).
+  So a D3D12 port of #536's idea (gather a pass's uploads and transition once before it) is the vendor-recommended
+  shape `[hypothesis: not measured on ReXGlue]`. A search for a Xenia-side fix of the same code found nothing
+  `[reported 2026-11-11, one web search; not a negative by itself]`.
+- **The global interrupt lock around atomic steps.** The generated code takes an "interrupts off" lock around every
+  `lwarx`/`stwcx.` pair (upstream now `rex::platform::InterruptMask`, a recursive mutex); in The Darkness it cost about a
+  third of the graphics thread's time and was removed by a post-generation script `[measured 2026-11-10, the-darkness-vr
+  b024]`. The code generator's `skip_msr` manifest key (present since v0.10.0) removes it at generation time instead
+  `[inferred-static 2026-11-11]`. Upstream keeps the lock by default, so whether a game is safe without it is a per-game check `[hypothesis]`.
+
 ## See also
 
 - [engines index](../engines-index.md) — the ReXGlue row.

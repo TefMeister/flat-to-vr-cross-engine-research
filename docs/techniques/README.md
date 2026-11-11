@@ -769,6 +769,14 @@ Why it dominates the alternatives, stated once so no project re-derives it:
   own. That is a real advantage of an OpenXR path over an OpenVR or half-SBS one, and it had not been
   written down here.
 
+**A cheap version for whole-screen menus and films** (added 2026-11-11, from
+[`the-darkness-vr`](https://github.com/TefMeister/the-darkness-vr), `modding-notes/2026-11-10d-the-menu-is-a-screen-in-the-room.md`):
+when the game is out of a level, hand the flat picture to the runtime with the **eye poses frozen at the moment the
+flat stretch began**, levelled and at about 0.75 of the game's own tangents; the runtime's reprojection then keeps the
+picture where it was while the head turns, and entering the level puts it back on the head `[verified-live 2026-11-10,
+simulator, n=1]`. It needs only a "not in a level" test (there: no camera build in the last half second), not a quad
+layer of its own.
+
 ⚠️ **The honest cost, from the same project:** *"The engine currently does a full draw pass per eye
 where it only needs one per frame."* Promoting the 2D layer out of the per-eye path does not by itself
 fix the per-eye cost of everything else.
@@ -5662,6 +5670,17 @@ units is 6–12 cm — at or above a real interpupillary distance, i.e. **correc
 "something is subtly off" symptom that had been read as a bad separation value was the uncorrected
 pixel-stage pass. Rule out the passes you are not touching before you tune the number you are.
 
+**"Off" in the options may only hide the effect, not stop its input pass** (added 2026-11-11). portingpete's
+*The Darkness Recomp* v0.1.9 found the engine still draws its velocity ("MotionMap") pass with motion blur switched
+off: moving and static geometry redrawn into a target only the blur reads, 17–23 % of the draws in one route; returning
+early from its emitter gave 8–25 % more frames a second `[reported 2026-11-11, from its release notes and RENDERING.md]`
+(<https://github.com/portingpete/The-Darkness-Recomp>; read via our
+[`the-darkness-vr`](https://github.com/TefMeister/the-darkness-vr), `external-research/topics/2026-11-11-portingpete-v019-fewer-draws-from-the-engine.md`).
+Stereo pays every draw twice, so after switching a screen effect off for VR, **count the draws before and after**: an
+unchanged count means the input pass still runs and is a performance lever. The same notes add two draw-count facts
+worth checking on any engine: a wider field of view costs draws (FOV 95 vs 70: about 6 % more, since the engine culls
+by its own projection), while model level of detail cuts triangles, not draws `[reported 2026-11-11, n=1 engine]`.
+
 ## The engine may have no projection matrix to patch
 
 `[reported 2026-09-02]` Generalised out of
@@ -7085,7 +7104,8 @@ unpublished port for most of it) `[reported 2026-10-26, read online]`, each haza
 
 - **fholger's Alan Wake VR** (v1.1.0 notes, 2026-10-20) had to make the pickup highlight stereo-correct, restore
   bright spots on light sources, rework fog billboards, move interaction markers out of the HUD into the scene, and
-  **disable the post-process vignette because it is not stereo-correct**. Read via our paused
+  **disable the post-process vignette because it is not stereo-correct**. (v2.0.0, 2026-11-10, then made it first
+  person with full motion controls `[reported 2026-11-11, release notes]`.) Read via our paused
   [`alan-wake-vr`](https://github.com/TefMeister/alan-wake-vr) project, whose own lamp halos that stayed put through
   the eye shift are likely the same family `[hypothesis]`.
 - **The 2012 Helix Mod 3D Vision fix for The Witcher 2** (eqzitara, HUD by Artox; read via our

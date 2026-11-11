@@ -44,6 +44,18 @@ Public precedent for the same conclusion sits in alphazolam's **EMV Engine**, wh
 spawning prefabs across every RE Engine title it covers and warns that its own component-level
 spawner does not cope with complicated GameObjects. Treat hand-assembly as the exception.
 
+⚠️ **Narrowed 2026-11-10: hand-assembly DOES draw on RE2 and RE3, once two traps are avoided.** A GameObject made with
+`via.GameObject.create(name, folder)` plus a `via.render.Mesh` component, `setMesh` and `set_Material` with holders from
+`sdk.create_resource`, drew in both eyes, lit by the room and fixed in the world `[verified-live 2026-11-10, simulator,
+n=1 each game]`. The traps, both met: **created with no folder it draws nothing**; and **the first request for a
+model's files in a session gives an object that never draws** (material not ready, 0 materials; re-handing the files
+does not help), while a NEW object made a moment later draws at once, so build, wait a few frames, and remake it if it
+is not ready (once was enough, n=2). Whether the five Village recipes above fell to one of these two traps is
+`[hypothesis]`. Live page pictures: `Mesh.updatableMaterial()` must be called before `setMaterialTexture`, which
+otherwise throws; swapping in another of the game's own textures then works `[verified-live, n=1]`, while a texture
+file of our own making did not load yet `[measured 2026-11-10, n=3]`. Source:
+[`visceral-re2-vr`](https://github.com/TefMeister/visceral-re2-vr) `modding-notes/2026-11-10-options-book-first-milestone-and-design-answers.md`.
+
 **Corollary worth stealing:** a title's shipped `.pfb` and `.rtex` paths can be enumerated offline
 from the published file lists in Ekey's **REE.PAK.Tool**, without unpacking anything — the
 game-relative path is the listed path minus the archive prefix and the trailing numeric suffix.
@@ -654,7 +666,14 @@ since at least nightly-01421, 2026-09-10]`. <https://github.com/praydog/REFramew
 praydog's [RE Engine MCP](https://github.com/praydog/re-engine-mcp) is a REFramework.NET (C#) plugin plus an MCP
 server that reads the engine's own type database while the game runs: types, fields, methods, singletons and live
 calls `[reported 2026-10-23, from its README; not yet run against our games]`. It needs a recent nightly REFramework
-with its C# support. For this family it turns "which field holds X" from a static hunt into a question. More, and the
+with its C# support. ⚠️ **If the log says `REFramework.NET has an exception in reframework_plugin_required_version,
+skipping...`**, suspect the .NET runtime before the build (added 2026-11-11): that function only writes three version
+numbers, but in a mixed managed/native DLL the first call in is where the .NET runtime starts, so the line reads as
+"the runtime could not start" `[inferred-static 2026-11-11, from REFramework's source]`; REFramework issue #1739
+(several games, ordinary nightlies) was cured for one user by installing the **.NET 10.0 Desktop Runtime**
+`[reported 2026-08-02]`. Check that both `Microsoft.NETCore.App 10.x` and `Microsoft.WindowsDesktop.App 10.x` are
+listed, then the files beside the DLL. <https://github.com/praydog/REFramework/issues/1739>; via
+[`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr) `external-research/topics/2026-11-11-the-dotnet-connector-error-is-a-runtime-start-failure-not-the-build.md`. For this family it turns "which field holds X" from a static hunt into a question. More, and the
 Unreal twin (UEVR-MCP), in [techniques](../techniques/README.md) → "Ask the running engine itself".
 
 ### A crash inside the engine's own effect request: the scratch-page nesting counter (2026-10-23)
@@ -697,6 +716,20 @@ flattens the text. Setting the menu library's framebuffer scale to back buffer �
 it, with no change to the mouse `[compile-verified 2026-10-24]`. Any plugin that draws its own window through
 REFramework's overlay on OpenXR meets the same two facts: the overlay is desktop-only, and its pixels are not the
 window's pixels.
+
+### REFramework's arm solve runs several times a frame, and one of them is far off (RE Village, 2026-11-10)
+
+From [`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr) `modding-notes/2026-11-10-the-free-left-hand-was-drawn-from-an-old-reading.md`.
+A probe on every arm solve of a frame found the hand target praydog's VR code writes is right on solves 1, 3 and later
+(0 mm still, a few mm swung), but **solve 2 is 18–73 cm off, every frame, for both hands** `[measured 2026-11-10,
+simulator, n=2 runs]`. Our own code read that far-off solve as "the game docked the hand" and put the free hand back
+on a frame-start snapshot, which it then held over the later, correct solve: the drawn hand lagged by an amount that
+changed every frame, which is exactly the stepped "jitter" a wearer reports (the left hand wandered 7.6 cm, the right
+0.6 cm) `[inferred-static, from the code path plus the numbers]`. Trusting REFramework's own dock flag instead gave 0
+put-backs in ~300 frames `[verified-live 2026-11-10, simulator, n=2; not worn yet]`. **The rule for any code that
+corrects a hand after REFramework's IK:** judge only the last solve of the frame, or the framework's own flags, never
+an intermediate one. What solve 2 is remains open `[hypothesis: the game's own IK pass or a solve before the camera is
+set]`.
 
 ## See also
 

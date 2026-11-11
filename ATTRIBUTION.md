@@ -1025,3 +1025,17 @@ respective owners.*
 Our own first-party generalisations, 2026-11-01: the motion-controlled hands order of levers (`the-darkness-vr`,
 `manhunt-2003-vr`), the RenderWare view offset confirmed in Manhunt's own code, and the shared-eye-counter reading of
 REFramework's pd-upscaler branch (`visceral-re4-vr`).
+
+**Added 2026-11-11.** People whose public work this sweep drew on, all read online, nothing copied:
+**elliotttate** (*OpenXR-Simulator*: the 4096 swapchain cap and its 16384 Direct3D lift in commit 692a66d, and the
+v1.6.0 preview thread, credited above); **datamothra** and **mkalkhoven-po** (rexglue-sdk pull requests #536 and #549,
+<https://github.com/rexglue/rexglue-sdk/pull/536>, <https://github.com/rexglue/rexglue-sdk/pull/549>) and the ReXGlue
+SDK authors (credited above); **portingpete** (*The Darkness Recomp* v0.1.9 and its `RENDERING.md`, credited above);
+**GameOrDie007** (*Doom VR*, <https://github.com/GameOrDie007/Doom-VR>) and the **UZDoom** team
+(<https://github.com/UZDoom/UZDoom>); **presidentkoopa** (*ModelSwapper*, <https://github.com/presidentkoopa/RS_ModelSwapper>);
+**fholger** (*Alan Wake VR* v2.0.0, credited above); **NVIDIA** (*Advanced API Performance: Barriers*,
+<https://developer.nvidia.com/blog/advanced-api-performance-barriers>) and **Microsoft** (the D3D12 resource-barrier
+documentation).
+Our own first-party generalisations the same day: the simulator's 4096 cap worked round by matching pixel load, the
+upscaler that silently reset, and the quit abort (`silent-hill-2-remake-vr`); the preview window that takes the polite
+close, the console's three-strip replay, the per-draw costs and the menu held in the room (`the-darkness-vr`).

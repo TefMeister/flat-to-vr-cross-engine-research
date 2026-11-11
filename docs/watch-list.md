@@ -2945,3 +2945,25 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   PureDark's AFW and joeyhodge's fork, rexglue-sdk (v0.10.1) and the watched VR mods; nothing else re-checked here, so
   the rest of this list keeps its 2026-11-01 date.
 - **Inboxes dropped into:** none.
+
+### 2026-11-11 (twenty-first sweep, home PC, part of a `/fullscan`) — the simulator's three traps, per-draw cost on ReXGlue, RE Engine hand-built meshes
+
+- **Inbox drained (2):** `2026-11-11-gr-openxr-simulator-master-lifts-the-4096-cap.md` (runtime-layers → headset-free
+  testing, new "three traps" entry with the quit abort beside it), `2026-11-11-gr-rexglue-d3d12-upload-barriers-per-draw.md`
+  (rexglue page, new section on per-draw costs). No `Supersedes:` lines.
+- **Delta since 2026-11-07:** silent-hill-2-remake-vr (optimiser step 3, quit-abort topic), the-darkness-vr (ten modding
+  notes 2026-11-10 to 10j, dossier, two `/gr` topics), visceral-re2-vr (clean rebuild, options book), visceral-re3-vr
+  (clean rebuild, hip ammo), visceral-re8-vr (hand and gun notes 11-07 to 11-11, the .NET topic), ashes-2063-weapons
+  (Doom VR and ModelSwapper topic); the rest `/gr` stamps or indexes. Read as deltas only.
+- **Generalised up:** the 4096 cap, matching headset pixel load at a desk, and the silently reset upscaler (SH2); the
+  simulator preview window taking the polite close, the 360's three-strip replay and the menu held in the room (the
+  Darkness); hand-assembled meshes DO draw on RE2/RE3 once two traps are avoided, narrowing the Village prefab rule;
+  the .NET 10 cause of the REFramework.NET load error (RE8, via `/gr`); REFramework's off-by-far second arm solve (RE8);
+  the velocity pass drawn with blur off (portingpete, via the Darkness `/gr`); Doom VR and ModelSwapper into
+  source-available (via Ashes `/gr`); Alan Wake VR v2.0.0 noted in techniques.
+- **Web (1 search + 1 fetch):** vendor guidance on D3D12 barriers (NVIDIA, Microsoft) for the ReXGlue per-draw pattern;
+  no Xenia-side fix found (one search, not a negative). Everything else as checked by today's `/gr`.
+- **Inboxes dropped into:** `silent-hill-2-remake-vr/engine-research/inbox/2026-11-11-sr-close-asks-the-simulator-preview-window.md`
+  (its `run-sim.ps1` closes `MainWindowHandle`, which may be the preview).
+- **Root sync:** the sr root needed nothing; the run was still copying a `builds` repo into the pd root when this
+  entry was written.

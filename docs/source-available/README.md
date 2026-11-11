@@ -54,6 +54,19 @@ gameplay, 6DoF weapon aim, and comfort options on top of the community engines t
   [hh79/gzdoomvr](https://github.com/hh79/gzdoomvr) (continuation fork)
 - **QuestZDoom** brought the same idea standalone —
   [questzdoom.com](https://www.questzdoom.com/).
+- **Doom VR** (GameOrDie007; GPL-3.0-or-later; created 2026-11-01, v1.2.3 on 2026-11-10) — UZDoom 5.0.1 (the
+  continuation of GZDoom) with a VR mode and its **own OpenXR layer**, so it needs no OpenVR-to-OpenXR translation;
+  3D guns held in the hands, two-handed shotgun, PC VR plus Quest builds from one source `[reported 2026-11-11, from
+  its README and releases]`. [github.com/GameOrDie007/Doom-VR](https://github.com/GameOrDie007/Doom-VR). Added because
+  a GZDoom-family engine that speaks OpenVR has to go through OpenComposite to reach an OpenXR simulator; this one would
+  not, though whether its pictures work in the simulator is untested `[hypothesis]` (from
+  [`ashes-2063-weapons`](https://github.com/TefMeister/ashes-2063-weapons), `external-research/topics/2026-11-11-doom-vr-openxr-engine-and-modelswapper-hand-reloads.md`).
+- **ModelSwapper** (presidentkoopa, no licence file; v1.5) — puts VR gun models on any Doom weapon mod's guns and adds
+  **hand reloads written as one "card" per action type**: magazine (drop, fetch from a pouch, seat, rack after empty),
+  pump (shells pushed into the port one by one, pump worked after a shot), break-open and revolver; the mod's own ammo
+  and reload rules stay in charge `[reported 2026-11-11, from its README; seen on QuestZDoom 17.3 "on the rig", not
+  headset-confirmed]`. A design to read before writing hand-loading for any game, not code to reuse.
+  [github.com/presidentkoopa/RS_ModelSwapper](https://github.com/presidentkoopa/RS_ModelSwapper)
 
 ### Quake & Doom 3 on PC
 - **Quake VR** (Vittorio Romeo; GPL-2.0) — Quake 1 with roomscale movement, two-handed

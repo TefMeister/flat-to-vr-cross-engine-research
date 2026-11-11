@@ -130,6 +130,39 @@ OpenXR runtime that shows both eyes in a window.
   mean "input delivered"; the game's own highlight or menu change is the proof it landed `[reported 2026-10-26, from
   its MCP README]`. <https://github.com/elliotttate/OpenXR-Simulator> This is the piece a headset-free menu driver
   for in-world VR menus has been missing.
+- **Three traps in elliotttate's simulator that a game hits without warning** (added 2026-11-11, from
+  [`silent-hill-2-remake-vr`](https://github.com/TefMeister/silent-hill-2-remake-vr) via our `/gr` lane, and
+  [`the-darkness-vr`](https://github.com/TefMeister/the-darkness-vr)):
+  - **A 4096-wide picture cap.** v1.7.1 (2026-10-28) and older advertise and enforce at most 4096 for every swapchain,
+    whatever the graphics API `[measured 2026-11-11, from the commit message]`. A game that asks for more fails to start
+    VR, and can carry on flat with no error: Silent Hill 2 under UEVR at the headset's own 5376 width did exactly that
+    `[verified-live 2026-11-10, n=1, SH2 board]`. Commit 692a66d on `master` (2026-10-29) raises it to 16384 for
+    Direct3D 11 and 12 only (system properties, view configuration and the `xrCreateSwapchain` check alike); OpenGL,
+    Vulkan and mixed bindings keep 4096, and no release carries it yet `[measured 2026-11-11, releases list]`. Until one
+    does: measure below 4096 per eye and scale the load with the engine's own resolution setting.
+    <https://github.com/elliotttate/OpenXR-Simulator/commit/692a66d>
+    **Worked case of that workaround:** SH2 ran the simulator at 2048 × 2194 per eye (58 % of a Quest 3's pixels over
+    Virtual Desktop) and raised `r.ScreenPercentage` to 131 % to match the headset's pixel load; the estimate read
+    32.5 ms against the headset's own 33.5 ms `[measured 2026-11-10, n=1 each]`, close enough to rank settings at a
+    desk ([SH2 note](https://github.com/TefMeister/silent-hill-2-remake-vr/blob/main/modding-notes/2026-11-10-optimiser-step-3-the-upscaler-was-off.md)).
+    The same note found the game had silently rewritten its own settings file and turned its upscaler off, so the
+    slow headset baseline had been taken with every pixel at full size: **check the game's upscaler and render scale
+    before taking any VR performance baseline** `[measured 2026-11-10]`.
+  - **An abort at quit.** Since v1.6.0 (2026-10-26) the simulator's preview window runs on its own thread, which is
+    joined only inside `xrDestroyInstance`; a process that exits without destroying the instance destroys a still
+    running thread object, which is a defined `abort()` in C++ (fast-fail code 7, inside the simulator's own dll since
+    it links its C runtime statically) `[inferred-static 2026-11-11, read online in its source, via our /gr lane]`.
+    `master` (2026-11-08) is unchanged on this. UEVR destroys the instance only from a path no quit-time caller was
+    found for, so every UEVR quit on v1.6.0+ may abort `[hypothesis]`; webhead2oo9's fork (v1.5.1) has no preview
+    thread and should not `[hypothesis, untested]`. A crash at quit under the simulator is therefore not evidence about
+    the mod. Detail:
+    [SH2 topic](https://github.com/TefMeister/silent-hill-2-remake-vr/blob/main/external-research/topics/2026-11-11-the-quit-abort-is-the-simulators-preview-thread.md).
+  - **"The game ignores a polite close" may be the wrong window.** Under the simulator the game's process owns two
+    top-level windows, and the simulator's preview comes first in the window list; a close message to it closes only
+    the preview and the game plays on. Sent to the game's own window (match its title), The Darkness closed in 0.7 s
+    with its own quit in the log `[verified-live 2026-11-10, n=3]`
+    ([the-darkness-vr note](https://github.com/TefMeister/the-darkness-vr/blob/main/modding-notes/2026-11-10j-the-polite-close-was-asked-of-the-wrong-window.md)).
+    A close script that picks "the process's first window" is likely to pick the preview on any game `[hypothesis]`.
 
 **The limit:** these are OpenXR runtimes. They help only a mod whose VR output goes through OpenXR, not
 one that draws stereo into the game's own swap chain. phunkaeg's playbook adds the matching warning
