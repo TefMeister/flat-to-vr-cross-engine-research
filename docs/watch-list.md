@@ -2967,3 +2967,19 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   (its `run-sim.ps1` closes `MainWindowHandle`, which may be the preview).
 - **Root sync:** the sr root needed nothing; the run was still copying a `builds` repo into the pd root when this
   entry was written.
+
+### 2026-11-14 (twenty-second sweep, Keeper PC, part of a `/fullscan`) — one-viewpoint tricks, the focus line, AFW's hand pass
+
+- **Inbox drained (2, by name):** `2026-11-14-gr-sky-dome-and-shared-per-eye-pictures.md` (to
+  `engine-agnostic-core/README.md`, a new "ONE viewpoint" section, marked one engine so far) and
+  `2026-11-14-gr-xr-session-not-focused-from-xrsyncactions-is-a-success-code.md` (to `runtime-layers/README.md`, a new
+  "not focused is not a fault" section). No `Supersedes:` lines.
+- **Delta since 2026-11-11:** silent-hill-2-remake-vr (frame warp on the real headset, the hands' own pass b020-b025, the
+  look inside AFW), ba-ttr-vr-bridge (`/gr` folder bootstrapped, FNVVR Reborn and Stewie topics), the-darkness-vr
+  (ReXGlue issue 525 heap corruption on self-quit, portingpete v0.1.10), condemned-2-vr (the read-only disc mount, F.E.A.R.
+  VR melee prior art), visceral-re8/re2/re3-vr (the focus line), plus seven check-in stamps. Read as deltas only.
+- **Generalised up:** AFW beta 6's hole filling, the hands jumping on warped frames and the pass that fixes them, and the
+  warp-on-start crash under Virtual Desktop (SH2, into the AFW section).
+- **Web:** none of its own this sweep; everything as checked by today's three `/gr` passes (2026-11-14).
+- **Inboxes dropped into:** none.
+

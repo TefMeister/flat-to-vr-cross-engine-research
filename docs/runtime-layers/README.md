@@ -218,6 +218,33 @@ What the public files show `[inferred-static 2026-09-21, from our modding lane's
   five listed games. Our wearer saw exactly that, slight, around the hands in the Silent Hill 2 remake,
   and judged it a fair trade for the smoothness `[reported 2026-09-21, n=1 wearer]`.
 
+What our Silent Hill 2 work added in November 2026 (UEVR with AFW beta 5 and beta 6, a Quest 3 through Virtual
+Desktop; the add-on looked into with PureDark's permission, for that game only):
+
+- **beta 6 fills the warp's holes from the other eye and from the previous frame** instead of from motion vectors; of
+  its modes, "previous frame only" removed the shimmer around the hands and weapon in the headset, "other eye" was the
+  worst `[verified-live 2026-11-13, headset, n=1 wearer]`.
+- In that cleanest mode the hands and weapon still **jumped every other frame**: the warp places near things by the
+  camera's move alone, so anything that moves with the controllers rather than the room lands in the wrong place on
+  made-up frames; the arms' own motion data was fine `[measured 2026-11-13, simulator]`.
+- The fix that held: after the warp has run, **paste the arms, hands and weapon from the eye's last real picture,
+  each pixel carried by its own controller's move**, over the warp's displaced copy, and fill the strip it leaves from
+  the other eye's picture of the same frame `[verified-live 2026-11-14, headset, n=1 wearer: "this works well"]`.
+  Switching the warp's mode frame by frame instead was a flop in the headset.
+- Starting the game with the warp already on crashed under Virtual Desktop; switching it on after the headset has drawn
+  for ten seconds works `[measured 2026-11-13, n small]`.
+
+## Reading a VR layer's log: "not focused" is not a fault
+
+`xrSyncActions` returning `XR_SESSION_NOT_FOCUSED` is one of its **success** codes in the OpenXR specification: the
+session is visible but not focused (the system menu, an overlay, the headset taken off), and every action reads
+inactive until focus comes back `[reported 2026-11-14, Khronos OpenXR 1.1 reference]`. REFramework's OpenXR layer
+logs any result other than `XR_SUCCESS` as "[VR] Failed to sync actions", so the line appears at each focus change
+`[inferred-static 2026-11-14, from our RE Village research]`. Read it as "input paused", not a fault; only a run of
+it on every frame (the layer's idea of focus out of step with the runtime's) is worth chasing `[hypothesis]`. A layer
+of our own should test with `XR_SUCCEEDED()` and handle the qualified success codes apart, rather than
+`result != XR_SUCCESS`.
+
 ## Sources
 
 - OpenComposite / OpenOVR — [gitlab.com/znixian/OpenOVR](https://gitlab.com/znixian/OpenOVR) ·
@@ -227,5 +254,7 @@ What the public files show `[inferred-static 2026-09-21, from our modding lane's
   [Helix Mod: VRto3D Driver](https://helixmod.blogspot.com/2024/07/vrto3d-driver.html)
 - Depth3D — [github.com/BlueSkyDefender/Depth3D](https://github.com/BlueSkyDefender/Depth3D)
 - ReShade (crosire) — [reshade.me](https://reshade.me/)
+- OpenXR 1.1 reference, `xrSyncActions` — [registry.khronos.org](https://registry.khronos.org/OpenXR/specs/1.1/man/html/xrSyncActions.html)
+- PureDark's UEVR fork (AFW) — [github.com/PureDark/UEVR](https://github.com/PureDark/UEVR)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

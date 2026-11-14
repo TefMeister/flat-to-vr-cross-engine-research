@@ -1039,3 +1039,10 @@ documentation).
 Our own first-party generalisations the same day: the simulator's 4096 cap worked round by matching pixel load, the
 upscaler that silently reset, and the quit abort (`silent-hill-2-remake-vr`); the preview window that takes the polite
 close, the console's three-strip replay, the per-draw costs and the menu held in the room (`the-darkness-vr`).
+
+**2026-11-14 (twenty-second sweep):** **df4l** (*FNVVR Reborn*, <https://github.com/df4l/FNVVR>: the release notes on
+the sky dome, sun glare, leaves and water drawn per eye); the **Khronos Group** (the OpenXR 1.1 reference for
+`xrSyncActions`); **PureDark** (AFW, credited above, whose add-on we were allowed to look into for Silent Hill 2).
+Our own first-party generalisations the same day: the warp's hand pass and the warp-on-start crash under Virtual
+Desktop (`silent-hill-2-remake-vr`); the focus line read correctly (`visceral-re8-vr`, via `/gr`); the one-viewpoint
+pattern noted from `ba-ttr-vr-bridge`'s `/gr`.

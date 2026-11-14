@@ -50,6 +50,26 @@ decoupled yaw/pitch, roomscale origin, and HUD-to-depth placement. The
 [techniques](../techniques/) section covers the parts that interact with engine specifics
 (basis/handedness, TAA under AFR); the rest is standard VR math that every runtime SDK documents.
 
+## Things a flat game builds around ONE viewpoint (a pattern to watch, one engine so far)
+
+A flat renderer may place some things relative to "the camera position" and draw some pictures only once a frame,
+because with one eye there is only one of each. Drawn twice for two eyes, they come out at the wrong depth or slide
+with the head. The examples so far, all from one Gamebryo VR mod's public release notes (df4l's FNVVR Reborn for
+Fallout: New Vegas, v0.2.0 to v0.16.0) `[reported 2026-11-14]`:
+
+- a **sky dome** centred on the one camera: clouds move against the head and read as a low ceiling; fixed by centring
+  it on each eye;
+- a **sun glare sprite** turned to the one camera: it rolls with the head;
+- **camera-facing leaves** (billboards): they turn and roll with the head;
+- a **water reflection** and **shadow maps** made once and shared: square shapes on the water and cut shadows in one
+  eye; fixed by a reflection per eye (shadow maps stay once a frame);
+- distant water turning grey and flat at the sides of the view.
+
+What to do with it: when a far or sky element "swims" against the near world in VR while the middle distance holds,
+look first for one of these single-viewpoint placements. Our Begin Again VR bridge has an open fault of that look
+(the skyline sliding 2-6 px a frame with head sway, 2026-11-13) `[hypothesis]` that it is the same family. **One engine
+so far:** a second engine, or our own confirmation, is needed before this is a rule.
+
 ## Key takeaway
 
 When you start a new mod, **do not rebuild the core** — study how UEVR / REFramework / vrframework
@@ -62,5 +82,6 @@ half, because that is the only part that is actually new for your game.
 - **REFramework** (praydog) — [github.com/praydog/REFramework](https://github.com/praydog/REFramework) · [reframework.dev](https://reframework.dev/)
 - **UEVR** (praydog) — [github.com/praydog/UEVR](https://github.com/praydog/UEVR) · [docs.uevr.io](https://docs.uevr.io/)
 - Runtimes/libraries: [OpenVR](https://github.com/ValveSoftware/openvr) · [OpenXR SDK](https://github.com/KhronosGroup/OpenXR-SDK) · [Dear ImGui](https://github.com/ocornut/imgui) · [MinHook](https://github.com/TsudaKageyu/minhook) · [safetyhook](https://github.com/cursey/safetyhook)
+- **FNVVR Reborn** (df4l) — [github.com/df4l/FNVVR/releases](https://github.com/df4l/FNVVR/releases)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).
