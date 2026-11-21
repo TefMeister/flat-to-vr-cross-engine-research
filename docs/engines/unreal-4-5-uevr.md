@@ -106,6 +106,37 @@ crash-breadcrumb file around six times a frame (the throttle in its source is br
 unreleased when measured) `[measured 2026-11-05, simulator, A/B/A]`. Keep a live-reading connector out of the profile
 for any run that measures frame time.
 
+### Plugin traps from a shipped UEVR plugin, via the playbook (2026-11-21)
+
+phunkaeg's VR Modding Playbook, chapter 18 (refreshed 2026-11-16), lists what the System Shock remake's companion UEVR
+plugin learned in production `[reported 2026-11-21, read through the playbook]`. The ones that transfer to any UEVR
+plugin:
+
+- **An object lookup that misses scans the whole object array** (about 105 ms over some 176,000 objects there): a
+  periodic check made of misses gave a stutter every 6.8 s, and a class not loaded in some areas misses every time.
+  Give lookups that can miss a cheap path, and drop cached objects on a level change. Hold UObjects rooted, or the
+  garbage collector frees them.
+- **UEVR places the hands by the view's yaw only, while the head renders with the full rotation**: on a pawn that
+  pitches or rolls (flight, a vehicle) the hands drift off. Move only the yaw into the pawn.
+- **Functions called only from Blueprint never reach UEVR's function hook.**
+- **VR controller input goes to the lowest polled XInput slot only.**
+- **Additive UI writes colour but no alpha and vanishes in the headset**; a reticle drawn with depth testing off
+  shimmers under DLSS.
+- **A newer MSVC runtime in the plugin than the game's** can make the first `std::mutex` lock throw (see
+  [runtime layers](../runtime-layers/README.md) → "A game's own old C++ runtime").
+
+<https://github.com/phunkaeg/vr-modding-playbook/blob/main/docs/18-beyond-the-native-injector.md>
+
+### A hang or crash at quit may be UEVR's own clean-up running during process exit (2026-11-21)
+
+UEVR keeps one global framework object; at `ExitProcess` the C runtime's destructors used to tear it down after the
+game's other threads were already dead, and releasing Direct3D 12 resources then could hang in the driver (TEKKEN 8
+demo, about 15 minutes with no window). joeyhodge's fork stopped doing that clean-up on process exit in commit
+`51ef1b0` (2026-11-19), keeping it for an explicit unload; not in a release when read `[reported 2026-11-21]`
+(<https://github.com/joeyhodge/UEVR/commit/51ef1b0>). Whether the quit crashes on our Silent Hill 2 build are the same
+chain is open `[hypothesis]`. The general rule: [techniques](../techniques/README.md) → "At process exit, do not tear
+your framework down".
+
 ### Ask the running engine
 
 UEVR-MCP (elliotttate) reads the engine's reflection live: objects, fields, calls, hooks and a simulated

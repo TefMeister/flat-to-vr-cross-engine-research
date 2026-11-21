@@ -1045,4 +1045,23 @@ the sky dome, sun glare, leaves and water drawn per eye); the **Khronos Group** 
 `xrSyncActions`); **PureDark** (AFW, credited above, whose add-on we were allowed to look into for Silent Hill 2).
 Our own first-party generalisations the same day: the warp's hand pass and the warp-on-start crash under Virtual
 Desktop (`silent-hill-2-remake-vr`); the focus line read correctly (`visceral-re8-vr`, via `/gr`); the one-viewpoint
-pattern noted from `ba-ttr-vr-bridge`'s `/gr`.
+pattern noted from `ba-ttr-vr-bridge`'s `/gr` (that project is now
+[`it-never-gets-old-vr`](https://github.com/TefMeister/it-never-gets-old-vr), renamed 2026-11-21).
+
+**2026-11-21 (twenty-third sweep):** **PureDark** (his REFramework fork carrying AFW for RE9, Pragmata and the RE4
+remake, <https://github.com/PureDark/REFramework>; the RE4 branch's commit messages on the volumetrics fix); **df4l**
+(*FNVVR Reborn* v0.20.0 notes: water, fades and eye adaptation running once per eye, credited above);
+**portingpete** (*The Darkness Recomp* PR #175, the skipped camera update at 120 frames a second, credited above);
+**joeyhodge** and **arhan-mopic** (joeyhodge's UEVR fork, <https://github.com/joeyhodge/UEVR>, commit 51ef1b0: no
+framework teardown at process exit); **Microsoft** (the `DllMain` reference, <https://learn.microsoft.com/en-us/windows/win32/dlls/dllmain>);
+**GameOrDie007** (*Doom VR* v1.3.0 "shots leave the barrel", credited above) and **Moondiesel**, **vicdanny1975** and
+**aidangken-cell** (*Doom VR* issue #2, <https://github.com/GameOrDie007/Doom-VR/issues/2>); **NVIDIA** (the DLSS
+repository, helper header and licence, <https://github.com/NVIDIA/DLSS>, and the Streamline integration checklist);
+**phunkaeg** (*VR Modding Playbook* chapters 09 and 18 as refreshed 2026-11-16, credited above) and, through it, the
+projects it credits: **GEVR**, **Braxus**'s *FarCry2VR*, **MGS5VR** and the *System Shock* remake's UEVR plugin;
+**oneup03** (*VRto3D* V5.1.0, emulated controllers, credited above); **praydog** (REFramework master `55d377c`) and
+**Riesu** (REFramework issue #1895, the exit crash, <https://github.com/praydog/REFramework/issues/1895>).
+Our own first-party generalisations the same day: carrying a warped hand by the pose the game drew
+(`silent-hill-2-remake-vr`). Spotted through our research lanes: the AFW fork (`visceral-re8-vr`), the per-eye timers
+(`it-never-gets-old-vr`), the skipped camera update (`the-darkness-vr`), the teardown at exit (`silent-hill-2-remake-vr`),
+the shot origin and direction (`ashes-2063-weapons`), and the DLSS kit (`visceral-re4-vr`, private).

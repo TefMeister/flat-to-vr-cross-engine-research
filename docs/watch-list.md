@@ -2983,3 +2983,36 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
 - **Web:** none of its own this sweep; everything as checked by today's three `/gr` passes (2026-11-14).
 - **Inboxes dropped into:** none.
 
+### 2026-11-21 (twenty-third sweep, Keeper PC, part of a `/fullscan`) — timers run per eye, skipped updates at high rates, teardown at exit
+
+- **Inbox drained (1, by name):** `2026-11-21-gr-puredarks-afw-also-exists-for-re-engine.md` (to
+  `runtime-layers/README.md` → AFW, a new "not only UEVR" part, and a pointer in `engines/re-engine.md`). No
+  `Supersedes:` lines.
+- **Delta since 2026-11-14:** read in full only today's `/gr` topics (visceral-re4-vr DLSS kit, ashes-2063-weapons
+  Doom VR shots, visceral-re8-vr AFW, the-darkness-vr portingpete PR #175, it-never-gets-old-vr FNVVR Reborn v0.20.0,
+  silent-hill-2-remake-vr joeyhodge teardown) and the visceral-re4-vr inbox hint on volumetrics; of the modding
+  notes, only SH2's `2026-11-18-hands-at-the-headsets-rate-the-carry-by-the-drawn-hand.md` and the b033 part of
+  `2026-11-19-the-long-gun-that-curled-up.md`. **Not read:** the large visceral-re4-vr dossier and static-reading
+  delta (2026-11-19 to 11-20, RE Engine second eye from zero), the-darkness-vr dossier 6h-6i (heap corruption on quit,
+  the hand skeleton), RE2/RE3/RE8 hands, walls and doors notes, it-never-gets-old-vr's water and sky notes. Start
+  there next time.
+- **Generalised up:** per-eye timers (water at double speed, fades, eye adaptation; FNVVR via it-never-gets-old-vr)
+  into techniques → "once per FRAME"; the skipped update at high frame rates (portingpete via the-darkness-vr), new
+  section; no framework teardown at process exit (joeyhodge's UEVR fork and Microsoft's `DllMain` page, via SH2), new
+  section plus a line on the UEVR page; shots must start and point along the drawn barrel (Doom VR via
+  ashes-2063-weapons), new section; volumetrics and the previous view-projection (PureDark's RE4 branch), into
+  temporal effects; adding DLSS yourself and two eyes in one texture (NVIDIA's kit, via visceral-re4-vr); carrying a
+  warped hand by the drawn pose (SH2, our own) into the AFW section.
+- **Web:** checked by `pushed_at` and newest release: REFramework master moved (`55d377c` exit-crash fix #1895,
+  kananlib deadlock fix; nightly 01441, 2026-11-17; into re-engine.md); phunkaeg's playbook moved (`b228217`,
+  2026-11-16: chapters 09 and 18 read, headset frame timing and admit versus present into techniques, UEVR plugin traps
+  into the UEVR page); VRto3D V5.1.0 (2026-11-17, emulated controllers, into runtime layers). Unchanged: UEVR and
+  UEVR-nightly (01143), PureDark's UEVR (beta 6) and REFramework (RE9 beta 6), mutars (starfield2vr 2026-05-05,
+  anvilengine2vr 2026-01-25), OldUnreal 227k_15 (2026-08-16), vrframework (2026-06-09), OpenXR-Simulator (elliotttate
+  v1.7.1, last push 2026-11-08; webhead2oo9 v1.5.1; fholger 2026-03-31), OpenXR Toolkit. Hubs and press not re-read.
+  One fetch of Microsoft's `DllMain` page and one of joeyhodge's commit to confirm the teardown section.
+- **Inboxes dropped into:** `silent-hill-2-remake-vr/engine-research/inbox/2026-11-21-sr-uevr-plugin-traps-from-a-shipped-plugin.md`.
+- **Renamed project:** `ba-ttr-vr-bridge` (later `atomic-fork-vr`) is now `it-never-gets-old-vr`; ATTRIBUTION's
+  2026-11-14 line now names it. Older sweep-log entries keep the name they were written with.
+- **Root sync:** added `holster-zones-vr` to all four lane roots.
+

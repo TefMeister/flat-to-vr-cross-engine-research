@@ -60,6 +60,12 @@ UEVR/UUVR/an engine adapter can, through VRto3D, be played as high-quality stere
 3D display — the modern replacement for the dead 3D Vision ecosystem, and a second audience for
 any VR mod you build. The Helix community documents this pairing.
 
+**V5.1.0 (2026-11-17) adds emulated motion controllers (beta)** `[reported 2026-11-21, release notes]`: an optional
+second SteamVR driver presents a pair of Index controllers or Vive wands, driven by keyboard and mouse (in the style of
+Half-Life: Alyx NoVR), a gamepad (one hand per half of the pad), a documented UDP protocol for other programs, or
+plug-in DLLs. For this library it is also a **SteamVR-side way to give a VR mod scripted hands with no headset**, the
+OpenVR counterpart of the OpenXR Simulator below `[hypothesis, untried by us]`.
+
 - [github.com/oneup03/VRto3D](https://github.com/oneup03/VRto3D) ·
   [project site](https://oneup03.github.io/VRto3D/) ·
   [Helix Mod write-up](https://helixmod.blogspot.com/2024/07/vrto3d-driver.html)
@@ -197,7 +203,7 @@ imports `_Mtx_lock` but not `_Mtx_init_in_situ`.
 
 ## Frame warping as a plug-in: PureDark's AFW
 
-**PureDark's UEVR fork** adds *Alternate Frame Warping*: the game draws fewer pictures and the missing
+**PureDark's UEVR fork** (and his REFramework fork, at the end of this section) adds *Alternate Frame Warping*: the game draws fewer pictures and the missing
 ones are made by warping pictures that exist — one eye from the other, this frame from the last, or
 both. The author reports roughly 60–80% more performance in VR, some artefacts, ~500 MB more VRAM,
 D3D12 only `[reported]`. <https://github.com/PureDark/UEVR> (branch `AFW`, releases
@@ -231,8 +237,39 @@ Desktop; the add-on looked into with PureDark's permission, for that game only):
   each pixel carried by its own controller's move**, over the warp's displaced copy, and fill the strip it leaves from
   the other eye's picture of the same frame `[verified-live 2026-11-14, headset, n=1 wearer: "this works well"]`.
   Switching the warp's mode frame by frame instead was a flop in the headset.
+- **Carry the hand the game DREW, not the raw controller** (2026-11-18 to 11-19). Once the gun hand was smoothed, the
+  pasted hand carried by the raw controller's step showed "drawn last frame plus the raw step" on made-up frames and
+  the drawn hand on real ones, so a quicker hand move doubled the gun again. A model of the shipped smoothing put the
+  gap at about 11 pixels for a 20 cm move in 0.4 s and 30 for a quick one, against zero when the carry is the move
+  between the two poses the arm solve actually drew, read for the frame that drew them (a frame late still left
+  about half) `[verified-numerically 2026-11-18, a model of the fault, not yet worn]`. The rule transfers to any
+  frame-generation pass that moves near things itself: **move them by what was drawn, keyed to the frame that drew
+  it**, and when that record is missing, repeat the last good move for a frame or two rather than snap to the raw
+  input `[hypothesis, built 2026-11-19, unworn]`.
 - Starting the game with the warp already on crashed under Virtual Desktop; switching it on after the headset has drawn
   for ten seconds works `[measured 2026-11-13, n small]`.
+
+**Not only UEVR: the same warp in PureDark's REFramework fork (added 2026-11-21)** `[reported 2026-11-21, releases,
+branches and branch comparisons read in the GitHub viewer; nothing downloaded]`. <https://github.com/PureDark/REFramework>
+carries AFW as pre-release builds for **RE9** (`RE9_AFW_v1.0-beta.1` to `beta.6`, 2026-03-29 to 2026-07-09) and
+**Pragmata** (`PRAGMATA_AFW_v1.0-beta.1`, 2026-05-19), plus branches for the **RE4 remake** (`RE4RAFW`,
+`RE4AFW_CPPVRMod`, March to August 2026). It has the same shape as on UEVR: a compiled add-on behind a published header,
+DLSS or DLAA switched on in the game, about 500 MB more video memory, and a volumetrics difference between the eyes
+listed as the known cost. So on RE Engine it arrives as **a per-game build of a different framework**, not as an add-on
+to the REFramework a mod already runs on; no build for Village or the RE2 / RE3 remakes was found (one listing, not
+proof that none is planned). Two details that transfer:
+
+- **Its debug keys are on the numpad** (keypad 7, 9, 4, 6, `*`, `+`, `-`), where many mods put their own hotkeys:
+  check for a clash before installing it beside another mod `[reported]`.
+- **The volumetrics difference had a stated fix on the RE4 remake branch:** its early commit messages (2026-03-21 to
+  03-24) say it was cured by putting the old view-projection matrix back before the post-process layer
+  `[reported, commit messages only, one engine]`. That fits the rule in
+  [techniques → temporal effects under AFR](../techniques/README.md#temporal-effects-under-afr): anything that reads
+  "last frame's camera" must be handed the camera that frame really had.
+
+The same permission caveat holds: it is PureDark's work and its licence is not established. Spotted by our
+[`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr) research (2026-11-21), which was checking whether
+Village has a build.
 
 ## Reading a VR layer's log: "not focused" is not a fault
 
@@ -256,5 +293,6 @@ of our own should test with `XR_SUCCEEDED()` and handle the qualified success co
 - ReShade (crosire) — [reshade.me](https://reshade.me/)
 - OpenXR 1.1 reference, `xrSyncActions` — [registry.khronos.org](https://registry.khronos.org/OpenXR/specs/1.1/man/html/xrSyncActions.html)
 - PureDark's UEVR fork (AFW) — [github.com/PureDark/UEVR](https://github.com/PureDark/UEVR)
+- PureDark's REFramework fork (AFW for RE9, Pragmata, RE4 remake) — [github.com/PureDark/REFramework](https://github.com/PureDark/REFramework)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

@@ -4,6 +4,12 @@
 (code MIT, prose CC BY 4.0; last commit 2026-09-20; ledger dated 2026-09-14). Read online, 2026-09-23.
 Everything below is our summary in our own words; nothing is copied.
 
+**Moved since** `[reported 2026-11-21, commit list]`: chapter 14 gained "two-pass ownership" (2026-10-21, in
+[techniques](../techniques/README.md)); a "core refresh" on 2026-11-16 (`b228217`) added single-frame stereo on Vulkan
+(KHARVOX), admit versus present and headset frame timing (MGS5VR, GEVR, FarCry2VR; summarised in
+[techniques → frame timing](../techniques/README.md#frame-timing)), game-owned melee windows (AH_UEVR, FarCry2VR) and
+UEVR plugin traps (System ReShock), and registered three new projects in its ledger.
+
 ## What it is `[reported]`
 
 An engineering reference for turning flat games into VR, distilled from about ten in-house ports and

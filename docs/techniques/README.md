@@ -63,6 +63,33 @@ elliotttate's vrframework guide 07 (frame timing and synchronisation) adds two r
 frames the eye parity must stay locked to the eye the compositor expects, with drift detected and recovered by
 skipping a present rather than by drawing the wrong eye `[reported]`.
 
+### Four ways the game's clock works against the headset, and admitting a frame versus keeping it (added 2026-11-21)
+
+phunkaeg's VR Modding Playbook, chapter 09, refreshed 2026-11-16 (commit `b228217`), gathers these from three public
+mods; all `[reported 2026-11-21, read online through the playbook, the mods' own pages not re-read]`:
+
+1. **A fixed frame rate** (GEVR's early betas locked 90): headsets at 72, 80 or 120 Hz then fight it. Follow the
+   display rate the runtime reports, with a fixed rate only as an option. MGS5VR sets its game frame cap from the
+   runtime's display period.
+2. **Motion smoothing / Space Warp halves the app's rate, and the game feels half-speed** when its simulation steps
+   per drawn frame instead of per unit of real time. FarCry2VR 1.0.3 advances one headset frame per frame and catches
+   up gradually so game time keeps to real time; its earlier wall-clock-per-frame build made the world judder.
+3. **A background game window can lose its 1 ms timer on Windows 11** (reset to about 15.6 ms), which capped
+   FarCry2VR near 64 frames a second; the fix opts the process out of power throttling for timer resolution and
+   execution speed and asks for 1 ms again. In VR the game window is normally in the background, so this is a
+   VR-only fault. A minimised window may stop rendering at all (MGS5VR), so keep it out of A/B runs.
+4. **Desktop vsync on the mirror window can pace the headset** (GEVR turns it off in its launch scripts).
+
+And from MGS5VR in the same chapter: **deciding whether a new eye pair is accepted and deciding how long a pair stays
+on screen are two different tests**. One age limit doing both turned any late frame into a black flash; accepting a
+pair only when both eyes come from the same fresh frame, then keeping it on screen (reprojected with its own poses)
+while its context holds, rode out an 800 ms producer stall. Stamp and test freshness with **one clock**: a tick-count
+clock compared against a steady clock ran 31 ms apart and rejected fresh frames.
+
+Source: <https://github.com/phunkaeg/vr-modding-playbook/blob/main/docs/09-d3d11-openxr-injection.md>. A related
+fault of the game's own clock, a fixed minimum interval that skips updates at high frame rates, is under "Stepped motion
+that gets WORSE as the frame rate rises" below.
+
 ## Stereo submission strategies
 
 From best-quality to most-compatible:
@@ -483,6 +510,44 @@ by AFR, including the previous view-projection matrix and motion vectors, not on
 Creation Engine 2 keeps a copy per parity, Anvil ping-pongs the previous view matrix. And before writing any
 matrix, hook the projection read-only and log the mono matrix first (08, section 5) `[reported]`.
 Source: <https://github.com/elliotttate/vrframework> (guides/07, guides/08).
+
+**Volumetrics are one of the passes that read "last frame's camera"** (added 2026-11-21). PureDark's frame-warping
+branch for the RE4 remake (REFramework fork, see [runtime layers → AFW](../runtime-layers/README.md#frame-warping-as-a-plug-in-puredarks-afw))
+names a volumetrics difference between the eyes as the cost of its method, and its early commit messages say it was
+fixed by putting the old view-projection matrix back before the post-process layer `[reported, commit messages only,
+one engine]`. So when volumetric fog or light shafts differ between the eyes and the rest of the picture does not,
+check which view-projection the volumetric pass gets as "previous" before blaming the fog itself `[hypothesis]`.
+Spotted by our [`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr) research; handed to
+`visceral-re4-vr` (private) for its own second eye.
+
+### Adding DLSS yourself: what NVIDIA's public kit asks for, and two eyes in one texture (2026-11-21)
+
+For a mod that runs its own DLSS Super Resolution (rather than relying on the game's), NVIDIA's public DLSS repository
+fixes the list of what the engine side must supply `[reported 2026-11-21, read in the GitHub viewer]`
+(<https://github.com/NVIDIA/DLSS>, the D3D helper header `include/nvsdk_ngx_helpers_d3d.h`; newest release 310.9.16
+when read):
+
+- **At creation, on D3D12:** a graphics command list (needed then too, not only per frame), the node masks (which
+  GPU), the render and output sizes, the quality mode, and the create flags (HDR, low-resolution motion vectors,
+  jittered motion vectors, inverted depth, auto-exposure, sharpening), plus a flag that enables output sub-rectangles.
+- **Each frame:** colour, output, depth and motion-vector resources (optionally exposure and a reactive mask), the
+  **jitter in render-pixel units**, a **motion-vector scale** for X and Y, the render size, **a sub-rectangle origin for
+  each input and for the output**, a reset flag for cuts, and pre-exposure.
+- **Two eyes, one side-by-side texture:** because every input and the output take their own sub-rectangle origin, one
+  DLSS feature per eye can read and write its own half of a shared target `[inferred-static: the header never mentions
+  stereo; read from the fields]`. Two features, not one, also keeps each eye's temporal history apart (the per-eye
+  history rule above).
+- **Motion-vector units** go through the scale numbers rather than a rewrite: NVIDIA's Streamline checklist gives a
+  scale of one over the render size for vectors in pixels and 1 for vectors already in -1..1 `[reported]`. **The sign
+  convention was not confirmed** (the programming guide is a PDF the automated read could not open); a developer on
+  NVIDIA's forum reports having to fix both sign and scale `[reported, n=1]`, so test both signs.
+- **The licence** (the repository's `LICENSE.txt`: NVIDIA's SDK licence and its supplement, both 2024-03-14) allows shipping the
+  runtime only as object code inside an application that adds material function, not on its own; asks for notice to
+  NVIDIA before a commercial release; requires crediting the kit and NVIDIA's approval for its marks
+  `[reported; a reading, not legal advice]`. It does not mention mods; a mod that uses the copy the player's game
+  already has avoids the question of redistributing it `[hypothesis]`.
+
+Generalised from `visceral-re4-vr` (private) research of 2026-11-21.
 
 ## Basis & handedness
 
@@ -4931,6 +4996,41 @@ Prey/Dawn case — removes that whole class of doubt. **A crash in the harness i
 the game is the game's.** The account's shared proxy generator now carries such a test, which reproduces
 the early-call crash on purpose `[compile-verified 2026-09-17]`.
 
+## At process exit, do not tear your framework down: its destructors run after the other threads are dead (2026-11-21)
+
+The release trap above has a mirror image. An injected VR framework usually keeps one global object that owns
+everything: the VR runtime session, the D3D device hooks, graphics resources. If that object is an ordinary C++ global,
+**the C runtime destroys it inside `DLL_PROCESS_DETACH`**, and when the game ends through `ExitProcess`, that is a
+moment when every other thread in the process has already been killed. A destructor that releases graphics resources
+then calls into a driver whose worker threads no longer exist.
+
+**Microsoft documents both halves** ([`DllMain` remarks](https://learn.microsoft.com/en-us/windows/win32/dlls/dllmain)):
+on `DLL_PROCESS_DETACH` the third parameter is non-NULL when the process is terminating; in that case all other
+threads have exited or been terminated, resources may be in an inconsistent state, it is not safe to clean up, and the
+DLL should let the operating system reclaim the memory. The same page says these limits **apply to the constructors
+and destructors of global and static C++ objects too**, because the CRT's entry point runs them `[reported, read
+2026-11-21]`.
+
+**A public case** `[reported 2026-11-21, commit read in the GitHub viewer]`: joeyhodge's UEVR fork, commit `51ef1b0`
+(by arhan-mopic, 2026-11-19, "Don't tear down the framework while the process is exiting"). Closing the TEKKEN 8 demo
+from its menu left the process alive for about 15 minutes with no window: the framework's static destructor released
+Direct3D 12 resources at exit, and the call went into the graphics driver, which waited on worker threads the exit had
+already killed. The fix lets go of the global object without destroying it when the detach comes from process
+termination, and keeps the full clean-up for an explicit unload. <https://github.com/joeyhodge/UEVR/commit/51ef1b0>
+
+What transfers:
+
+- **A hang or a crash at quit, in a game running an injected framework, after the window is gone, points at clean-up
+  run during termination** before it points at the game. On one driver it may hang; on another the same release can
+  fault instead `[hypothesis]`. Read the dump's stack for the framework's detach handler and its destructors first.
+- **The rule for your own injected code:** in `DLL_PROCESS_DETACH`, branch on the third parameter. Clean up only on an
+  explicit unload; on process exit, flush logs if you must and leave everything else to the operating system. Keep the
+  owning object on the heap (or deliberately leaked) rather than as a plain global, so no destructor runs behind your
+  back.
+
+Spotted by our [`silent-hill-2-remake-vr`](https://github.com/TefMeister/silent-hill-2-remake-vr) research, whose
+own quit crashes under UEVR are a candidate for the same chain, not yet checked against a dump `[hypothesis]`.
+
 ## A vtable patch is a LIFETIME commitment — restore it before anything can unload you
 
 `[inferred-static 2026-09-04, n=1 title]` The companion hazard to the state-block rewrite above, and
@@ -6910,7 +7010,7 @@ When a game is made to draw the world twice — a second camera, a replayed pass
 frames — every piece of per-frame state the engine advances while drawing is now advanced twice, or
 advanced between the two eyes. The eyes then disagree about something that is not the viewpoint, and
 the wearer sees it as blinking shadows, jittering foliage, grain that differs per eye, or an object in
-two places. Four independent sources name the same fault `[reported]`:
+two places. Five independent sources name the same fault `[reported]`:
 
 - **dariulone's CyberpunkVR Port** (REDengine 4, MIT) renders the second eye as a real second engine
   camera, and computes the effects that must not differ **once per frame and shares them**: sun shadow
@@ -6925,10 +7025,21 @@ two places. Four independent sources name the same fault `[reported]`:
   eyes of a pair were ~130 ms apart in a moving car, so disparity could not be told from motion;
   **holding the world still on the second eye's frame** became a prerequisite rather than polish
   `[verified-live 2026-09-18]`.
+- **df4l's FNVVR Reborn** (Gamebryo, New Vegas, the world drawn once per eye; v0.20.0 release notes, 2026-11-18,
+  added 2026-11-21) found the fault in effects that are timed rather than drawn: the **water animated twice as fast as
+  on a flat screen and differed between the eyes** because its timer ran once per eye pass, and **object fades,
+  light and shadow fades, eye adaptation and the loading fader** each ran once per drawn eye, two or three times a
+  frame. Moving each to once per frame fixed them; the same release cut its foveation-map rebuilds from 43,772 in 20
+  minutes to 2 `[reported 2026-11-21]`. <https://github.com/df4l/FNVVR/releases> The symptom to recognise: **something
+  runs at double speed in VR only**, and slightly differently in each eye. Spotted by our
+  [`it-never-gets-old-vr`](https://github.com/TefMeister/it-never-gets-old-vr) research, which checks the same
+  engine.
 
 **Checklist when one eye flickers against the other:** list everything the frame advances — clocks,
-random seeds, wind, particle steps, shadow cascade fitting, temporal history, streaming — and confirm
-each advances exactly once per displayed pair. The same rule governs any setting you ramp: advance it
+random seeds, wind, particle steps, shadow cascade fitting, temporal history, streaming, and anything with a timer of
+its own (water and wave animation, fades, eye adaptation, loading faders) — and confirm
+each advances exactly once per displayed pair. A cheap test for the timed kind: compare the effect's speed flat
+against VR; double speed in VR is the per-eye pass counted as a frame. The same rule governs any setting you ramp: advance it
 once per real frame, never inside the per-eye loop (vaas993's scope-fade note makes exactly this point:
 a value that differs between eye 0 and eye 1 is instant double vision).
 
@@ -7371,6 +7482,31 @@ board 2026-10-01) and [`visceral-re2-vr`](https://github.com/TefMeister/visceral
 `modding-notes/2026-10-02-the-swing-is-the-support-hand-leaving-the-gun-through-the-kick.md`,
 `2026-10-02-the-swing-fix-freeze-the-grip-socket-in-reframework.md`); first filed by the modding session 2026-09-30.
 
+## Shots must start AND point along the barrel the wearer sees: two separate faults (2026-11-21)
+
+A flat game fires from the player's body or camera. A VR mod has to move that to the gun, and there are two
+different things to move, which fail independently:
+
+1. **Where the shot starts.** If it still starts at the body, or at a point computed once and not updated as the
+   player moves, shots hit nearby walls and door frames, and the start point can wander away from the gun.
+2. **Where the shot goes.** If the direction comes from the controller's pose while the visible gun model is posed
+   with an offset from the controller (a pitch tuned by eye so the grip feels right), every shot misses the sights by
+   that offset, and players learn to tip the gun.
+
+**A public case with both** `[reported 2026-11-21, release notes and issue read in the GitHub viewer]`: GameOrDie007's
+*Doom VR* (UZDoom-based, its own OpenXR layer). Issue #2 (opened 2026-11-10 by Moondiesel, confirmed by vicdanny1975)
+reported projectiles leaving from near the body, the origin drifting up to three or four feet to the side and **not
+fixed by recentring**; a reply (aidangken-cell) found that the engine's "bullets come from gun" option stopped the drift
+but then shots **followed the controller, not the gun model**, so the gun had to be tilted up to hit, and suggested
+turning the model down about 10 degrees. v1.3.0 (2026-11-17) lists "shots leave the barrel": shots now leave the gun you
+see, along its barrel. <https://github.com/GameOrDie007/Doom-VR/issues/2> · <https://github.com/GameOrDie007/Doom-VR/releases>
+
+The cheap test, any engine: one shot at a near wall with the head turned about 45 degrees away from the gun, then one
+after walking and turning for a while; compare the impact with where the drawn barrel points. Take both the origin
+and the direction from the same muzzle point on the drawn model (RE Engine's shipped muzzle-origin option is one
+engine's version of this; see the [RE Engine page](../engines/re-engine.md)). Spotted by our
+[`ashes-2063-weapons`](https://github.com/TefMeister/ashes-2063-weapons) research.
+
 ## When the result you expect looks the same as a fallback, swap in something that cannot
 
 `[verified-live 2026-10-16, n=1 each]` Generalised out of [`prince-of-persia-2008-vr`](https://github.com/TefMeister/prince-of-persia-2008-vr)
@@ -7469,6 +7605,37 @@ is a general rule for any automated VR checker:
 
 From our checker suite [`BeG0nE`](https://github.com/TefMeister/BeG0nE) (`ideas/fresh/`, 2026-10-26) and the
 project boards it fed.
+
+## Stepped motion that gets WORSE as the frame rate rises: a minimum interval with a strict comparison (2026-11-21)
+
+A game may run an update only when "at least T has passed since the last one", with T fixed for the frame rate the
+game was made for. When the real frame rate sits near 1/T, the time between frames scatters around T; every frame that
+falls just under T is **skipped**, and the input it should have used is applied on the next update as one step twice
+the size. Frames arrive evenly, but the camera moves in uneven steps: exactly the "stepped" kind of jitter, and it is
+worse at a high, uncapped rate than at a low one. VR invites it: a flat game pushed to 90, 120 or 144 frames a second
+can cross a threshold it never met on a 60 Hz screen.
+
+**A public case, measured** `[reported 2026-11-21, pull request read in the GitHub viewer]`: portingpete's *The
+Darkness Recomp*, PR #175 (merged 2026-11-17). The game drives its player-camera update with a minimum of about 1/120 s
+under a strict comparison; at a 120 frames-a-second cap, the gap since the last update could fall just under that, the
+turn was skipped and caught up later. Lowering the minimum for the player-camera update only (the slower periodic
+update, scripted cameras and menus kept the original) cut the repeated, unchanged camera angles while turning at a
+steady rate from **277 of 689 sampled intervals to 21 of 690** one way and **287 of 689 to 16 of 688** the other, turn
+speed unchanged. <https://github.com/portingpete/The-Darkness-Recomp/pull/175>
+
+How to recognise and test it, in any engine:
+
+- **Hold a constant turn and log the game camera's angle once per game frame; count frames where it did not change.**
+  A large count at the free (uncapped) rate and a small one at a lower cap is this fault. Use a constant input source
+  (a held stick, a scripted turn), not a stream of pose commands, or you measure the driver (see "Jitter checks" above).
+- In VR the head view usually comes from the headset, not from the game camera, so the head does not step. What can
+  step is **whatever the game's own camera update still drives**: stick turning, and any aim or body direction a mod
+  reads back from the game camera `[hypothesis]`.
+- The fix shape is to change the threshold (or give the comparison a tolerance) only for the update that must follow
+  the frame, and leave timers that genuinely want a slow rate alone.
+
+Spotted by our [`the-darkness-vr`](https://github.com/TefMeister/the-darkness-vr) research (its port runs the same
+game code at 112 to 180 game frames a second).
 
 ## A skinned view model may arrive in world space: move its bones, not its object matrix (2026-10-23)
 
@@ -7626,5 +7793,12 @@ engine-specific type-database support `[reported 2026-10-17, from its README; no
   eqzitara and Artox, Helix Mod *Witcher 2: Enhanced Edition* fix and its comments:
   [helixmod.blogspot.com](https://helixmod.blogspot.com/2012/04/witcher-2-enhanced-edition.html) ·
   our own `visceral-re2-vr` (menu hand-back), `BeG0nE` (checker lessons)
+- **Added 2026-11-21:** df4l, *FNVVR Reborn* v0.20.0 notes: [github.com/df4l/FNVVR/releases](https://github.com/df4l/FNVVR/releases) ·
+  portingpete, *The Darkness Recomp* PR #175: [github.com/portingpete/The-Darkness-Recomp/pull/175](https://github.com/portingpete/The-Darkness-Recomp/pull/175) ·
+  joeyhodge's UEVR fork, commit 51ef1b0 (by arhan-mopic): [github.com/joeyhodge/UEVR/commit/51ef1b0](https://github.com/joeyhodge/UEVR/commit/51ef1b0) ·
+  Microsoft, [`DllMain` remarks](https://learn.microsoft.com/en-us/windows/win32/dlls/dllmain) ·
+  GameOrDie007, *Doom VR* v1.3.0 and issue #2: [github.com/GameOrDie007/Doom-VR](https://github.com/GameOrDie007/Doom-VR) ·
+  NVIDIA, DLSS repository and licence: [github.com/NVIDIA/DLSS](https://github.com/NVIDIA/DLSS) ·
+  PureDark's REFramework fork (RE4 remake AFW branch): [github.com/PureDark/REFramework](https://github.com/PureDark/REFramework)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

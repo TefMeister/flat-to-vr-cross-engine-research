@@ -661,6 +661,23 @@ The nightly builds now ship one `REFramework.zip` that detects the game at run t
 RE3 and RE7 are not supported by it `[reported 2026-10-23, from the nightly release page; the single zip is listed
 since at least nightly-01421, 2026-09-10]`. <https://github.com/praydog/REFramework-nightly/releases>
 
+### A crash at a normal quit can be the framework's (master, 2026-11-16)
+
+REFramework master `55d377c` (2026-11-16) fixed an access violation on a normal menu quit in its integrity-check bypass
+(issue #1895, Dragon's Dogma 2 on nightly 01439, the stock framework with no scripts or plugins); nightly 01441
+(2026-11-17) carries it, with a kananlib update for a start-up deadlock when freezing threads `[reported 2026-11-21,
+commit list and issue]`. So on a nightly older than 01441, an exit crash with nothing of yours loaded may be the
+framework's own; retest on 01441 or later before chasing it in a mod. See also "At process exit, do not tear your
+framework down" in [techniques](../techniques/README.md). <https://github.com/praydog/REFramework/issues/1895>
+
+### Frame warping (AFW) exists for RE Engine, as per-game builds of a forked framework (noted 2026-11-21)
+
+PureDark's REFramework fork carries his Alternate Frame Warping for RE9, Pragmata and (on branches) the RE4 remake;
+nothing for Village or the RE2 / RE3 remakes was found `[reported 2026-11-21]`. It replaces the framework rather than
+adding to it, needs DLSS or DLAA on, and puts debug keys on the numpad. Details, and the volumetrics fix its RE4 branch
+names: [runtime layers → AFW](../runtime-layers/README.md#frame-warping-as-a-plug-in-puredarks-afw). From our
+[`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr) research.
+
 ### Ask the running game: RE Engine MCP (2026-10-23)
 
 praydog's [RE Engine MCP](https://github.com/praydog/re-engine-mcp) is a REFramework.NET (C#) plugin plus an MCP
