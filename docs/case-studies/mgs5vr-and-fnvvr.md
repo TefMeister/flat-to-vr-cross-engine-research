@@ -101,3 +101,16 @@
 Items 2–6 and 9–12 depend on no particular engine. Item 1 needs the engine's scene-draw and camera
 builders; item 7 applies to any 32-bit game, which on this account includes Psychonauts, Alan Wake,
 Manhunt, Burnout Paradise and Prototype.
+
+## Update 2026-11-25: Fallout: New Vegas and Fallout 3 can now be read as source
+
+From a Build PC note of 2026-11-21 (`it-never-gets-old-vr`). momusdigital's **fnv_decomp**
+(<https://github.com/momusdigital/fnv_decomp>, CC0) rebuilds FalloutNV.exe 1.4.0.525 (68,657 functions) as C++ that
+compiles to the same bytes at the same addresses, and **f3_decomp** (<https://github.com/momusdigital/f3_decomp>,
+CC0) does the same for Fallout3.exe 1.7.0.3 (63,681 of 63,682) `[reported 2026-11-21]`. Many names come from two
+Xbox 360 development symbol files of August 2010, so the Gamebryo 2.6 and Bethesda layer (water, sky, shaders,
+interface and menus, VATS, Pip-Boy) reads with its original names. For a VR mod on these games (fnvvr, FNVVR
+Reborn, TTWVR) that means reading the engine instead of disassembling it, and Oblivion-era code shares much of
+the same layer. The 4 GB patch used by TTW lists changes only the header and a stub, so the addresses hold
+`[measured 2026-11-21]`; one lookup checked: 0x004E3320 is `TESWaterSystem::UpdateLODWater` (far water: binds
+the reflected or plain water shader per reference) `[verified-numerically 2026-11-21]`.

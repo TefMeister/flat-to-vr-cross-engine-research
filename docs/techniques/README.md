@@ -7679,6 +7679,18 @@ reads .NET assemblies statically with nothing else installed, which may suit Uni
 engine-specific type-database support `[reported 2026-10-17, from its README; not installed]`.
 <https://github.com/morluto/rea>
 
+## Freezing every thread to patch can deadlock on the heap
+
+Added 2026-11-25 (from kananlib, via `visceral-re8-vr`). A hooking tool that suspends all other threads while it
+writes a patch must not freeze a thread that holds a lock the tool itself needs. The known ones on Windows are the
+loader lock, the PEB lock and the **process heap lock**: the suspender allocates between its suspend calls, and so
+do logging and hook set-up, so a thread frozen inside `RtlAllocateHeap` hangs the whole program. kananlib's fix
+(cursey, 2026-11-17) takes the PEB and loader locks without ever waiting on one while holding the other, then
+takes the heap lock last, so no thread can be frozen holding any of them `[reported 2026-11-25, its commit
+comment]`. The symptom to recognise: a hang with no CPU in use that comes and goes, most often while the game is
+loading and hooks are going in. Before suspecting your own code, check the framework's date: REFramework before
+nightly 01441 (2026-11-17) has this hole. <https://github.com/cursey/kananlib/commit/114de171>
+
 ## Sources
 
 - **Hard Reset VR** (this account) — the moved scissor rectangle for panel HUDs, input without focus and the latched-post trap, the per-frame pose source for jitter checks, and world-space skinned view models with shader-role gating (2026-10-17); generalised out of [`hard-reset-vr/engine-research/`](https://github.com/TefMeister/hard-reset-vr/tree/main/engine-research)

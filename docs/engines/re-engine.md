@@ -670,6 +670,17 @@ commit list and issue]`. So on a nightly older than 01441, an exit crash with no
 framework's own; retest on 01441 or later before chasing it in a mod. See also "At process exit, do not tear your
 framework down" in [techniques](../techniques/README.md). <https://github.com/praydog/REFramework/issues/1895>
 
+**What that deadlock is** (added 2026-11-25): REFramework freezes every other thread while it installs a hook
+(kananlib's thread suspender). kananlib `114de171` (cursey, 2026-11-17) added the process heap lock to the locks a
+frozen thread must not hold: a thread frozen inside the heap while owning its lock hangs the next allocation, and
+the suspender, its logging and every hook set-up allocate. Its own words: an intermittent start-up hang "in a game
+that was loading, i.e. allocating hard, while the world was frozen" `[reported 2026-11-25, the commit]`. What it
+looks like: the game stops with almost no CPU in use, and it comes and goes. Any REFramework older than nightly
+01441 has it, the `pd-upscaler` build our RE2 and Village mods run (`76298bd`, 2026-03-11) included `[measured
+2026-11-25, their logs]`; a Village freeze of that night is being tested against it (`visceral-re8-vr`). The same
+hazard applies to any tool that freezes threads to patch, so the general line is in
+[techniques](../techniques/README.md). <https://github.com/cursey/kananlib/commit/114de171>
+
 ### Frame warping (AFW) exists for RE Engine, as per-game builds of a forked framework (noted 2026-11-21)
 
 PureDark's REFramework fork carries his Alternate Frame Warping for RE9, Pragmata and (on branches) the RE4 remake;

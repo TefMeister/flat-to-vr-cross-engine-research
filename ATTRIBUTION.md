@@ -483,6 +483,15 @@ frame-timing tool; nothing was cloned or copied.
   as described in its README (read 2026-11-07); no code taken. <https://github.com/Braxusx/FarCry2VR>
 - **wdre9** and **praydog** — REFramework PR **#1885**, the rest of the HookManager float-argument fix and safer
   callbacks (read 2026-11-07). <https://github.com/praydog/REFramework/pull/1885>
+- **phunkaeg** — additionally **xr-tape** (no licence; read and run only) and **xr-sim** (MIT): the outside-the-mod
+  OpenXR trace and its checks, the injector FOV rule, the three-leg stereo check and the Virtual Desktop focus-loss
+  model; no code taken (read 2026-11-21, folded 2026-11-25). <https://github.com/phunkaeg/xr-tape>
+  <https://github.com/phunkaeg/xr-sim>
+- **momusdigital** and the fnvdecomp.com / f3decomp.com contributors — **fnv_decomp** and **f3_decomp** (CC0),
+  matching decompilations of Fallout: New Vegas and Fallout 3 (read 2026-11-21, folded 2026-11-25).
+  <https://github.com/momusdigital/fnv_decomp> <https://github.com/momusdigital/f3_decomp>
+- **cursey** — kananlib commit **114de171**, "Thread: Fix heap lock oversight" (2026-11-17): the heap-lock
+  deadlock when freezing threads to patch; read online only, no code taken. <https://github.com/cursey/kananlib/commit/114de171>
 ## Open-source libraries commonly used by these projects
 
 Each under its own license:

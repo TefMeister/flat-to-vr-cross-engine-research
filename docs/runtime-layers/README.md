@@ -182,6 +182,45 @@ both controllers, and both eyes saved per frame. Its `--sim all` mode runs a scr
 checks that the game reacted: a model for turning a headset-free runtime into a regression suite. Whether it runs
 under an RE Engine game has not been tried `[hypothesis]`.
 
+**Two more by phunkaeg: `xr-tape` (a recorder outside the mod) and `xr-sim` (a scripted runtime)** (added
+2026-11-25, from a Build PC note of 2026-11-21; both read online, xr-tape also built and self-tested there)
+`[reported 2026-11-21, their READMEs and docs]`.
+
+- **xr-tape** (<https://github.com/phunkaeg/xr-tape>, no licence: read and run only) is an OpenXR API layer that
+  records every frame's calls to a trace and passes them through untouched; a checker then runs 20 checks on the
+  trace. Because it sits at the loader, it needs no change to the mod, covers every graphics API, and works on mods
+  you did not write (UEVR too, when the game goes through the Khronos loader). It catches swapped eyes, both eyes
+  sent the same image, toe-in, eye spacing outside 45-80 mm, vertical or depth disparity over 2 mm, the two eyes
+  submitted for different display times, a frame sent with the view-validity bits clear, more layers than the
+  system allows, and a capped recording passing itself off as a complete one.
+- **The injector FOV rule:** for a mod that draws with the game's own frustum (UEVR-style), *a declared FOV equal
+  to the runtime's FOV is the defect*: the game cannot have drawn with the runtime's FOV, so the declaration is a
+  lie the runtime cannot see, and it shows up as wrong depth and scale. A mod that sometimes builds its own frustum
+  owes an in-process check of declared versus drawn, because no layer can see the drawn projection; their own Prey
+  mod shipped that slip and it read in the headset as three unrelated faults (wall-eyed, stretched sideways, the sun
+  swinging with head yaw).
+- **Every check proves it can fail:** a self-test builds a good trace, injects one fault at a time and requires
+  exactly the named checks to flip. `[verified-numerically 2026-11-21, n=1]` built x86 and x64 on our Build PC, the
+  self-test passed (20 checks, 21 fault cases); not yet run on a game.
+- Limits it states: OpenXR only (an OpenVR mod leaves an empty trace, which proves nothing); not for programs that
+  load a runtime without the loader; no pixels yet. **Trap:** a game started through Steam does not inherit your
+  environment, so the layer's variables never reach it; start the exe directly. An elevated shell or a 32/64-bit
+  mismatch also makes the loader skip a layer without a word.
+- **xr-sim** (<https://github.com/phunkaeg/xr-sim>, MIT) is a deterministic headset-free OpenXR runtime (x86 and
+  x64; pictures on D3D11, numbers only elsewhere). What the simulator forks above lack: frame-exact command scripts
+  with asserts (poses, timed moves, buttons, `assert sessionState eq FOCUSED`), frame stepping, fault injection
+  (failed wait/begin/end, swapchain failures, instance loss), and strict headset profiles that refuse a bad one at
+  start instead of half-working.
+- **A Virtual Desktop lesson for any OpenXR mod**, from xr-sim's measured focus-loss model: while the session is not
+  FOCUSED the runtime says "don't render", only frames that carry a layer count toward getting focus back, and
+  end-frame is slowed to about 87 ms. A mod that answers "don't render" by sending empty frames stays parked for
+  good; re-sending the last good layers heals it.
+- **Stereo acceptance in three legs** (their testing doc): a per-eye counter inside the mod, the wire trace, and an
+  image comparison. An image pair after the compositor is not a guard against mono: their deliberate mono control
+  stayed inside the normal image band while the per-eye rate fell from 90 to 0.
+- A fix worth copying for anyone driving a runtime by a command file: marking a file "seen" before reading it lost
+  commands; read first, then mark.
+
 ## A game's own old C++ runtime can kill any runtime loaded into it
 
 Generalised out of [`heavy-rain-vr`](https://github.com/TefMeister/heavy-rain-vr) (`dev-archive/recon/2026-10-12-old-cpp-runtime-closes-the-game/`).
@@ -294,5 +333,6 @@ of our own should test with `XR_SUCCEEDED()` and handle the qualified success co
 - OpenXR 1.1 reference, `xrSyncActions` — [registry.khronos.org](https://registry.khronos.org/OpenXR/specs/1.1/man/html/xrSyncActions.html)
 - PureDark's UEVR fork (AFW) — [github.com/PureDark/UEVR](https://github.com/PureDark/UEVR)
 - PureDark's REFramework fork (AFW for RE9, Pragmata, RE4 remake) — [github.com/PureDark/REFramework](https://github.com/PureDark/REFramework)
+- phunkaeg's xr-tape and xr-sim — [github.com/phunkaeg/xr-tape](https://github.com/phunkaeg/xr-tape), [github.com/phunkaeg/xr-sim](https://github.com/phunkaeg/xr-sim)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).

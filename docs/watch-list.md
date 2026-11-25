@@ -3016,3 +3016,19 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   2026-11-14 line now names it. Older sweep-log entries keep the name they were written with.
 - **Root sync:** added `holster-zones-vr` to all four lane roots.
 
+### 2026-11-25 (twenty-fourth sweep, Build PC, part of an unattended `/fullscan`) — two outside OpenXR testers, the heap-lock freeze, Fallout as source
+
+- **Inbox drained (3, by name):** `2026-11-21-mod-xr-tape-and-xr-sim.md` (to `runtime-layers/README.md`, a new
+  part beside the simulators), `2026-11-21-mod-fnv-and-f3-matching-decompilations.md` (to
+  `case-studies/mgs5vr-and-fnvvr.md`, an update section), `2026-11-25-gr-kananlib-heap-lock-freeze.md` (to
+  `engines/re-engine.md` and a new techniques section). No `Supersedes:` lines.
+- **Delta since 2026-11-21:** only tonight's `/gr` check-ins (visceral-re8-vr heap-lock topic, it-never-gets-old-vr
+  FNVVR Reborn v1.0.0) and the Gold Digger notes (visceral-re8-vr b164 freeze, silent-hill-2-remake-vr crashes) were
+  read. **Still not read** (carried from 11-21): the visceral-re4-vr dossier and static-reading delta, the-darkness-vr
+  dossier 6h-6i, RE2/RE3/RE8 hands, walls and doors notes, it-never-gets-old-vr's water and sky notes. Start there.
+- **Generalised up:** the heap-lock freeze (kananlib, via visceral-re8-vr); xr-tape's injector FOV rule and
+  xr-sim's Virtual Desktop focus-loss model (via a Build PC note).
+- **Web:** REFramework (nightly 01451, 2026-11-23, build fix only), kananlib (114de171 and eeb97a5b, 2026-11-17),
+  UEVR and UEVR-nightly unchanged (01143), FNVVR Reborn v0.21.0 and v1.0.0 (to it-never-gets-old-vr's research
+  lane by /gr, not copied up). Other watch-list sources not re-checked this sweep.
+- **Inboxes dropped into:** none.
