@@ -3032,3 +3032,23 @@ The five deltas the main sweep left unread, read now (`git log --since=2026-09-2
   UEVR and UEVR-nightly unchanged (01143), FNVVR Reborn v0.21.0 and v1.0.0 (to it-never-gets-old-vr's research
   lane by /gr, not copied up). Other watch-list sources not re-checked this sweep.
 - **Inboxes dropped into:** none.
+
+### 2026-11-28 (twenty-fifth sweep, Build PC, part of a `/fullscan`) — joint writes that freeze others, the neck not the eyes, the sleeping controller
+
+- **Inbox:** empty, nothing to drain.
+- **Delta since 2026-11-25:** visceral-re8-vr (dossier §9, §10, §11: run-time meshes, the prologue, the body in VR;
+  read in full), hard-reset-vr (dossier: a hold per morph, the gun ripper; game-specific, not copied up; plus tonight's
+  Gold Digger and /gr crash notes), mad-max-vr (Max's position found live; game-specific), silent-hill-2-remake-vr (one
+  start-values line), visceral-re2-vr (a grenade-launcher shell recon drop; game-specific), and tonight's /gr stamps and
+  watch-list drops in 14 paused projects. **Still not read** (carried from 11-21): the visceral-re4-vr dossier and
+  static-reading delta, the-darkness-vr dossier 6h-6i, RE2/RE3/RE8 hands, walls and doors notes, it-never-gets-old-vr's
+  water and sky notes.
+- **Generalised up (all from visceral-re8-vr's dossier):** joint writes at BeginRendering and hooks on the joint
+  setters freeze other objects (to `engines/re-engine.md`), with the mesh material-order rule; placing a body from the
+  neck (to `techniques/README.md`); the put-down Quest controller at 0 0 0 (to `runtime-layers/README.md`).
+- **Web:** REFramework (no nightly after 01451, no master commits since 11-24; `pd-upscaler` unchanged since 10-11),
+  UEVR and UEVR-nightly unchanged (01143). Through /gr's watch-list check the same night: a public Dead Space 2 VR mod
+  (chortdev, DS2PCVR 0.3.0) and the Blood Dragon and Psychonauts VR mods (game-specific, in those repos' inboxes, not
+  copied up). Other watch-list sources not re-checked this sweep.
+- **Inboxes dropped into:** none.
+

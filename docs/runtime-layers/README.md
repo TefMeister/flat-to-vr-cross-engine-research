@@ -336,3 +336,12 @@ of our own should test with `XR_SUCCEEDED()` and handle the qualified success co
 - phunkaeg's xr-tape and xr-sim — [github.com/phunkaeg/xr-tape](https://github.com/phunkaeg/xr-tape), [github.com/phunkaeg/xr-sim](https://github.com/phunkaeg/xr-sim)
 
 Full credit list: [`../../ATTRIBUTION.md`](../../ATTRIBUTION.md).
+
+## A put-down Quest controller reports 0 0 0 after about 6 seconds (Virtual Desktop, OpenXR; 2026-11-28 sweep)
+
+From [`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr) `engine-research/ENGINE-DOSSIER.md` §11. A Quest 3
+controller put down keeps reporting its last spot for about 6 s, then reports the position 0 0 0 until it is picked
+up, while the mod's "controllers in use" check stays true `[measured 2026-11-26, Village, Virtual Desktop, n=1, both
+controllers]`. For any mod that draws hands: a hand at 0 0 0 is a hand in the player's face. Treat a pose of exactly
+0 0 0 (or a pose that stops changing for seconds) as "not tracked" and hide or park the hand.
+

@@ -1074,3 +1074,8 @@ Our own first-party generalisations the same day: carrying a warped hand by the 
 (`silent-hill-2-remake-vr`). Spotted through our research lanes: the AFW fork (`visceral-re8-vr`), the per-eye timers
 (`it-never-gets-old-vr`), the skipped camera update (`the-darkness-vr`), the teardown at exit (`silent-hill-2-remake-vr`),
 the shot origin and direction (`ashes-2063-weapons`), and the DLSS kit (`visceral-re4-vr`, private).
+
+**2026-11-28 sweep:** our own first-party generalisations only: the joint writes and joint hooks that freeze other
+objects, the material order a hand-built mesh needs, placing a body from the neck, and the put-down Quest controller
+that reports 0 0 0 (all `visceral-re8-vr`, its dossier §9 and §11), with Tefa's tuning in the headset.
+

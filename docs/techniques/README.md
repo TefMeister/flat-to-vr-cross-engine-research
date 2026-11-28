@@ -7679,6 +7679,17 @@ reads .NET assemblies statically with nothing else installed, which may suit Uni
 engine-specific type-database support `[reported 2026-10-17, from its README; not installed]`.
 <https://github.com/morluto/rea>
 
+## A body under the headset: place it from the neck, not the eyes (2026-11-28 sweep)
+
+From [`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr) `engine-research/ENGINE-DOSSIER.md` §11
+(2026-11-26, headset). The headset's position is the eyes, about 9 cm in front of the axis the head turns on. Anything
+placed "under the head" (the hips, a body offset, the test for when to take a step) must follow the **neck**: the eyes
+moved about 9 cm back along the head's flat facing. Placed from the eyes, a head that only turns drags the whole body
+round with it `[verified-live 2026-11-26, Village, n=3 runs: hips, then steps]`. Engine-agnostic: it holds for any
+full-body VR mod. Two tuning results worn by Tefa on the same day, as a starting point elsewhere: for the body's
+place a damped follow with a 1 cm dead zone (a wide dead zone felt wrong: "we need a lag instead"); for the body's
+turn a 25 degree dead zone, then a full 0.18 s turn `[reported 2026-11-26, Tefa, n=1]`.
+
 ## Freezing every thread to patch can deadlock on the heap
 
 Added 2026-11-25 (from kananlib, via `visceral-re8-vr`). A hooking tool that suspends all other threads while it

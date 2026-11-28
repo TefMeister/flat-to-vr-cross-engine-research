@@ -759,6 +759,26 @@ corrects a hand after REFramework's IK:** judge only the last solve of the frame
 an intermediate one. What solve 2 is remains open `[hypothesis: the game's own IK pass or a solve before the camera is
 set]`.
 
+### Joint writes and joint hooks at the wrong moment freeze other things on screen (2026-11-28 sweep)
+
+From [`visceral-re8-vr`](https://github.com/TefMeister/visceral-re8-vr) `engine-research/ENGINE-DOSSIER.md` §9 (2026-11-25).
+Two ways a plugin's skeleton work stopped the engine drawing OTHER objects anew while their animation kept running (a
+character standing frozen, moving platforms and held guns in the wrong place):
+
+- **Writing any `via.Joint` at BeginRendering** froze them; the same writes at PrepareRendering alone were fine
+  `[measured 2026-11-25, Village, flat, n=2 + 2 controls]`.
+- **A REFramework hook on any `via.Joint` setter** (`set_LocalRotation`, `set_Rotation`, `set_LocalPosition`,
+  `set_Position`, `set_LocalScale`) froze them too, with nothing else of the plugin running `[measured 2026-11-25, Village,
+  a repeatable test: FAIL 315/115 frames changed with the hooks, PASS 3143/3453 without]`.
+
+**The rule for any RE Engine title:** write joints at PrepareRendering (they still show in both eyes and carry attached
+objects with them `[verified-live 2026-11-26, Village, headset]`), and never hook the joint setters. Not yet checked on
+RE2, RE3 or RE4; a frozen NPC there after a joint change is the first thing to suspect.
+
+Also from the same section: **a hand-built mesh must name the same materials, in the same order, as its `.mdf2`**, or
+the engine takes none and draws its dark checker pattern; and a material's first load takes seconds, so load every
+material a script may swap to once play has started `[verified-live 2026-11-25, Village, n=1 each]`.
+
 ## See also
 
 - [engines index](../engines-index.md) — the "Capcom RE Engine" row.
